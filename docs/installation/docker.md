@@ -8,8 +8,7 @@ Install Wyrm using Docker compose.
 - docker-compose
 
 ## Compose
-
-This compose file installs everything you need to run the app, including the PostgreSQL database itself. However, feel free to use your own PostgreSQL database if you have one.
+Everything you need to run Wyrm is there, including PostgreSQL itself. You can also use your own database.
 
 ```yaml
 services:
