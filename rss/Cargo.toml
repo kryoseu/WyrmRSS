@@ -16,5 +16,5 @@ chrono = { workspace = true }
 utils = { path = "../utils" }
 database = { path = "../database" }
 async-trait = "0.1.89"
-http = "1.4.0"
+http = "1.4.1"
 bytes = "1.11.1"
