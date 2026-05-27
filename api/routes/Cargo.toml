@@ -1,0 +1,10 @@
+[package]
+name = "api_routes"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+actix-web = { workspace = true }
+serde = { workspace = true }
+api_api = { path = "../api" }
+api_crud = { path = "../crud" }

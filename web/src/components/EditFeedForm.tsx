@@ -1,0 +1,104 @@
+import { useState } from "react";
+import { useUpdateFeed } from "../hooks/useFeeds";
+import type { Feed } from "../types/Feed";
+
+interface Props {
+  feed: Feed;
+  onClose: () => void;
+}
+
+export function EditFeedForm({ feed, onClose }: Props) {
+  const [title, setTitle] = useState(feed.title);
+  const [url, setUrl] = useState(feed.url);
+  const [ttl, setTtl] = useState(feed.ttl);
+  const [urlFilters, setUrlFilters] = useState<string[]>(
+    feed.url_filter.filter((f): f is string => f !== null)
+  );
+  const update = useUpdateFeed();
+
+  function updateFilter(index: number, value: string) {
+    setUrlFilters(urlFilters.map((f, i) => (i === index ? value : f)));
+  }
+
+  function removeFilter(index: number) {
+    setUrlFilters(urlFilters.filter((_, i) => i !== index));
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    update.mutate(
+      {
+        id: feed.id,
+        body: {
+          title: title.trim() || null,
+          url: url.trim() || null,
+          ttl: ttl || null,
+          url_filter: urlFilters.map((f) => f.trim()).filter(Boolean),
+        },
+      },
+      { onSuccess: onClose }
+    );
+  }
+
+  return (
+    <form className="add-feed-form" onSubmit={handleSubmit}>
+      <input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Title"
+        required
+        autoFocus
+      />
+      <input
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        placeholder="Feed URL"
+        type="url"
+        required
+      />
+      <input
+        value={ttl}
+        onChange={(e) => setTtl(Number(e.target.value))}
+        placeholder="Refresh (min)"
+        type="number"
+        min={1}
+        required
+      />
+      <div className="url-filters">
+        {urlFilters.map((filter, i) => (
+          <div key={i} className="url-filter-row">
+            <input
+              value={filter}
+              onChange={(e) => updateFilter(i, e.target.value)}
+              placeholder="e.g. /something-to-exclude"
+            />
+            <button type="button" className="btn-remove-filter" onClick={() => removeFilter(i)}>×</button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => setUrlFilters([...urlFilters, ""])}
+        >
+          + URL filter
+        </button>
+      </div>
+      <div className="add-feed-form-actions">
+        <button
+          className="btn btn-primary"
+          type="submit"
+          disabled={update.isPending}
+        >
+          {update.isPending ? "Saving…" : "Save"}
+        </button>
+        <button
+          className="btn btn-ghost"
+          type="button"
+          onClick={onClose}
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}

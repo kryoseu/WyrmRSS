@@ -1,0 +1,35 @@
+[workspace]
+resolver = "3"
+members = [
+  "api/api",
+  "api/crud",
+  "api/routes",
+  "api/utils",
+  "database",
+  "rss",
+  "server",
+  "utils",
+]
+
+[workspace.dependencies]
+tokio = { version = "1.52.3", features = ["full"] }
+actix-web = "4.13.0"
+actix-files = "0.6.10"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+diesel = { version = "2.3.9", features = ["postgres", "chrono"] }
+diesel-async = { version = "0.9.0", features = ["postgres", "deadpool"] }
+deadpool = "0.13.0"
+diesel_migrations = "2.3.2"
+thiserror = "2.0.18"
+chrono = "0.4.44"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+config = "0.15.23"
+smart-default = "0.7.1"
+reqwest = { version = "0.13.3", features = ["gzip"] }
+reqwest-retry = "0.9.1"
+reqwest-middleware = "0.5.2"
+futures = "0.3.32"
+feed-rs = "2.3.1"
+ts-rs = { version = "12.0.1", features = ["chrono-impl"] }

@@ -1,0 +1,15 @@
+[package]
+name = "database"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ts-rs = { workspace = true }
+tracing = { workspace = true }
+diesel = { workspace = true }
+diesel-async = { workspace = true }
+diesel_migrations = { workspace = true }
+chrono = { workspace = true }
+feed-rs = { workspace = true }
+serde = { workspace = true }
+utils = { path = "../utils" }

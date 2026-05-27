@@ -1,0 +1,20 @@
+[package]
+name = "wyrm-rss"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { workspace = true }
+tracing = { workspace = true }
+smart-default = { workspace = true }
+futures = { workspace = true }
+reqwest = { workspace = true }
+reqwest-retry = { workspace = true }
+reqwest-middleware = { workspace = true }
+feed-rs = { workspace = true }
+chrono = { workspace = true }
+utils = { path = "../utils" }
+database = { path = "../database" }
+async-trait = "0.1.89"
+http = "1.4.0"
+bytes = "1.11.1"

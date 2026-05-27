@@ -1,0 +1,72 @@
+# Installation with Docker
+
+Install Wyrm using Docker compose.
+
+### Prerequisites
+
+- Docker
+- docker-compose
+
+## Compose
+
+This compose file installs everything you need to run the app, including the PostgreSQL database itself. However, feel free to use your own PostgreSQL database if you have one.
+
+```yaml
+services:
+  wyrm-db:
+    image: postgres:18
+    container_name: wyrm-db
+    environment:
+      POSTGRES_USER: wyrm
+      POSTGRES_PASSWORD: wyrm
+      POSTGRES_DB: wyrm
+    volumes:
+      - wyrm_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wyrm -d wyrm"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  wyrm-server:
+    image: ghcr.io/kryoseu/wyrm-server:latest
+    container_name: wyrm-rss
+    environment:
+      # all env vars are optional, these are default values
+      WYRM_PORT: 3001 
+      WYRM_FEED_PAGE_SIZE: 100 
+      WYRM_HTTP_TIMEOUT: 30
+      WYRM_HTTP_CONNECT_TIMEOUT: 30
+      WYRM_HTTP_RETRIES: 3
+      WYRM_DATABASE_CONNECTION: "postgres://wyrm:wyrm@wyrm-db/wyrm"
+      WYRM_DATABASE_POOL_SIZE: 30
+    ports:
+      - 3001:3001
+    volumes:
+      - /path/to/config:/app/config
+    depends_on:
+      wyrm-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  wyrm-ui:
+    image: ghcr.io/kryoseu/wyrm-ui:latest
+    container_name: wyrm-ui
+    environment:
+      WYRM_WEB_PORT: 3000
+      WYRM_BACKEND_URL: "http://wyrm-server:3001"
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+volumes:
+  wyrm_data:
+```
+
+Settings can also be provided via a config file `/app/config/wyrm.toml`.
+
+Run it:
+
+```
+docker compose -f docker-compose.yaml up
+```

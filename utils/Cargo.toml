@@ -1,0 +1,19 @@
+[package]
+name = "utils"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+config = { workspace = true }
+diesel = { workspace = true }
+diesel-async = { workspace = true }
+deadpool = { workspace = true }
+actix-web = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+smart-default = { workspace = true }
+reqwest = { workspace = true }
+reqwest-middleware = { workspace = true }
+feed-rs = { workspace = true }

@@ -1,0 +1,15 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { workspace = true }
+actix-web = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+api_routes = { path = "../api/routes" }
+api_utils = { path = "../api/utils" }
+database = { path = "../database" }
+utils = { path = "../utils" }
+wyrm-rss = { path = "../rss" }

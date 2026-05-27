@@ -1,0 +1,14 @@
+port = 3002 # default 3001
+
+[feed]
+page_size = 50 # default 100
+
+[http]
+timeout = 15         # default 30
+connect_timeout = 10 # default 30
+retries = 5          # default 3
+
+
+[database]
+connection = "postgres://wyrm:wyrm@localhost/wyrm"
+pool_size = 25                                     # default 30

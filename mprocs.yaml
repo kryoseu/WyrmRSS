@@ -1,0 +1,10 @@
+procs:
+  backend:
+    cmd:
+      - cargo
+      - run
+  frontend:
+    cmd:
+      - pnpm
+      - preview
+    cwd: web
