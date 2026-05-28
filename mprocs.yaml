@@ -6,5 +6,5 @@ procs:
   frontend:
     cmd:
       - pnpm
-      - preview
+      - dev
     cwd: web

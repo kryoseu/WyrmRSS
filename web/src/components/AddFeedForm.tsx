@@ -8,7 +8,7 @@ interface Props {
 export function AddFeedForm({ onClose }: Props) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
-  const [ttl, setTtl] = useState(60);
+  const [ttl, setTtl] = useState("");
   const [urlFilters, setUrlFilters] = useState<string[]>([]);
   const create = useCreateFeed();
 
@@ -23,7 +23,7 @@ export function AddFeedForm({ onClose }: Props) {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     create.mutate(
-      { title, url, ttl, url_filter: urlFilters.map((f) => f.trim()).filter(Boolean) },
+      { title, url, ttl: ttl === "" ? 60 : Number(ttl), url_filter: urlFilters.map((f) => f.trim()).filter(Boolean) },
       { onSuccess: onClose }
     );
   }
@@ -46,7 +46,7 @@ export function AddFeedForm({ onClose }: Props) {
       />
       <input
         value={ttl}
-        onChange={(e) => setTtl(Number(e.target.value))}
+        onChange={(e) => setTtl(e.target.value.replace(/\D/g, ""))}
         placeholder="Refresh (min)"
         type="number"
         min={1}

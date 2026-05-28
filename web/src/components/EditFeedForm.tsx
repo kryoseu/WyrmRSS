@@ -10,7 +10,7 @@ interface Props {
 export function EditFeedForm({ feed, onClose }: Props) {
   const [title, setTitle] = useState(feed.title);
   const [url, setUrl] = useState(feed.url);
-  const [ttl, setTtl] = useState(feed.ttl);
+  const [ttl, setTtl] = useState(String(feed.ttl));
   const [urlFilters, setUrlFilters] = useState<string[]>(
     feed.url_filter.filter((f): f is string => f !== null)
   );
@@ -32,7 +32,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
         body: {
           title: title.trim() || null,
           url: url.trim() || null,
-          ttl: ttl || null,
+          ttl: Number(ttl) || null,
           url_filter: urlFilters.map((f) => f.trim()).filter(Boolean),
         },
       },
@@ -58,7 +58,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
       />
       <input
         value={ttl}
-        onChange={(e) => setTtl(Number(e.target.value))}
+        onChange={(e) => setTtl(e.target.value.replace(/\D/g, ""))}
         placeholder="Refresh (min)"
         type="number"
         min={1}
@@ -70,7 +70,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
             <input
               value={filter}
               onChange={(e) => updateFilter(i, e.target.value)}
-              placeholder="e.g. /something-to-exclude"
+              placeholder="e.g. /unwanted"
             />
             <button type="button" className="btn-remove-filter" onClick={() => removeFilter(i)}>×</button>
           </div>
