@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  Yet another self-hosted RSS reader and aggregator.
+  A self-hosted RSS reader and aggregator.
 </p>
 
 <p align="center">
