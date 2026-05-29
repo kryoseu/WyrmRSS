@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     outputs:
       version: ${{ steps.bump.outputs.version }}
     steps:
@@ -46,6 +47,21 @@ jobs:
           git add Cargo.toml
           git commit -m "Release ${{ steps.bump.outputs.version }}"
           git push
+      - name: Sync version to main via PR
+        run: |
+          git fetch origin main
+          git checkout -b sync-version-${{ steps.bump.outputs.version }} origin/main
+          sed -i "s/^version = \".*\"/version = \"${{ steps.bump.outputs.version }}\"/" Cargo.toml
+          git add Cargo.toml
+          git commit -m "Release ${{ steps.bump.outputs.version }}"
+          git push origin sync-version-${{ steps.bump.outputs.version }}
+          gh pr create \
+            --title "Release ${{ steps.bump.outputs.version }}" \
+            --body "Automated version sync from release workflow." \
+            --base main \
+            --head sync-version-${{ steps.bump.outputs.version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-backend:
     needs: [bump-version]
