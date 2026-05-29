@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { HiMail, HiMailOpen } from "react-icons/hi";
+import { TbStar, TbStarFilled } from "react-icons/tb";
 import type { Post } from "../types/Post";
-import { useToggleFavorite } from "../hooks/usePosts";
+import { useUpdatePost } from "../hooks/usePosts";
 
 interface Props {
   post: Post;
@@ -17,18 +19,25 @@ function initials(name: string): string {
 }
 
 export function PostItem({ post, to, active, feedName }: Props) {
-  const { mutate: toggleFavorite } = useToggleFavorite();
+  const { mutate: updatePost } = useUpdatePost();
 
   return (
-    <Link to={to} className={`post-item${active ? " active" : ""}`}>
+    <Link to={to} className={`post-item${active ? " active" : ""}${post.is_read ? " read" : ""}`}>
+      <button
+        className={`post-item-read${!post.is_read ? " unread" : ""}`}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePost({ id: post.id, is_read: !post.is_read }); }}
+        aria-label={post.is_read ? "Mark as unread" : "Mark as read"}
+      >
+        {post.is_read ? <HiMailOpen /> : <HiMail />}
+      </button>
       {feedName && <span className="post-item-feed">{initials(feedName)}</span>}
       <span className="post-item-title">{post.title ?? "Untitled"}</span>
       <button
         className={`post-item-fav${post.is_favorite ? " favorited" : ""}`}
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(post.id); }}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePost({ id: post.id, is_favorite: !post.is_favorite }); }}
         aria-label={post.is_favorite ? "Unfavorite" : "Favorite"}
       >
-        {post.is_favorite ? "★" : "☆"}
+        {post.is_favorite ? <TbStarFilled /> : <TbStar />}
       </button>
     </Link>
   );

@@ -514,9 +514,14 @@
   &:hover {
     background: var(--accent-bg);
 
-    .post-item-fav {
+    .post-item-fav,
+    .post-item-read {
       opacity: 1;
     }
+  }
+
+  &.read {
+    color: var(--text);
   }
 
   &.active {
@@ -543,6 +548,29 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.post-item-read {
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+  transition: color 0.15s, opacity 0.15s;
+
+  &.unread {
+    opacity: 1;
+    color: var(--accent);
+  }
+
+  &:hover {
+    color: var(--accent);
+    opacity: 1;
+  }
 }
 
 .post-item-fav {

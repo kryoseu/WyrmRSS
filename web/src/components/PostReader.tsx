@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import YouTube from "react-youtube";
-import { usePost, useToggleFavorite } from "../hooks/usePosts";
+import { TbStar, TbStarFilled } from "react-icons/tb";
+import { usePost, useUpdatePost } from "../hooks/usePosts";
 
 function extractYouTubeId(url: string | null): string | null {
   if (!url) return null;
@@ -33,7 +35,13 @@ interface Props {
 
 export function PostReader({ postId, onClose }: Props) {
   const { data: post, isLoading } = usePost(postId ?? undefined);
-  const { mutate: toggleFavorite } = useToggleFavorite();
+  const { mutate: updatePost } = useUpdatePost();
+
+  useEffect(() => {
+    if (post && !post.is_read) {
+      updatePost({ id: post.id, is_read: true });
+    }
+  }, [post?.id]);
 
   if (!postId) return null;
 
@@ -47,10 +55,10 @@ export function PostReader({ postId, onClose }: Props) {
         {post && (
           <button
             className={`pane-reader-fav${post.is_favorite ? " favorited" : ""}`}
-            onClick={() => toggleFavorite(post.id)}
+            onClick={() => updatePost({ id: post.id, is_favorite: !post.is_favorite })}
             aria-label={post.is_favorite ? "Unfavorite" : "Favorite"}
           >
-            {post.is_favorite ? "★" : "☆"}
+            {post.is_favorite ? <TbStarFilled /> : <TbStar />}
           </button>
         )}
         <button

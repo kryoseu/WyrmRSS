@@ -5,9 +5,10 @@ import {
   useQueryClient,
   type InfiniteData,
 } from "@tanstack/react-query";
-import { getFavoritePosts, getPost, getPosts, getPostsByFeed, toggleFavorite } from "../api/posts";
+import { getFavoritePosts, getPost, getPosts, getPostsByFeed, updatePost } from "../api/posts";
 import type { Post } from "../types/Post";
 import type { PostsPage } from "../types/PostsPage";
+import type { UpdatePost } from "../types/UpdatePost";
 import type { Cursor } from "../utils/api";
 
 export const postKeys = {
@@ -52,10 +53,10 @@ export function usePost(id?: number) {
   });
 }
 
-export function useToggleFavorite() {
+export function useUpdatePost() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => toggleFavorite(id),
+    mutationFn: ({ id, ...data }: { id: number } & UpdatePost) => updatePost(id, data),
     onSuccess: (post: Post) => {
       queryClient.setQueryData(postKeys.detail(post.id), post);
 

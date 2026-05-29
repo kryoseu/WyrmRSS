@@ -20,7 +20,7 @@ export const ENDPOINTS = {
     get: (id: number) => `${BASE}/posts/${id}`,
     getByFeed: (feedId: number, cursor?: Cursor) => `${BASE}/feeds/${feedId}/posts${cursorParams(cursor)}`,
     getFavorites: (cursor?: Cursor) => `${BASE}/posts/favorites${cursorParams(cursor)}`,
-    toggleFavorite: (id: number) => `${BASE}/posts/${id}/favorite`,
+    update: (id: number) => `${BASE}/posts/${id}`,
   },
 } as const;
 

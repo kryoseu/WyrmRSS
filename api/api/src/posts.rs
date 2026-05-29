@@ -54,9 +54,3 @@ pub async fn list_favorites(
     .await?;
     Ok(Json(page))
 }
-
-pub async fn toggle_favorite(path: Path<i32>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Post>> {
-    let post_id = path.into_inner();
-    let post = Post::toggle_favorite(&ctx.db_pool, post_id).await?;
-    Ok(Json(post))
-}
