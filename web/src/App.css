@@ -255,18 +255,24 @@
   white-space: nowrap;
 }
 
-.feed-item-filter {
+.feed-item-filter,
+.feed-item-edit,
+.feed-item-delete {
   opacity: 0;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1;
   padding: 0 2px;
   flex-shrink: 0;
   transition: color 0.15s, opacity 0.15s;
+  display: flex;
+  align-items: center;
+}
 
+.feed-item-filter {
   &.active {
     opacity: 1;
     color: var(--accent);
@@ -278,34 +284,12 @@
 }
 
 .feed-item-edit {
-  opacity: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1;
-  padding: 0 2px;
-  flex-shrink: 0;
-  transition: color 0.15s, opacity 0.15s;
-
   &:hover {
     color: var(--accent);
   }
 }
 
 .feed-item-delete {
-  opacity: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text);
-  font-size: 16px;
-  line-height: 1;
-  padding: 0 2px;
-  flex-shrink: 0;
-  transition: color 0.15s, opacity 0.15s;
-
   &:hover {
     color: #ef4444;
   }
