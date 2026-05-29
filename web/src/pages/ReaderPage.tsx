@@ -1,10 +1,18 @@
 import { useState } from "react";
+import { Outlet } from "react-router-dom";
 import { SideMenu } from "../components/SideMenu";
-import { PostList } from "../components/PostList";
 import { PostReader } from "../components/PostReader";
+
+export type ReaderOutletContext = {
+  excludedFeeds: Set<number>;
+  onToggleExclude: (feedId: number) => void;
+  activePostId: number | null;
+  onOpenPost: (id: number) => void;
+};
 
 export function ReaderPage() {
   const [excludedFeeds, setExcludedFeeds] = useState<Set<number>>(new Set());
+  const [activePostId, setActivePostId] = useState<number | null>(null);
 
   function toggleExclude(feedId: number) {
     setExcludedFeeds((prev) => {
@@ -18,8 +26,8 @@ export function ReaderPage() {
   return (
     <div className="layout">
       <SideMenu excludedFeeds={excludedFeeds} onToggleExclude={toggleExclude} />
-      <PostList excludedFeeds={excludedFeeds} />
-      <PostReader />
+      <Outlet context={{ excludedFeeds, onToggleExclude: toggleExclude, activePostId, onOpenPost: setActivePostId } satisfies ReaderOutletContext} />
+      <PostReader postId={activePostId} onClose={() => setActivePostId(null)} />
     </div>
   );
 }

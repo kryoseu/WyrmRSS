@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
 import YouTube from "react-youtube";
 import { usePost, useToggleFavorite } from "../hooks/usePosts";
 
@@ -28,18 +26,16 @@ function formatDate(iso: string | null): string {
   });
 }
 
-export function PostReader() {
-  const { postId } = useParams();
-  const postIdNum = postId ? Number(postId) : undefined;
-  const { data: post, isLoading } = usePost(postIdNum);
+interface Props {
+  postId: number | null;
+  onClose: () => void;
+}
+
+export function PostReader({ postId, onClose }: Props) {
+  const { data: post, isLoading } = usePost(postId ?? undefined);
   const { mutate: toggleFavorite } = useToggleFavorite();
-  const [showPane, setShowPane] = useState(false);
 
-  useEffect(() => {
-    if (postId) setShowPane(true);
-  }, [postId]);
-
-  if (!showPane) return null;
+  if (!postId) return null;
 
   const body = post?.content ?? post?.description;
   const date = formatDate(post?.published_at ?? null);
@@ -59,7 +55,7 @@ export function PostReader() {
         )}
         <button
           className="pane-reader-close"
-          onClick={() => setShowPane(false)}
+          onClick={onClose}
           aria-label="Close reader"
         >
           ×
