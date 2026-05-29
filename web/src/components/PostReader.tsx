@@ -39,7 +39,7 @@ export function PostReader({ postId, onClose }: Props) {
 
   useEffect(() => {
     if (post && !post.is_read) {
-      updatePost({ id: post.id, is_read: true });
+      updatePost({ id: post.id, is_read: true, is_favorite: null });
     }
   }, [post?.id]);
 
@@ -55,7 +55,7 @@ export function PostReader({ postId, onClose }: Props) {
         {post && (
           <button
             className={`pane-reader-fav${post.is_favorite ? " favorited" : ""}`}
-            onClick={() => updatePost({ id: post.id, is_favorite: !post.is_favorite })}
+            onClick={() => updatePost({ id: post.id, is_favorite: !post.is_favorite, is_read: null })}
             aria-label={post.is_favorite ? "Unfavorite" : "Favorite"}
           >
             {post.is_favorite ? <TbStarFilled /> : <TbStar />}
