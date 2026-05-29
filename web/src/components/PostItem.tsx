@@ -21,11 +21,23 @@ function initials(name: string): string {
 export function PostItem({ post, to, active, feedName }: Props) {
   const { mutate: updatePost } = useUpdatePost();
 
+  function handleReadToggle(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    updatePost({ id: post.id, is_read: !post.is_read, is_favorite: null });
+  }
+
+  function handleFavToggle(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    updatePost({ id: post.id, is_favorite: !post.is_favorite, is_read: null });
+  }
+
   return (
     <Link to={to} className={`post-item${active ? " active" : ""}${post.is_read ? " read" : ""}`}>
       <button
         className={`post-item-read${!post.is_read ? " unread" : ""}`}
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePost({ id: post.id, is_read: !post.is_read }); }}
+        onClick={handleReadToggle}
         aria-label={post.is_read ? "Mark as unread" : "Mark as read"}
       >
         {post.is_read ? <HiMailOpen /> : <HiMail />}
@@ -34,7 +46,7 @@ export function PostItem({ post, to, active, feedName }: Props) {
       <span className="post-item-title">{post.title ?? "Untitled"}</span>
       <button
         className={`post-item-fav${post.is_favorite ? " favorited" : ""}`}
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); updatePost({ id: post.id, is_favorite: !post.is_favorite }); }}
+        onClick={handleFavToggle}
         aria-label={post.is_favorite ? "Unfavorite" : "Favorite"}
       >
         {post.is_favorite ? <TbStarFilled /> : <TbStar />}
