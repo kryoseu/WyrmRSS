@@ -48,6 +48,8 @@ pub enum WyrmError {
     HttpClient(#[from] HttpClientError),
     #[error("rss parse feed error: {0}")]
     ParseFeedError(#[from] feed_rs::parser::ParseFeedError),
+    #[error("rss worker error")]
+    WorkerError,
 }
 
 impl From<reqwest::Error> for WyrmError {

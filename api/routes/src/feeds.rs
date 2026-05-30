@@ -7,6 +7,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         web::scope("/feeds")
             .route("", web::get().to(feeds::list))
             .route("", web::post().to(crud_feeds::create))
+            .route("/poll", web::post().to(feeds::poll))
             .route("/{feed_id}", web::get().to(feeds::get))
             .route("/{feed_id}", web::patch().to(crud_feeds::update))
             .route("/{feed_id}", web::delete().to(crud_feeds::delete)),

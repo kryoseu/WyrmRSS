@@ -1,7 +1,7 @@
 import type { Feed } from "../types/Feed";
 import type { CreateFeed } from "../types/CreateFeed";
 import type { UpdateFeed } from "../types/UpdateFeed";
-import { ENDPOINTS, json } from "../utils/api";
+import { ENDPOINTS, json, noContent } from "../utils/api";
 
 export const getFeeds = (): Promise<Feed[]> =>
   fetch(ENDPOINTS.feeds.list()).then<Feed[]>(json);
@@ -25,3 +25,6 @@ export const updateFeed = (id: number, body: UpdateFeed): Promise<Feed> =>
 
 export const deleteFeed = (id: number): Promise<Feed> =>
   fetch(ENDPOINTS.feeds.delete(id), { method: "DELETE" }).then<Feed>(json);
+
+export const pollFeeds = (): Promise<void> =>
+  fetch(ENDPOINTS.feeds.poll(), { method: "POST" }).then(noContent);

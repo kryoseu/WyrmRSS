@@ -14,6 +14,7 @@ export const ENDPOINTS = {
     create: () => `${BASE}/feeds`,
     update: (id: number) => `${BASE}/feeds/${id}`,
     delete: (id: number) => `${BASE}/feeds/${id}`,
+    poll: () => `${BASE}/feeds/poll`,
   },
   posts: {
     list: (cursor?: Cursor) => `${BASE}/posts${cursorParams(cursor)}`,
@@ -27,4 +28,8 @@ export const ENDPOINTS = {
 export async function json<T>(res: Response): Promise<T> {
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json();
+}
+
+export async function noContent(res: Response): Promise<void> {
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
 }
