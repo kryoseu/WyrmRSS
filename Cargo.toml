@@ -11,6 +11,14 @@ members = [
   "utils",
 ]
 
+[workspace.package]
+version = "0.3.0"
+edition = "2024"
+description = "A self-hosted RSS reader and aggregator"
+license = "GPL-3.0-only"
+repository = "https://github.com/kryoseu/WyrmRSS"
+rust-version = "1.94.1"
+
 [workspace.dependencies]
 tokio = { version = "1.52.3", features = ["full"] }
 actix-web = "4.13.0"

@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect } from "react";
 import YouTube from "react-youtube";
-import { usePost, useToggleFavorite } from "../hooks/usePosts";
+import { TbStar, TbStarFilled } from "react-icons/tb";
+import { usePost, useUpdatePost } from "../hooks/usePosts";
 
 function extractYouTubeId(url: string | null): string | null {
   if (!url) return null;
@@ -28,38 +28,43 @@ function formatDate(iso: string | null): string {
   });
 }
 
-export function PostReader() {
-  const { postId } = useParams();
-  const postIdNum = postId ? Number(postId) : undefined;
-  const { data: post, isLoading } = usePost(postIdNum);
-  const { mutate: toggleFavorite } = useToggleFavorite();
-  const [showPane, setShowPane] = useState(false);
+interface Props {
+  postId: number | null;
+  onClose: () => void;
+  width: number;
+}
+
+export function PostReader({ postId, onClose, width }: Props) {
+  const { data: post, isLoading } = usePost(postId ?? undefined);
+  const { mutate: updatePost } = useUpdatePost();
 
   useEffect(() => {
-    if (postId) setShowPane(true);
-  }, [postId]);
+    if (post && !post.is_read) {
+      updatePost({ id: post.id, is_read: true, is_favorite: null });
+    }
+  }, [post?.id]);
 
-  if (!showPane) return null;
+  if (!postId) return null;
 
   const body = post?.content ?? post?.description;
   const date = formatDate(post?.published_at ?? null);
   const youtubeId = extractYouTubeId(post?.url ?? null);
 
   return (
-    <div className="pane pane-reader">
+    <div className="pane pane-reader" style={{ width }}>
       <div className="pane-reader-header">
         {post && (
           <button
             className={`pane-reader-fav${post.is_favorite ? " favorited" : ""}`}
-            onClick={() => toggleFavorite(post.id)}
+            onClick={() => updatePost({ id: post.id, is_favorite: !post.is_favorite, is_read: null })}
             aria-label={post.is_favorite ? "Unfavorite" : "Favorite"}
           >
-            {post.is_favorite ? "★" : "☆"}
+            {post.is_favorite ? <TbStarFilled /> : <TbStar />}
           </button>
         )}
         <button
           className="pane-reader-close"
-          onClick={() => setShowPane(false)}
+          onClick={onClose}
           aria-label="Close reader"
         >
           ×

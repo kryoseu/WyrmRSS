@@ -1,8 +1,8 @@
-name: CI
+name: Build
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "release"]
   pull_request:
   workflow_dispatch:
 

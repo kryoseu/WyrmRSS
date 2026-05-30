@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useOutletContext, useParams } from "react-router-dom";
 import { useFavoritePosts, usePosts } from "../hooks/usePosts";
 import { useFeeds } from "../hooks/useFeeds";
 import { PostItem } from "./PostItem";
 import type { Post } from "../types/Post";
+import type { ReaderOutletContext } from "../pages/ReaderPage";
 
 function getDateLabel(iso: string): string {
   const date = new Date(iso);
@@ -35,11 +36,8 @@ function groupByDate(posts: Post[]): [string, Post[]][] {
   return Array.from(map.entries());
 }
 
-interface Props {
-  excludedFeeds: Set<number>;
-}
-
-export function PostList({ excludedFeeds }: Props) {
+export function PostList() {
+  const { excludedFeeds, activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
   const { pathname } = useLocation();
   const isFavorites = pathname.startsWith("/favorites");
   const { feedId, postId } = useParams();
@@ -52,6 +50,10 @@ export function PostList({ excludedFeeds }: Props) {
     ? favoritesQuery
     : postsQuery;
   const feedMap = feeds ? new Map(feeds.map((f) => [f.id, f.title])) : new Map<number, string>();
+
+  useEffect(() => {
+    if (postId) onOpenPost(Number(postId));
+  }, [postId, onOpenPost]);
 
   const posts = data?.pages.flatMap((p) => p.items);
   const filtered = posts?.filter(
@@ -88,7 +90,7 @@ export function PostList({ excludedFeeds }: Props) {
                   key={p.id}
                   post={p}
                   to={postPath(p, feedIdNum, isFavorites)}
-                  active={postId === String(p.id)}
+                  active={activePostId === p.id}
                   feedName={feedIdNum === undefined ? feedMap.get(p.feed_id) : undefined}
                 />
               ))}

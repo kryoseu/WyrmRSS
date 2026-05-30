@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { TbCircleOff, TbPencil, TbX } from "react-icons/tb";
 import { useDeleteFeed } from "../hooks/useFeeds";
 import type { Feed } from "../types/Feed";
 import { EditFeedForm } from "./EditFeedForm";
@@ -49,7 +50,7 @@ export function FeedItem({ feed, active, excluded, onToggleExclude }: Props) {
         title={excluded ? "Show feed posts" : "Hide feed posts"}
         aria-label={excluded ? `Show ${feed.title} posts` : `Hide ${feed.title} posts`}
       >
-        ⊘
+        <TbCircleOff />
       </button>
       <button
         className="feed-item-edit"
@@ -57,7 +58,7 @@ export function FeedItem({ feed, active, excluded, onToggleExclude }: Props) {
         title="Edit feed"
         aria-label={`Edit ${feed.title}`}
       >
-        ✎
+        <TbPencil />
       </button>
       <button
         className="feed-item-delete"
@@ -65,7 +66,7 @@ export function FeedItem({ feed, active, excluded, onToggleExclude }: Props) {
         title="Remove feed"
         aria-label={`Remove ${feed.title}`}
       >
-        ×
+        <TbX />
       </button>
     </Link>
   );

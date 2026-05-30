@@ -44,15 +44,6 @@ impl Post {
             .map_err(WyrmError::from)
     }
 
-    pub async fn toggle_favorite(pool: &DatabasePool, post_id: i32) -> WyrmResult<Self> {
-        let mut conn = pool.get().await?;
-        diesel::update(posts::table.find(post_id))
-            .set(posts::is_favorite.eq(diesel::dsl::not(posts::is_favorite)))
-            .get_result::<Self>(&mut conn)
-            .await
-            .map_err(WyrmError::from)
-    }
-
     pub async fn create(pool: &DatabasePool, form: PostInsertForm) -> WyrmResult<()> {
         let mut conn = pool.get().await?;
         diesel::insert_into(posts::table)
@@ -63,6 +54,33 @@ impl Post {
             .await?;
         Ok(())
     }
+
+    pub async fn update(pool: &DatabasePool, form: PostUpdateForm) -> WyrmResult<Self> {
+        let mut conn = pool.get().await?;
+        diesel::update(posts::table.find(form.id))
+            .set(form)
+            .get_result::<Self>(&mut conn)
+            .await
+            .map_err(WyrmError::from)
+    }
+
+    pub async fn toggle_is_read(pool: &DatabasePool, post_id: i32) -> WyrmResult<Self> {
+        let mut conn = pool.get().await?;
+        diesel::update(posts::table.find(post_id))
+            .set(posts::is_read.eq(diesel::dsl::not(posts::is_read)))
+            .get_result::<Self>(&mut conn)
+            .await
+            .map_err(WyrmError::from)
+    }
+}
+
+#[derive(Identifiable, AsChangeset)]
+#[diesel(table_name = crate::schema::posts)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct PostUpdateForm {
+    pub id: i32,
+    pub is_favorite: Option<bool>,
+    pub is_read: Option<bool>,
 }
 
 #[derive(Insertable)]

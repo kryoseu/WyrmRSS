@@ -19,8 +19,19 @@
 }
 
 .pane-reader {
-  width: 40%;
   flex-shrink: 0;
+}
+
+.reader-resize-handle {
+  width: 2px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.15s;
+
+  &:hover, &:active {
+    background: var(--accent-border);
+  }
 }
 
 .pane-scroll {
@@ -255,18 +266,24 @@
   white-space: nowrap;
 }
 
-.feed-item-filter {
+.feed-item-filter,
+.feed-item-edit,
+.feed-item-delete {
   opacity: 0;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text);
-  font-size: 8px;
+  font-size: 12px;
   line-height: 1;
   padding: 0 2px;
   flex-shrink: 0;
   transition: color 0.15s, opacity 0.15s;
+  display: flex;
+  align-items: center;
+}
 
+.feed-item-filter {
   &.active {
     opacity: 1;
     color: var(--accent);
@@ -278,34 +295,12 @@
 }
 
 .feed-item-edit {
-  opacity: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1;
-  padding: 0 2px;
-  flex-shrink: 0;
-  transition: color 0.15s, opacity 0.15s;
-
   &:hover {
     color: var(--accent);
   }
 }
 
 .feed-item-delete {
-  opacity: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text);
-  font-size: 16px;
-  line-height: 1;
-  padding: 0 2px;
-  flex-shrink: 0;
-  transition: color 0.15s, opacity 0.15s;
-
   &:hover {
     color: #ef4444;
   }
@@ -514,9 +509,14 @@
   &:hover {
     background: var(--accent-bg);
 
-    .post-item-fav {
+    .post-item-fav,
+    .post-item-read {
       opacity: 1;
     }
+  }
+
+  &.read {
+    color: var(--text);
   }
 
   &.active {
@@ -543,6 +543,29 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.post-item-read {
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+  transition: color 0.15s, opacity 0.15s;
+
+  &.unread {
+    opacity: 1;
+    color: var(--accent);
+  }
+
+  &:hover {
+    color: var(--accent);
+    opacity: 1;
+  }
 }
 
 .post-item-fav {
