@@ -8,7 +8,7 @@ use api_utils::context::WyrmContext;
 use database::models::feed::Feed;
 use tokio::sync::mpsc::error::TrySendError;
 use utils::{error::WyrmError, result::WyrmResult};
-use wyrm_rss::worker::FeedCommand;
+use wyrm_rss::worker::WorkerCommand;
 
 pub async fn get(path: Path<i32>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Feed>> {
     let feed = Feed::get(&ctx.db_pool, path.into_inner()).await?;
@@ -24,7 +24,7 @@ pub async fn poll(ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
     // channel through which worker signals completion
     let (tx, rx) = tokio::sync::oneshot::channel();
 
-    match ctx.worker_tx.try_send(FeedCommand::Fetch(tx)) {
+    match ctx.worker_tx.try_send(WorkerCommand::PollFeeds(tx)) {
         Err(TrySendError::Full(_)) => return Ok(HttpResponse::Accepted().finish()),
         Err(TrySendError::Closed(_)) => {
             tracing::error!("feed worker channel closed");
