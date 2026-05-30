@@ -6,7 +6,7 @@ use utils::error::{DatabaseError, HttpServerError};
 use utils::result::WyrmResult;
 use utils::settings::WyrmSettings;
 use wyrm_rss::http::HttpClient;
-use wyrm_rss::worker::FeedWorker;
+use wyrm_rss::worker::{FeedCommand, FeedWorker};
 
 pub async fn start_server() -> WyrmResult<()> {
     info!("Loading settings");
@@ -24,15 +24,18 @@ pub async fn start_server() -> WyrmResult<()> {
     info!("Building http client");
     let http = HttpClient::builder(&settings).build()?;
 
+    let (tx, rx) = tokio::sync::mpsc::channel::<FeedCommand>(1);
+
     let ctx = web::Data::new(WyrmContext {
         db_pool: db_pool.clone(),
         settings: settings.clone(),
         http: http.clone(),
+        worker_tx: tx,
     });
 
     tokio::spawn(async move {
         let mut rss_worker = FeedWorker::new(db_pool, http);
-        rss_worker.run().await;
+        rss_worker.run(rx).await;
     });
 
     info!("Starting up HTTP server");

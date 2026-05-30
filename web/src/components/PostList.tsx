@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocation, useOutletContext, useParams } from "react-router-dom";
+import { TbRefresh } from "react-icons/tb";
 import { useFavoritePosts, usePosts } from "../hooks/usePosts";
-import { useFeeds } from "../hooks/useFeeds";
+import { useFeeds, usePollFeeds } from "../hooks/useFeeds";
 import { PostItem } from "./PostItem";
 import type { Post } from "../types/Post";
 import type { ReaderOutletContext } from "../pages/ReaderPage";
@@ -44,11 +45,17 @@ export function PostList() {
   const [search, setSearch] = useState("");
   const { data: feeds } = useFeeds();
   const feedIdNum = feedId ? Number(feedId) : undefined;
+  const pollMutation = usePollFeeds();
   const postsQuery = usePosts(feedIdNum);
   const favoritesQuery = useFavoritePosts();
-  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = isFavorites
-    ? favoritesQuery
-    : postsQuery;
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+    isRefetching
+  } = isFavorites ? favoritesQuery : postsQuery;
   const feedMap = feeds ? new Map(feeds.map((f) => [f.id, f.title])) : new Map<number, string>();
 
   useEffect(() => {
@@ -72,6 +79,14 @@ export function PostList() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <button
+          className="posts-refresh-btn"
+          onClick={() => pollMutation.mutate()}
+          disabled={pollMutation.isPending || isRefetching || isLoading}
+          title="Refresh"
+        >
+          <TbRefresh className={pollMutation.isPending || isRefetching ? "spinning" : ""} />
+        </button>
       </div>
       <div className="pane-scroll">
         {isLoading && <div className="pane-empty">Loading…</div>}

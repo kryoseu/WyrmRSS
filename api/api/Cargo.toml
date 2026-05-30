@@ -8,6 +8,8 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+tokio = { workspace = true }
+tracing = { workspace = true }
 actix-web = { workspace = true }
 serde = { workspace = true }
 chrono = { workspace = true }
@@ -16,3 +18,4 @@ diesel-async = { workspace = true }
 api_utils = { path = "../utils" }
 utils = { path = "../../utils" }
 database = { path = "../../database" }
+wyrm-rss = { path = "../../rss" }

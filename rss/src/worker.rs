@@ -10,10 +10,16 @@ use database::{
     },
 };
 use futures::future::join_all;
+use tokio::sync::mpsc::Receiver;
 use tracing::{error, info};
 use utils::result::WyrmResult;
 
-const INTERVAL: Duration = Duration::from_secs(30);
+#[derive(Debug)]
+pub enum FeedCommand {
+    Fetch(tokio::sync::oneshot::Sender<()>),
+}
+
+const INTERVAL: Duration = Duration::from_secs(900); // 15 min
 
 /// Background worker responsible for polling RSS feeds on a scheduled interval.
 ///
@@ -35,14 +41,27 @@ impl FeedWorker {
 
     /// Starts the feed polling loop.
     ///
-    /// Runs indefinitely, polling due feeds every [`INTERVAL`] seconds.
-    /// Errors are logged but do not stop the worker.
-    pub async fn run(&mut self) {
+    /// Runs indefinitely, polling due feeds every [`INTERVAL`] seconds or when a
+    /// [`FeedCommand::Fetch`] is received. Errors are logged but do not stop the worker.
+    pub async fn run(&mut self, mut rx: Receiver<FeedCommand>) {
         let mut interval = tokio::time::interval(INTERVAL);
         loop {
-            interval.tick().await;
-            if let Err(e) = self.poll_feeds().await {
-                error!("Feed worker error: {e}");
+            tokio::select! {
+                _ = interval.tick() => {
+                    if let Err(e) = self.poll_feeds().await {
+                        error!("Feed worker error: {e}");
+                    }
+                }
+                Some(cmd) = rx.recv() => {
+                    match cmd {
+                        FeedCommand::Fetch(reply) => {
+                            if let Err(e) = self.poll_feeds().await {
+                                error!("Feed worker error: {e}");
+                            }
+                            let _ = reply.send(());
+                        }
+                    }
+                }
             }
         }
     }
@@ -52,6 +71,8 @@ impl FeedWorker {
         let feeds = Feed::get_all(&self.db_pool).await?;
 
         let due_feeds: Vec<Feed> = feeds.into_iter().filter(|f| f.is_due()).collect();
+
+        info!("Processing {} due feeds", due_feeds.len());
 
         let tasks: Vec<_> = due_feeds
             .into_iter()

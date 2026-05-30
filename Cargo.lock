@@ -241,7 +241,10 @@ dependencies = [
  "diesel",
  "diesel-async",
  "serde",
+ "tokio",
+ "tracing",
  "utils",
+ "wyrm-rss",
 ]
 
 [[package]]
@@ -272,6 +275,7 @@ name = "api_utils"
 version = "0.3.0"
 dependencies = [
  "database",
+ "tokio",
  "utils",
  "wyrm-rss",
 ]
