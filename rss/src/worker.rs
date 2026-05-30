@@ -15,8 +15,8 @@ use tracing::{error, info};
 use utils::result::WyrmResult;
 
 #[derive(Debug)]
-pub enum FeedCommand {
-    Fetch(tokio::sync::oneshot::Sender<()>),
+pub enum WorkerCommand {
+    PollFeeds(tokio::sync::oneshot::Sender<()>),
 }
 
 const INTERVAL: Duration = Duration::from_secs(900); // 15 min
@@ -43,7 +43,7 @@ impl FeedWorker {
     ///
     /// Runs indefinitely, polling due feeds every [`INTERVAL`] seconds or when a
     /// [`FeedCommand::Fetch`] is received. Errors are logged but do not stop the worker.
-    pub async fn run(&mut self, mut rx: Receiver<FeedCommand>) {
+    pub async fn run(&mut self, mut rx: Receiver<WorkerCommand>) {
         let mut interval = tokio::time::interval(INTERVAL);
         loop {
             tokio::select! {
@@ -54,7 +54,7 @@ impl FeedWorker {
                 }
                 Some(cmd) = rx.recv() => {
                     match cmd {
-                        FeedCommand::Fetch(reply) => {
+                        WorkerCommand::PollFeeds(reply) => {
                             if let Err(e) = self.poll_feeds().await {
                                 error!("Feed worker error: {e}");
                             }
