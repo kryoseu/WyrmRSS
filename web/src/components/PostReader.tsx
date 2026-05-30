@@ -31,9 +31,10 @@ function formatDate(iso: string | null): string {
 interface Props {
   postId: number | null;
   onClose: () => void;
+  width: number;
 }
 
-export function PostReader({ postId, onClose }: Props) {
+export function PostReader({ postId, onClose, width }: Props) {
   const { data: post, isLoading } = usePost(postId ?? undefined);
   const { mutate: updatePost } = useUpdatePost();
 
@@ -50,7 +51,7 @@ export function PostReader({ postId, onClose }: Props) {
   const youtubeId = extractYouTubeId(post?.url ?? null);
 
   return (
-    <div className="pane pane-reader">
+    <div className="pane pane-reader" style={{ width }}>
       <div className="pane-reader-header">
         {post && (
           <button
