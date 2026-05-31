@@ -4,38 +4,8 @@ import { TbRefresh } from "react-icons/tb";
 import { useFavoritePosts, usePosts } from "../hooks/usePosts";
 import { useFeeds, usePollFeeds } from "../hooks/useFeeds";
 import { PostItem, type FeedMeta } from "./PostItem";
-import type { Post } from "../types/Post";
 import type { ReaderOutletContext } from "../pages/ReaderPage";
-
-function getDateLabel(iso: string): string {
-  const date = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-
-  const fmt = (d: Date) =>
-    d.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
-
-  if (date.toDateString() === today.toDateString()) return `Today · ${fmt(date)}`;
-  if (date.toDateString() === yesterday.toDateString()) return `Yesterday · ${fmt(date)}`;
-  return fmt(date);
-}
-
-function postPath(p: Post, feedId?: number, isFavorites?: boolean): string {
-  if (isFavorites) return `/favorites/${p.id}`;
-  if (feedId !== undefined) return `/feeds/${p.feed_id}/posts/${p.id}`;
-  return `/feeds/posts/${p.id}`;
-}
-
-function groupByDate(posts: Post[]): [string, Post[]][] {
-  const map = new Map<string, Post[]>();
-  for (const post of posts) {
-    const label = getDateLabel(post.published_at);
-    if (!map.has(label)) map.set(label, []);
-    map.get(label)!.push(post);
-  }
-  return Array.from(map.entries());
-}
+import { groupByDate, postPath } from "../utils/posts";
 
 export function PostList() {
   const { excludedFeeds, activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
