@@ -17,7 +17,11 @@ export const ENDPOINTS = {
     poll: () => `${BASE}/feeds/poll`,
   },
   posts: {
-    list: (cursor?: Cursor) => `${BASE}/posts${cursorParams(cursor)}`,
+    list: (cursor?: Cursor, tag?: string) => {
+      const base = `${BASE}/posts${cursorParams(cursor)}`;
+      if (!tag) return base;
+      return `${base}${cursor ? "&" : "?"}tag=${encodeURIComponent(tag)}`;
+    },
     get: (id: number) => `${BASE}/posts/${id}`,
     getByFeed: (feedId: number, cursor?: Cursor) => `${BASE}/feeds/${feedId}/posts${cursorParams(cursor)}`,
     getFavorites: (cursor?: Cursor) => `${BASE}/posts/favorites${cursorParams(cursor)}`,

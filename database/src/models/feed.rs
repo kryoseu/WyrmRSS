@@ -17,6 +17,8 @@ pub struct Feed {
     pub title: String,
     pub url: String,
     pub ttl: i32,
+    pub tag: Option<String>,
+    pub tag_color: Option<String>,
     pub url_filter: Vec<Option<String>>,
     pub last_fetched_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
@@ -87,7 +89,9 @@ pub struct FeedInsertForm {
     pub title: String,
     pub url: String,
     pub ttl: i32,
-    pub url_filter: Vec<Option<String>>,
+    pub tag: Option<String>,
+    pub tag_color: Option<String>,
+    pub url_filter: Option<Vec<Option<String>>>,
 }
 
 #[derive(Identifiable, AsChangeset)]
@@ -98,6 +102,8 @@ pub struct FeedUpdateForm {
     pub title: Option<String>,
     pub url: Option<String>,
     pub ttl: Option<i32>,
+    pub tag: Option<String>,
+    pub tag_color: Option<String>,
     pub url_filter: Option<Vec<Option<String>>>,
     pub last_fetched_at: Option<DateTime<Utc>>,
 }

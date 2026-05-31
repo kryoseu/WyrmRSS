@@ -10,7 +10,9 @@ pub struct CreateFeed {
     title: String,
     url: String,
     ttl: i32,
-    url_filter: Vec<String>,
+    tag: Option<String>,
+    tag_color: Option<String>,
+    url_filter: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, ts_rs::TS)]
@@ -19,6 +21,8 @@ pub struct UpdateFeed {
     title: Option<String>,
     url: Option<String>,
     ttl: Option<i32>,
+    tag: Option<String>,
+    tag_color: Option<String>,
     url_filter: Option<Vec<String>>,
 }
 
@@ -32,7 +36,9 @@ pub async fn create(
             title: data.title,
             url: data.url,
             ttl: data.ttl,
-            url_filter: data.url_filter.into_iter().map(Some).collect(),
+            tag: data.tag,
+            tag_color: data.tag_color,
+            url_filter: data.url_filter.map(|v| v.into_iter().map(Some).collect()),
         },
     )
     .await?;
@@ -51,6 +57,8 @@ pub async fn update(
             title: data.title,
             url: data.url,
             ttl: data.ttl,
+            tag: data.tag,
+            tag_color: data.tag_color,
             url_filter: data.url_filter.map(|v| v.into_iter().map(Some).collect()),
             last_fetched_at: None,
         },

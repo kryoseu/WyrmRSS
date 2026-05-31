@@ -1,0 +1,2 @@
+ALTER TABLE feeds ADD COLUMN tag TEXT;
+ALTER TABLE feeds ADD COLUMN tag_color TEXT;

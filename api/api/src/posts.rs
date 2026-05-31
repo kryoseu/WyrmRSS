@@ -1,10 +1,18 @@
 use actix_web::web::{Data, Json, Path, Query};
 use api_utils::context::WyrmContext;
 use database::models::post::{Post, PostsPage};
-use database::views::post::PostQuery;
+use database::views::post::PostView;
+use serde::Deserialize;
 use utils::result::WyrmResult;
 
 use crate::CursorQuery;
+
+#[derive(Deserialize)]
+pub struct PostListQuery {
+    #[serde(flatten)]
+    cursor: CursorQuery,
+    tag: Option<String>,
+}
 
 pub async fn get(path: Path<i32>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Post>> {
     let post_id = path.into_inner();
@@ -13,11 +21,12 @@ pub async fn get(path: Path<i32>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Pos
 }
 
 pub async fn list(
-    query: Query<CursorQuery>,
+    query: Query<PostListQuery>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<PostsPage>> {
-    let page = PostQuery {
-        cursor: query.to_cursor(),
+    let page = PostView {
+        cursor: query.cursor.to_cursor(),
+        tag: query.tag.clone(),
         ..Default::default()
     }
     .list(&ctx.db_pool, ctx.settings.feed.page_size)
@@ -27,13 +36,13 @@ pub async fn list(
 
 pub async fn list_by_feed(
     path: Path<i32>,
-    query: Query<CursorQuery>,
+    query: Query<PostListQuery>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<PostsPage>> {
     let feed_id = path.into_inner();
-    let page = PostQuery {
+    let page = PostView {
         feed_id: Some(feed_id),
-        cursor: query.to_cursor(),
+        cursor: query.cursor.to_cursor(),
         ..Default::default()
     }
     .list(&ctx.db_pool, ctx.settings.feed.page_size)
@@ -42,13 +51,13 @@ pub async fn list_by_feed(
 }
 
 pub async fn list_favorites(
-    query: Query<CursorQuery>,
+    query: Query<PostListQuery>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<PostsPage>> {
-    let page = PostQuery {
-        feed_id: None,
+    let page = PostView {
         fav_only: true,
-        cursor: query.to_cursor(),
+        cursor: query.cursor.to_cursor(),
+        ..Default::default()
     }
     .list(&ctx.db_pool, ctx.settings.feed.page_size)
     .await?;

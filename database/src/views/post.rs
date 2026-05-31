@@ -6,17 +6,18 @@ use utils::{error::WyrmError, result::WyrmResult};
 use crate::{
     DatabasePool,
     models::post::{Post, PostsPage},
-    schema::posts,
+    schema::{feeds, posts},
 };
 
 #[derive(Default)]
-pub struct PostQuery {
+pub struct PostView {
     pub feed_id: Option<i32>,
+    pub tag: Option<String>,
     pub fav_only: bool,
     pub cursor: Option<(DateTime<Utc>, i32)>,
 }
 
-impl PostQuery {
+impl PostView {
     pub async fn list(self, pool: &DatabasePool, page_size: i64) -> WyrmResult<PostsPage> {
         let mut conn = pool.get().await?;
 
@@ -28,6 +29,12 @@ impl PostQuery {
 
         if let Some(feed_id) = self.feed_id {
             query = query.filter(posts::feed_id.eq(feed_id));
+        }
+
+        if let Some(tag) = self.tag {
+            query = query.filter(
+                posts::feed_id.eq_any(feeds::table.select(feeds::id).filter(feeds::tag.eq(tag))),
+            );
         }
 
         if self.fav_only {

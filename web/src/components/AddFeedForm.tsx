@@ -9,6 +9,8 @@ export function AddFeedForm({ onClose }: Props) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [ttl, setTtl] = useState("");
+  const [tag, setTag] = useState("");
+  const [tagColor, setTagColor] = useState("#6b7280");
   const [urlFilters, setUrlFilters] = useState<string[]>([]);
   const create = useCreateFeed();
 
@@ -23,7 +25,14 @@ export function AddFeedForm({ onClose }: Props) {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     create.mutate(
-      { title, url, ttl: ttl === "" ? 60 : Number(ttl), url_filter: urlFilters.map((f) => f.trim()).filter(Boolean) },
+      {
+        title,
+        url,
+        ttl: ttl === "" ? 60 : Number(ttl),
+        tag: tag.trim() || null,
+        tag_color: tag.trim() ? tagColor : null,
+        url_filter: urlFilters.map((f) => f.trim()).filter(Boolean),
+      },
       { onSuccess: onClose }
     );
   }
@@ -52,6 +61,20 @@ export function AddFeedForm({ onClose }: Props) {
         min={1}
         required
       />
+      <div className="feed-tag-row">
+        <input
+          value={tag}
+          onChange={(e) => setTag(e.target.value)}
+          placeholder="Tag (optional)"
+        />
+        <input
+          type="color"
+          value={tagColor}
+          onChange={(e) => setTagColor(e.target.value)}
+          disabled={!tag.trim()}
+          title="Tag color"
+        />
+      </div>
       <div className="url-filters">
         {urlFilters.map((filter, i) => (
           <div key={i} className="url-filter-row">
