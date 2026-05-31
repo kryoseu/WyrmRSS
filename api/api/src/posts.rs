@@ -1,8 +1,10 @@
 use actix_web::web::{Data, Json, Path, Query};
 use api_utils::context::WyrmContext;
-use database::models::post::Post;
-use database::utils::pagination::PagedResponse;
-use database::views::post::{ListPosts, PostQuery};
+use database::{
+    models::post::Post,
+    utils::pagination::PagedResponse,
+    views::post::{ListPosts, PostQuery},
+};
 use wyrm_utils::result::WyrmResult;
 
 pub async fn get(path: Path<i32>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Post>> {

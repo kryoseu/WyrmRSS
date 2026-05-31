@@ -1,5 +1,6 @@
 use actix_web::{
-    HttpResponse, error,
+    HttpResponse,
+    error,
     http::{StatusCode, header::ContentType},
 };
 use diesel::result::DatabaseErrorKind;

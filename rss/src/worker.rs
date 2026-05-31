@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use crate::http::HttpClient;
 use chrono::Utc;
 use database::{
@@ -10,6 +8,7 @@ use database::{
     },
 };
 use futures::future::join_all;
+use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
 use tracing::{error, info};
 use wyrm_utils::result::WyrmResult;
