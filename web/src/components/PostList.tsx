@@ -43,14 +43,27 @@ export function PostList() {
   const { pathname } = useLocation();
   const isFavorites = pathname.startsWith("/favorites");
 
-  const { data: feeds } = useFeeds();
   const { feedId, postId } = useParams();
+  const feedIdNum = feedId ? Number(feedId) : undefined;
+
+  const { data: feeds } = useFeeds();
+
   const pollMutation = usePollFeeds();
   const favoritesQuery = useFavoritePosts();
+
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState<string | undefined>(undefined);
 
-  const feedIdNum = feedId ? Number(feedId) : undefined;
+  // Reset activeTag on navigation. setState during render (vs. useEffect) avoids rendering once
+  // with a stale tag before the reset kicks in.
+  const [prevFeedId, setPrevFeedId] = useState(feedId);
+  const [prevIsFavorites, setPrevIsFavorites] = useState(isFavorites);
+  if (prevFeedId !== feedId || prevIsFavorites !== isFavorites) {
+    setPrevFeedId(feedId);
+    setPrevIsFavorites(isFavorites);
+    setActiveTag(undefined);
+  }
+
   const showTagChips = !feedIdNum && !isFavorites;
   const postsQuery = usePosts(feedIdNum, showTagChips ? activeTag : undefined);
   const {
@@ -75,10 +88,6 @@ export function PostList() {
       .map((f) => [f.tag!, f.tag_color])
   );
   const tags = [...tagMap.keys()];
-
-  useEffect(() => {
-    setActiveTag(undefined);
-  }, [feedIdNum, isFavorites]);
 
   useEffect(() => {
     if (postId) onOpenPost(Number(postId));

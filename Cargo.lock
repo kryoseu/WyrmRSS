@@ -243,8 +243,8 @@ dependencies = [
  "serde",
  "tokio",
  "tracing",
- "utils",
  "wyrm-rss",
+ "wyrm_utils",
 ]
 
 [[package]]
@@ -257,7 +257,7 @@ dependencies = [
  "serde",
  "tracing",
  "ts-rs",
- "utils",
+ "wyrm_utils",
 ]
 
 [[package]]
@@ -276,8 +276,8 @@ version = "0.5.0"
 dependencies = [
  "database",
  "tokio",
- "utils",
  "wyrm-rss",
+ "wyrm_utils",
 ]
 
 [[package]]
@@ -724,7 +724,7 @@ dependencies = [
  "serde",
  "tracing",
  "ts-rs",
- "utils",
+ "wyrm_utils",
 ]
 
 [[package]]
@@ -2606,8 +2606,8 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "utils",
  "wyrm-rss",
+ "wyrm_utils",
 ]
 
 [[package]]
@@ -3290,25 +3290,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
 
 [[package]]
-name = "utils"
-version = "0.5.0"
-dependencies = [
- "actix-web",
- "config",
- "deadpool",
- "diesel",
- "diesel-async",
- "feed-rs",
- "reqwest",
- "reqwest-middleware",
- "serde",
- "serde_json",
- "smart-default",
- "thiserror",
- "tracing",
-]
-
-[[package]]
 name = "uuid"
 version = "1.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3836,7 +3817,26 @@ dependencies = [
  "smart-default",
  "tokio",
  "tracing",
- "utils",
+ "wyrm_utils",
+]
+
+[[package]]
+name = "wyrm_utils"
+version = "0.5.0"
+dependencies = [
+ "actix-web",
+ "config",
+ "deadpool",
+ "diesel",
+ "diesel-async",
+ "feed-rs",
+ "reqwest",
+ "reqwest-middleware",
+ "serde",
+ "serde_json",
+ "smart-default",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]

@@ -17,7 +17,7 @@ reqwest-retry = { workspace = true }
 reqwest-middleware = { workspace = true }
 feed-rs = { workspace = true }
 chrono = { workspace = true }
-utils = { path = "../utils" }
+wyrm_utils = { path = "../utils" }
 database = { path = "../database" }
 async-trait = "0.1.89"
 http = "1.4.1"

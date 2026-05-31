@@ -5,14 +5,7 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use feed_rs::model::Entry;
 use serde::Serialize;
-use utils::{error::WyrmError, result::WyrmResult};
-
-#[derive(Serialize, ts_rs::TS)]
-#[ts(export)]
-pub struct PostsPage {
-    pub items: Vec<Post>,
-    pub has_more: bool,
-}
+use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 #[derive(Serialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::posts)]

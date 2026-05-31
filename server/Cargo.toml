@@ -15,5 +15,5 @@ tracing-subscriber = { workspace = true }
 api_routes = { path = "../api/routes" }
 api_utils = { path = "../api/utils" }
 database = { path = "../database" }
-utils = { path = "../utils" }
+wyrm_utils = { path = "../utils" }
 wyrm-rss = { path = "../rss" }

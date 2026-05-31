@@ -1,6 +1,6 @@
 mod server;
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
-use utils::result::WyrmResult;
+use wyrm_utils::result::WyrmResult;
 
 #[tokio::main]
 async fn main() -> WyrmResult<()> {

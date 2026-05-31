@@ -1,17 +1,18 @@
 pub mod models;
 pub mod schema;
+pub mod utils;
 pub mod views;
 use diesel::{Connection, PgConnection};
 use std::error::Error;
-use utils::error::{DatabaseError, WyrmError};
-use utils::settings::WyrmSettings;
+use wyrm_utils::error::{DatabaseError, WyrmError};
+use wyrm_utils::settings::WyrmSettings;
 
 use diesel_async::AsyncPgConnection;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::Pool;
-use utils::result::WyrmResult;
+use wyrm_utils::result::WyrmResult;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../migrations/");
 

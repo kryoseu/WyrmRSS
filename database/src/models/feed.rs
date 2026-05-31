@@ -5,7 +5,7 @@ use diesel::prelude::*;
 use diesel::{Selectable, prelude::Queryable};
 use diesel_async::RunQueryDsl;
 use serde::Serialize;
-use utils::{error::WyrmError, result::WyrmResult};
+use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 #[derive(Debug, Serialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::feeds)]
