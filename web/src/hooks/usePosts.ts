@@ -13,16 +13,17 @@ import type { Cursor } from "../utils/api";
 
 export const postKeys = {
   all: ["posts"] as const,
-  favorites: ["posts", "favorites"] as const,
+  byTag: (tag: string) => ["posts", "tag", tag] as const,
   byFeed: (feedId: number) => ["posts", "feed", feedId] as const,
+  favorites: ["posts", "favorites"] as const,
   detail: (id: number) => ["posts", id] as const,
 };
 
-export function usePosts(feedId?: number) {
+export function usePosts(feedId?: number, tag?: string) {
   return useInfiniteQuery({
-    queryKey: feedId ? postKeys.byFeed(feedId) : postKeys.all,
+    queryKey: feedId ? postKeys.byFeed(feedId) : tag ? postKeys.byTag(tag) : postKeys.all,
     queryFn: ({ pageParam: cursor }) =>
-      feedId ? getPostsByFeed(feedId, cursor) : getPosts(cursor),
+      feedId ? getPostsByFeed(feedId, cursor) : getPosts(cursor, tag),
     initialPageParam: undefined as Cursor | undefined,
     getNextPageParam: (lastPage): Cursor | undefined => {
       if (!lastPage.has_more) return undefined;
@@ -73,6 +74,7 @@ export function useUpdatePost() {
 
       queryClient.setQueryData(postKeys.all, updatePages);
       queryClient.setQueryData(postKeys.byFeed(post.feed_id), updatePages);
+      queryClient.setQueriesData({ queryKey: ["posts", "tag"] }, updatePages);
       queryClient.invalidateQueries({ queryKey: postKeys.favorites });
     },
   });

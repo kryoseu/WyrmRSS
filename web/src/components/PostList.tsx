@@ -3,7 +3,7 @@ import { useLocation, useOutletContext, useParams } from "react-router-dom";
 import { TbRefresh } from "react-icons/tb";
 import { useFavoritePosts, usePosts } from "../hooks/usePosts";
 import { useFeeds, usePollFeeds } from "../hooks/useFeeds";
-import { PostItem } from "./PostItem";
+import { PostItem, type FeedMeta } from "./PostItem";
 import type { Post } from "../types/Post";
 import type { ReaderOutletContext } from "../pages/ReaderPage";
 
@@ -39,15 +39,20 @@ function groupByDate(posts: Post[]): [string, Post[]][] {
 
 export function PostList() {
   const { excludedFeeds, activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
+
   const { pathname } = useLocation();
   const isFavorites = pathname.startsWith("/favorites");
-  const { feedId, postId } = useParams();
-  const [search, setSearch] = useState("");
+
   const { data: feeds } = useFeeds();
-  const feedIdNum = feedId ? Number(feedId) : undefined;
+  const { feedId, postId } = useParams();
   const pollMutation = usePollFeeds();
-  const postsQuery = usePosts(feedIdNum);
   const favoritesQuery = useFavoritePosts();
+  const [search, setSearch] = useState("");
+  const [activeTag, setActiveTag] = useState<string | undefined>(undefined);
+
+  const feedIdNum = feedId ? Number(feedId) : undefined;
+  const showTagChips = !feedIdNum && !isFavorites;
+  const postsQuery = usePosts(feedIdNum, showTagChips ? activeTag : undefined);
   const {
     data,
     isLoading,
@@ -56,18 +61,35 @@ export function PostList() {
     isFetchingNextPage,
     isRefetching
   } = isFavorites ? favoritesQuery : postsQuery;
-  const feedMap = feeds ? new Map(feeds.map((f) => [f.id, f.title])) : new Map<number, string>();
+
+  const feedMap = new Map(
+    (feeds ?? []).map((f): [number, FeedMeta] => [
+      f.id,
+      { name: f.title, tag: f.tag, tagColor: f.tag_color },
+    ])
+  );
+
+  const tagMap = new Map(
+    (feeds ?? [])
+      .filter((f) => f.tag !== null)
+      .map((f) => [f.tag!, f.tag_color])
+  );
+  const tags = [...tagMap.keys()];
+
+  useEffect(() => {
+    setActiveTag(undefined);
+  }, [feedIdNum, isFavorites]);
 
   useEffect(() => {
     if (postId) onOpenPost(Number(postId));
   }, [postId, onOpenPost]);
 
   const posts = data?.pages.flatMap((p) => p.items);
-  const filtered = posts?.filter(
-    (p) =>
-      (!search || (p.title ?? "").toLowerCase().includes(search.toLowerCase())) &&
-      (isFavorites || feedIdNum !== undefined || !excludedFeeds.has(p.feed_id))
-  );
+  const filtered = posts?.filter((p) => {
+    const matchesSearch = !search || (p.title ?? "").toLowerCase().includes(search.toLowerCase());
+    const notExcluded = isFavorites || feedIdNum !== undefined || !excludedFeeds.has(p.feed_id);
+    return matchesSearch && notExcluded;
+  });
   const groups = filtered ? groupByDate(filtered) : [];
 
   return (
@@ -88,6 +110,20 @@ export function PostList() {
           <TbRefresh className={pollMutation.isPending || isRefetching ? "spinning" : ""} />
         </button>
       </div>
+      {showTagChips && tags.length > 0 && (
+        <div className="posts-tags">
+          {tags.map((tag) => (
+            <button
+              key={tag}
+              className={`posts-tag-chip${activeTag === tag ? " active" : ""}`}
+              style={{ '--tag-color': tagMap.get(tag) ?? 'var(--text)' } as React.CSSProperties}
+              onClick={() => setActiveTag((prev) => (prev === tag ? undefined : tag))}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="pane-scroll">
         {isLoading && <div className="pane-empty">Loading…</div>}
         {!isLoading && groups.length === 0 && (
@@ -106,7 +142,7 @@ export function PostList() {
                   post={p}
                   to={postPath(p, feedIdNum, isFavorites)}
                   active={activePostId === p.id}
-                  feedName={feedIdNum === undefined ? feedMap.get(p.feed_id) : undefined}
+                  feed={feedIdNum === undefined ? feedMap.get(p.feed_id) : undefined}
                 />
               ))}
             </div>

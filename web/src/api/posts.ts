@@ -3,8 +3,8 @@ import type { PostsPage } from "../types/PostsPage";
 import type { UpdatePost } from "../types/UpdatePost";
 import { ENDPOINTS, json, type Cursor } from "../utils/api";
 
-export const getPosts = (cursor?: Cursor): Promise<PostsPage> =>
-  fetch(ENDPOINTS.posts.list(cursor)).then<PostsPage>(json);
+export const getPosts = (cursor?: Cursor, tag?: string): Promise<PostsPage> =>
+  fetch(ENDPOINTS.posts.list(cursor, tag)).then<PostsPage>(json);
 
 export const getPost = (id: number): Promise<Post> =>
   fetch(ENDPOINTS.posts.get(id)).then<Post>(json);

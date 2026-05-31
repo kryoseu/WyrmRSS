@@ -6,6 +6,8 @@ diesel::table! {
         title -> Text,
         url -> Text,
         ttl -> Int4,
+        tag -> Nullable<Text>,
+        tag_color -> Nullable<Text>,
         url_filter -> Array<Nullable<Text>>,
         last_fetched_at -> Nullable<Timestamptz>,
         created_at -> Timestamptz,

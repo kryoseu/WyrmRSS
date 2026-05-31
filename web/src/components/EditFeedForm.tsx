@@ -11,6 +11,8 @@ export function EditFeedForm({ feed, onClose }: Props) {
   const [title, setTitle] = useState(feed.title);
   const [url, setUrl] = useState(feed.url);
   const [ttl, setTtl] = useState(String(feed.ttl));
+  const [tag, setTag] = useState(feed.tag ?? "");
+  const [tagColor, setTagColor] = useState(feed.tag_color ?? "#6b7280");
   const [urlFilters, setUrlFilters] = useState<string[]>(
     feed.url_filter.filter((f): f is string => f !== null)
   );
@@ -33,6 +35,8 @@ export function EditFeedForm({ feed, onClose }: Props) {
           title: title.trim() || null,
           url: url.trim() || null,
           ttl: Number(ttl) || null,
+          tag: tag.trim() || null,
+          tag_color: tag.trim() ? tagColor : null,
           url_filter: urlFilters.map((f) => f.trim()).filter(Boolean),
         },
       },
@@ -64,6 +68,20 @@ export function EditFeedForm({ feed, onClose }: Props) {
         min={1}
         required
       />
+      <div className="feed-tag-row">
+        <input
+          value={tag}
+          onChange={(e) => setTag(e.target.value)}
+          placeholder="Tag (optional)"
+        />
+        <input
+          type="color"
+          value={tagColor}
+          onChange={(e) => setTagColor(e.target.value)}
+          disabled={!tag.trim()}
+          title="Tag color"
+        />
+      </div>
       <div className="url-filters">
         {urlFilters.map((filter, i) => (
           <div key={i} className="url-filter-row">

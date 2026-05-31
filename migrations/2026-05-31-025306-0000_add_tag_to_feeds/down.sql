@@ -1,0 +1,2 @@
+ALTER TABLE feeds DROP COLUMN tag;
+ALTER TABLE feeds DROP COLUMN tag_color;

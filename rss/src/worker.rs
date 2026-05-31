@@ -128,6 +128,8 @@ async fn process_feed(http: &HttpClient, pool: &DatabasePool, feed: &Feed) -> Wy
             title: None,
             url: None,
             ttl: None,
+            tag: None,
+            tag_color: None,
             url_filter: None,
             last_fetched_at: Some(Utc::now()),
         },

@@ -4,11 +4,17 @@ import { TbStar, TbStarFilled } from "react-icons/tb";
 import type { Post } from "../types/Post";
 import { useUpdatePost } from "../hooks/usePosts";
 
+export interface FeedMeta {
+  name: string;
+  tag: string | null;
+  tagColor: string | null;
+}
+
 interface Props {
   post: Post;
   to: string;
   active: boolean;
-  feedName?: string;
+  feed?: FeedMeta;
 }
 
 function initials(name: string): string {
@@ -18,7 +24,7 @@ function initials(name: string): string {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
-export function PostItem({ post, to, active, feedName }: Props) {
+export function PostItem({ post, to, active, feed }: Props) {
   const { mutate: updatePost } = useUpdatePost();
 
   function handleReadToggle(e: React.MouseEvent) {
@@ -42,7 +48,15 @@ export function PostItem({ post, to, active, feedName }: Props) {
       >
         {post.is_read ? <HiMailOpen /> : <HiMail />}
       </button>
-      {feedName && <span className="post-item-feed">{initials(feedName)}</span>}
+      {feed && <span className="post-item-feed">{initials(feed.name)}</span>}
+      {feed?.tag && (
+        <span
+          className="post-item-tag"
+          style={feed.tagColor ? ({ '--tag-color': feed.tagColor } as React.CSSProperties) : undefined}
+        >
+          {feed.tag}
+        </span>
+      )}
       <span className="post-item-title">{post.title ?? "Untitled"}</span>
       <button
         className={`post-item-fav${post.is_favorite ? " favorited" : ""}`}
