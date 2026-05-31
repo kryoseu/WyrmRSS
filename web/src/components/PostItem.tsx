@@ -3,6 +3,7 @@ import { HiMail, HiMailOpen } from "react-icons/hi";
 import { TbStar, TbStarFilled } from "react-icons/tb";
 import type { Post } from "../types/Post";
 import { useUpdatePost } from "../hooks/usePosts";
+import { initials } from "../utils/posts";
 
 export interface FeedMeta {
   name: string;
@@ -15,13 +16,6 @@ interface Props {
   to: string;
   active: boolean;
   feed?: FeedMeta;
-}
-
-function initials(name: string): string {
-  const words = name.trim().split(/\s+/).filter((w) => /^[a-zA-Z0-9]/.test(w));
-  if (words.length === 0) return "?";
-  if (words.length === 1) return words[0].replace(/[^a-zA-Z0-9]/g, "").slice(0, 2).toUpperCase();
-  return (words[0][0] + words[1][0]).toUpperCase();
 }
 
 export function PostItem({ post, to, active, feed }: Props) {

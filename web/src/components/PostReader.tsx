@@ -2,31 +2,7 @@ import { useEffect } from "react";
 import YouTube from "react-youtube";
 import { TbStar, TbStarFilled } from "react-icons/tb";
 import { usePost, useUpdatePost } from "../hooks/usePosts";
-
-function extractYouTubeId(url: string | null): string | null {
-  if (!url) return null;
-  try {
-    const u = new URL(url);
-    if (u.hostname === "www.youtube.com" || u.hostname === "youtube.com") {
-      return u.searchParams.get("v");
-    }
-    if (u.hostname === "youtu.be") {
-      return u.pathname.slice(1) || null;
-    }
-  } catch {
-    // not a valid URL
-  }
-  return null;
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+import { extractYouTubeId, formatDate } from "../utils/utils";
 
 interface Props {
   postId: number | null;
