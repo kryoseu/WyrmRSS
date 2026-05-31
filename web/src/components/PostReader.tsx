@@ -42,7 +42,7 @@ export function PostReader({ postId, onClose, width }: Props) {
     if (post && !post.is_read) {
       updatePost({ id: post.id, is_read: true, is_favorite: null });
     }
-  }, [post?.id]);
+  }, [post, updatePost]);
 
   if (!postId) return null;
 
