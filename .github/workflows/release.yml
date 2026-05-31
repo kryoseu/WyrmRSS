@@ -38,6 +38,12 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ needs.get-version.outputs.sha }}
+      - name: Install nightly rustfmt
+        run: rustup toolchain install nightly --component rustfmt --no-self-update
+      - name: Format check
+        run: cargo +nightly fmt --check
+      - name: Clippy
+        run: cargo clippy -- -D warnings
       - name: Build
         run: cargo build --verbose
       - name: Test
@@ -58,11 +64,15 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
-      - name: Install & Build
+      - name: Install
         working-directory: web
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm run build
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        working-directory: web
+        run: pnpm lint
+      - name: Build
+        working-directory: web
+        run: pnpm run build
 
   push-backend:
     needs: [build-backend, get-version]
