@@ -1,14 +1,13 @@
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
-use serde::Deserialize;
-use wyrm_utils::{error::WyrmError, result::WyrmResult};
-
 use crate::{
     DatabasePool,
     models::post::Post,
     schema::{feeds, posts},
     utils::pagination::{PagedResponse, PaginationCursor},
 };
+use diesel::prelude::*;
+use diesel_async::RunQueryDsl;
+use serde::Deserialize;
+use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 #[derive(Deserialize)]
 pub struct ListPosts {

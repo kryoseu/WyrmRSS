@@ -3,16 +3,17 @@ pub mod schema;
 pub mod utils;
 pub mod views;
 use diesel::{Connection, PgConnection};
-use std::error::Error;
-use wyrm_utils::error::{DatabaseError, WyrmError};
-use wyrm_utils::settings::WyrmSettings;
-
-use diesel_async::AsyncPgConnection;
+use diesel_async::{
+    AsyncPgConnection,
+    pooled_connection::{AsyncDieselConnectionManager, deadpool::Pool},
+};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
-
-use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use diesel_async::pooled_connection::deadpool::Pool;
-use wyrm_utils::result::WyrmResult;
+use std::error::Error;
+use wyrm_utils::{
+    error::{DatabaseError, WyrmError},
+    result::WyrmResult,
+    settings::WyrmSettings,
+};
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../migrations/");
 

@@ -1,8 +1,9 @@
 use crate::{DatabasePool, schema::feeds};
-
 use chrono::{DateTime, Utc};
-use diesel::prelude::*;
-use diesel::{Selectable, prelude::Queryable};
+use diesel::{
+    Selectable,
+    prelude::{Queryable, *},
+};
 use diesel_async::RunQueryDsl;
 use serde::Serialize;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};

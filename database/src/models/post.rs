@@ -1,5 +1,7 @@
-use crate::DatabasePool;
-use crate::schema::posts::{self};
+use crate::{
+    DatabasePool,
+    schema::posts::{self},
+};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
