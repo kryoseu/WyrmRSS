@@ -6,7 +6,7 @@ use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 use smart_default::SmartDefault;
 use std::time::Duration;
 use tracing::info;
-use utils::{result::WyrmResult, settings::WyrmSettings};
+use wyrm_utils::{result::WyrmResult, settings::WyrmSettings};
 
 struct LoggingMiddleware;
 

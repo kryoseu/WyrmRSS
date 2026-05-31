@@ -1,5 +1,5 @@
 [package]
-name = "utils"
+name = "wyrm_utils"
 version.workspace = true
 edition.workspace = true
 description.workspace = true

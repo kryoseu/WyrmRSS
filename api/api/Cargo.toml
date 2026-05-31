@@ -16,6 +16,6 @@ chrono = { workspace = true }
 diesel = { workspace = true }
 diesel-async = { workspace = true }
 api_utils = { path = "../utils" }
-utils = { path = "../../utils" }
+wyrm_utils = { path = "../../utils" }
 database = { path = "../../database" }
 wyrm-rss = { path = "../../rss" }

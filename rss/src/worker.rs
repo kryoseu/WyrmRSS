@@ -12,7 +12,7 @@ use database::{
 use futures::future::join_all;
 use tokio::sync::mpsc::Receiver;
 use tracing::{error, info};
-use utils::result::WyrmResult;
+use wyrm_utils::result::WyrmResult;
 
 #[derive(Debug)]
 pub enum WorkerCommand {

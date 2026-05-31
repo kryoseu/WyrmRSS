@@ -7,8 +7,8 @@ use actix_web::{
 use api_utils::context::WyrmContext;
 use database::models::feed::Feed;
 use tokio::sync::mpsc::error::TrySendError;
-use utils::{error::WyrmError, result::WyrmResult};
 use wyrm_rss::worker::WorkerCommand;
+use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 pub async fn get(path: Path<i32>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Feed>> {
     let feed = Feed::get(&ctx.db_pool, path.into_inner()).await?;

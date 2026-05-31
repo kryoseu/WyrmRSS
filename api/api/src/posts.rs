@@ -1,18 +1,9 @@
 use actix_web::web::{Data, Json, Path, Query};
 use api_utils::context::WyrmContext;
-use database::models::post::{Post, PostsPage};
-use database::views::post::PostView;
-use serde::Deserialize;
-use utils::result::WyrmResult;
-
-use crate::CursorQuery;
-
-#[derive(Deserialize)]
-pub struct PostListQuery {
-    #[serde(flatten)]
-    cursor: CursorQuery,
-    tag: Option<String>,
-}
+use database::models::post::Post;
+use database::utils::pagination::PagedResponse;
+use database::views::post::{ListPosts, PostQuery};
+use wyrm_utils::result::WyrmResult;
 
 pub async fn get(path: Path<i32>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Post>> {
     let post_id = path.into_inner();
@@ -21,12 +12,13 @@ pub async fn get(path: Path<i32>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Pos
 }
 
 pub async fn list(
-    query: Query<PostListQuery>,
+    query: Query<ListPosts>,
     ctx: Data<WyrmContext>,
-) -> WyrmResult<Json<PostsPage>> {
-    let page = PostView {
-        cursor: query.cursor.to_cursor(),
-        tag: query.tag.clone(),
+) -> WyrmResult<Json<PagedResponse<Vec<Post>>>> {
+    let query = query.into_inner();
+    let page = PostQuery {
+        cursor: query.page,
+        tag: query.tag,
         ..Default::default()
     }
     .list(&ctx.db_pool, ctx.settings.feed.page_size)
@@ -36,13 +28,13 @@ pub async fn list(
 
 pub async fn list_by_feed(
     path: Path<i32>,
-    query: Query<PostListQuery>,
+    query: Query<ListPosts>,
     ctx: Data<WyrmContext>,
-) -> WyrmResult<Json<PostsPage>> {
-    let feed_id = path.into_inner();
-    let page = PostView {
-        feed_id: Some(feed_id),
-        cursor: query.cursor.to_cursor(),
+) -> WyrmResult<Json<PagedResponse<Vec<Post>>>> {
+    let query = query.into_inner();
+    let page = PostQuery {
+        feed_id: Some(path.into_inner()),
+        cursor: query.page,
         ..Default::default()
     }
     .list(&ctx.db_pool, ctx.settings.feed.page_size)
@@ -51,12 +43,13 @@ pub async fn list_by_feed(
 }
 
 pub async fn list_favorites(
-    query: Query<PostListQuery>,
+    query: Query<ListPosts>,
     ctx: Data<WyrmContext>,
-) -> WyrmResult<Json<PostsPage>> {
-    let page = PostView {
+) -> WyrmResult<Json<PagedResponse<Vec<Post>>>> {
+    let query = query.into_inner();
+    let page = PostQuery {
         fav_only: true,
-        cursor: query.cursor.to_cursor(),
+        cursor: query.page,
         ..Default::default()
     }
     .list(&ctx.db_pool, ctx.settings.feed.page_size)

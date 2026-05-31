@@ -1,10 +1,7 @@
 const BASE = "/api/v1";
 
-export type Cursor = { timestamp: number; post_id: number };
-
-function cursorParams(cursor?: Cursor): string {
-  if (!cursor) return "";
-  return `?timestamp=${cursor.timestamp}&post_id=${cursor.post_id}`;
+function pageParam(page?: string): string {
+  return page ? `?page=${encodeURIComponent(page)}` : "";
 }
 
 export const ENDPOINTS = {
@@ -17,14 +14,14 @@ export const ENDPOINTS = {
     poll: () => `${BASE}/feeds/poll`,
   },
   posts: {
-    list: (cursor?: Cursor, tag?: string) => {
-      const base = `${BASE}/posts${cursorParams(cursor)}`;
+    list: (page?: string, tag?: string) => {
+      const base = `${BASE}/posts${pageParam(page)}`;
       if (!tag) return base;
-      return `${base}${cursor ? "&" : "?"}tag=${encodeURIComponent(tag)}`;
+      return `${base}${page ? "&" : "?"}tag=${encodeURIComponent(tag)}`;
     },
     get: (id: number) => `${BASE}/posts/${id}`,
-    getByFeed: (feedId: number, cursor?: Cursor) => `${BASE}/feeds/${feedId}/posts${cursorParams(cursor)}`,
-    getFavorites: (cursor?: Cursor) => `${BASE}/posts/favorites${cursorParams(cursor)}`,
+    getByFeed: (feedId: number, page?: string) => `${BASE}/feeds/${feedId}/posts${pageParam(page)}`,
+    getFavorites: (page?: string) => `${BASE}/posts/favorites${pageParam(page)}`,
     update: (id: number) => `${BASE}/posts/${id}`,
   },
 } as const;

@@ -1,7 +1,7 @@
 use database::DatabasePool;
 use tokio::sync::mpsc::Sender;
-use utils::settings::WyrmSettings;
 use wyrm_rss::{http::HttpClient, worker::WorkerCommand};
+use wyrm_utils::settings::WyrmSettings;
 
 #[derive(Clone)]
 pub struct WyrmContext {

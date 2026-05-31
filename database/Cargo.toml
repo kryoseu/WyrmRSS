@@ -16,4 +16,4 @@ diesel_migrations = { workspace = true }
 chrono = { workspace = true }
 feed-rs = { workspace = true }
 serde = { workspace = true }
-utils = { path = "../utils" }
+wyrm_utils = { path = "../utils" }

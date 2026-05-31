@@ -2,7 +2,7 @@ use actix_web::web::{Data, Json, Path};
 use api_utils::context::WyrmContext;
 use database::models::post::{Post, PostUpdateForm};
 use serde::Deserialize;
-use utils::result::WyrmResult;
+use wyrm_utils::result::WyrmResult;
 
 #[derive(Deserialize, ts_rs::TS)]
 #[ts(export)]

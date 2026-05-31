@@ -13,5 +13,5 @@ serde = { workspace = true }
 tracing = { workspace = true }
 ts-rs = { workspace = true }
 api_utils = { path = "../utils" }
-utils = { path = "../../utils" }
+wyrm_utils = { path = "../../utils" }
 database = { path = "../../database" }

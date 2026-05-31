@@ -7,9 +7,8 @@ import {
 } from "@tanstack/react-query";
 import { getFavoritePosts, getPost, getPosts, getPostsByFeed, updatePost } from "../api/posts";
 import type { Post } from "../types/Post";
-import type { PostsPage } from "../types/PostsPage";
+import type { PagedResponse } from "../types/PagedResponse";
 import type { UpdatePost } from "../types/UpdatePost";
-import type { Cursor } from "../utils/api";
 
 export const postKeys = {
   all: ["posts"] as const,
@@ -22,27 +21,21 @@ export const postKeys = {
 export function usePosts(feedId?: number, tag?: string) {
   return useInfiniteQuery({
     queryKey: feedId ? postKeys.byFeed(feedId) : tag ? postKeys.byTag(tag) : postKeys.all,
-    queryFn: ({ pageParam: cursor }) =>
-      feedId ? getPostsByFeed(feedId, cursor) : getPosts(cursor, tag),
-    initialPageParam: undefined as Cursor | undefined,
-    getNextPageParam: (lastPage): Cursor | undefined => {
-      if (!lastPage.has_more) return undefined;
-      const last = lastPage.items.at(-1)!;
-      return { timestamp: new Date(last.published_at).getTime(), post_id: last.id };
-    },
+    queryFn: ({ pageParam }) =>
+      feedId ? getPostsByFeed(feedId, pageParam) : getPosts(pageParam, tag),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage): string | undefined =>
+      lastPage.next_page ?? undefined,
   });
 }
 
 export function useFavoritePosts() {
   return useInfiniteQuery({
     queryKey: postKeys.favorites,
-    queryFn: ({ pageParam: cursor }) => getFavoritePosts(cursor),
-    initialPageParam: undefined as Cursor | undefined,
-    getNextPageParam: (lastPage): Cursor | undefined => {
-      if (!lastPage.has_more) return undefined;
-      const last = lastPage.items.at(-1)!;
-      return { timestamp: new Date(last.published_at).getTime(), post_id: last.id };
-    },
+    queryFn: ({ pageParam }) => getFavoritePosts(pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage): string | undefined =>
+      lastPage.next_page ?? undefined,
   });
 }
 
@@ -61,7 +54,7 @@ export function useUpdatePost() {
     onSuccess: (post: Post) => {
       queryClient.setQueryData(postKeys.detail(post.id), post);
 
-      const updatePages = (old: InfiniteData<PostsPage> | undefined) => {
+      const updatePages = (old: InfiniteData<PagedResponse<Array<Post>>> | undefined) => {
         if (!old) return old;
         return {
           ...old,
