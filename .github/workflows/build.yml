@@ -14,6 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Install nightly rustfmt
+        run: rustup toolchain install nightly --component rustfmt --no-self-update
+      - name: Format check
+        run: cargo +nightly fmt --check
+      - name: Clippy
+        run: cargo clippy -- -D warnings
       - name: Build
         run: cargo build --verbose
       - name: Test
@@ -33,6 +39,9 @@ jobs:
           cache-dependency-path: web/pnpm-lock.yaml
       - name: Install
         run: pnpm install --frozen-lockfile
+        working-directory: web
+      - name: Lint
+        run: pnpm lint
         working-directory: web
       - name: Build
         run: pnpm run build
