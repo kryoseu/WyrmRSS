@@ -12,17 +12,17 @@ import type { UpdatePost } from "../types/UpdatePost";
 
 export const postKeys = {
   all: ["posts"] as const,
-  byTag: (tag: string) => ["posts", "tag", tag] as const,
+  listed: (tag?: string, search?: string) => ["posts", "list", { tag, search }] as const,
   byFeed: (feedId: number) => ["posts", "feed", feedId] as const,
   favorites: ["posts", "favorites"] as const,
   detail: (id: number) => ["posts", id] as const,
 };
 
-export function usePosts(feedId?: number, tag?: string) {
+export function usePosts(feedId?: number, tag?: string, search?: string) {
   return useInfiniteQuery({
-    queryKey: feedId ? postKeys.byFeed(feedId) : tag ? postKeys.byTag(tag) : postKeys.all,
+    queryKey: feedId ? postKeys.byFeed(feedId) : postKeys.listed(tag, search),
     queryFn: ({ pageParam }) =>
-      feedId ? getPostsByFeed(feedId, pageParam) : getPosts(pageParam, tag),
+      feedId ? getPostsByFeed(feedId, pageParam, search) : getPosts(pageParam, tag, search),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage): string | undefined =>
       lastPage.next_page ?? undefined,
@@ -65,9 +65,8 @@ export function useUpdatePost() {
         };
       };
 
-      queryClient.setQueryData(postKeys.all, updatePages);
+      queryClient.setQueriesData({ queryKey: ["posts", "list"] }, updatePages);
       queryClient.setQueryData(postKeys.byFeed(post.feed_id), updatePages);
-      queryClient.setQueriesData({ queryKey: ["posts", "tag"] }, updatePages);
       queryClient.invalidateQueries({ queryKey: postKeys.favorites });
     },
   });
