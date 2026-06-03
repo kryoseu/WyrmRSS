@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FiCheck, FiCopy } from "react-icons/fi";
 import { useUpdateFeed } from "../hooks/useFeeds";
 import type { Feed } from "../types/Feed";
 
@@ -13,6 +14,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
   const [ttl, setTtl] = useState(String(feed.ttl));
   const [tag, setTag] = useState(feed.tag ?? "");
   const [tagColor, setTagColor] = useState(feed.tag_color ?? "#6b7280");
+  const [copied, setCopied] = useState(false);
   const [urlFilters, setUrlFilters] = useState<string[]>(
     feed.url_filter.filter((f): f is string => f !== null)
   );
@@ -81,6 +83,19 @@ export function EditFeedForm({ feed, onClose }: Props) {
           disabled={!tag.trim()}
           title="Tag color"
         />
+        <button
+          type="button"
+          className="btn-copy-color"
+          disabled={!tag.trim()}
+          title={tagColor}
+          onClick={() => {
+            navigator.clipboard.writeText(tagColor);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
+        >
+          {copied ? <FiCheck size={13} /> : <FiCopy size={13} />}
+        </button>
       </div>
       <div className="url-filters">
         {urlFilters.map((filter, i) => (
