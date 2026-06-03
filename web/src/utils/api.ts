@@ -14,13 +14,22 @@ export const ENDPOINTS = {
     poll: () => `${BASE}/feeds/poll`,
   },
   posts: {
-    list: (page?: string, tag?: string) => {
-      const base = `${BASE}/posts${pageParam(page)}`;
-      if (!tag) return base;
-      return `${base}${page ? "&" : "?"}tag=${encodeURIComponent(tag)}`;
+    list: (page?: string, tag?: string, search?: string) => {
+      const params = new URLSearchParams();
+      if (page) params.set("page", page);
+      if (tag) params.set("tag", tag);
+      if (search) params.set("search", search);
+      const qs = params.toString();
+      return `${BASE}/posts${qs ? `?${qs}` : ""}`;
     },
     get: (id: number) => `${BASE}/posts/${id}`,
-    getByFeed: (feedId: number, page?: string) => `${BASE}/feeds/${feedId}/posts${pageParam(page)}`,
+    getByFeed: (feedId: number, page?: string, search?: string) => {
+      const params = new URLSearchParams();
+      if (page) params.set("page", page);
+      if (search) params.set("search", search);
+      const qs = params.toString();
+      return `${BASE}/feeds/${feedId}/posts${qs ? `?${qs}` : ""}`;
+    },
     getFavorites: (page?: string) => `${BASE}/posts/favorites${pageParam(page)}`,
     update: (id: number) => `${BASE}/posts/${id}`,
   },

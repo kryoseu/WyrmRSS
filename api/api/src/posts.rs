@@ -21,6 +21,7 @@ pub async fn list(
     let page = PostQuery {
         cursor: query.page,
         tag: query.tag,
+        search: query.search,
         ..Default::default()
     }
     .list(&ctx.db_pool, ctx.settings.feed.page_size)
@@ -37,6 +38,7 @@ pub async fn list_by_feed(
     let page = PostQuery {
         feed_id: Some(path.into_inner()),
         cursor: query.page,
+        search: query.search,
         ..Default::default()
     }
     .list(&ctx.db_pool, ctx.settings.feed.page_size)

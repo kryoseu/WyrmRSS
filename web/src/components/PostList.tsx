@@ -22,6 +22,7 @@ export function PostList() {
   const favoritesQuery = useFavoritePosts();
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeTag, setActiveTag] = useState<string | undefined>(undefined);
 
   // Reset activeTag on navigation. setState during render (vs. useEffect) avoids rendering once
@@ -34,8 +35,14 @@ export function PostList() {
     setActiveTag(undefined);
   }
 
+  // Delay search query until the user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search || ""), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const showTagChips = !feedIdNum && !isFavorites;
-  const postsQuery = usePosts(feedIdNum, showTagChips ? activeTag : undefined);
+  const postsQuery = usePosts(feedIdNum, showTagChips ? activeTag : undefined, debouncedSearch || undefined);
   const {
     data,
     isLoading,
@@ -64,11 +71,11 @@ export function PostList() {
   }, [postId, onOpenPost]);
 
   const posts = data?.pages.flatMap((p) => p.items);
-  const filtered = posts?.filter((p) => {
-    const matchesSearch = !search || (p.title ?? "").toLowerCase().includes(search.toLowerCase());
-    const notExcluded = isFavorites || feedIdNum !== undefined || !excludedFeeds.has(p.feed_id);
-    return matchesSearch && notExcluded;
-  });
+  // Filter out posts whose feed.id are in the excluded list, 
+  // unless we're on the favorites or on a feed page.
+  const filtered = posts?.filter((p) =>
+    isFavorites || feedIdNum !== undefined || !excludedFeeds.has(p.feed_id)
+  );
   const groups = filtered ? groupByDate(filtered) : [];
 
   return (

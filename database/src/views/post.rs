@@ -9,10 +9,12 @@ use diesel_async::RunQueryDsl;
 use serde::Deserialize;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(export)]
 pub struct ListPosts {
     pub page: Option<PaginationCursor>,
     pub tag: Option<String>,
+    pub search: Option<String>,
 }
 
 #[derive(Default)]
@@ -20,6 +22,7 @@ pub struct PostQuery {
     pub feed_id: Option<i32>,
     pub tag: Option<String>,
     pub fav_only: bool,
+    pub search: Option<String>,
     pub cursor: Option<PaginationCursor>,
 }
 
@@ -47,6 +50,10 @@ impl PostQuery {
             query = query.filter(
                 posts::feed_id.eq_any(feeds::table.select(feeds::id).filter(feeds::tag.eq(tag))),
             );
+        }
+
+        if let Some(search) = self.search {
+            query = query.filter(posts::title.ilike(format!("%{search}%")));
         }
 
         if self.fav_only {
