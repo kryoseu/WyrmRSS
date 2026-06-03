@@ -9,11 +9,12 @@ use feed_rs::model::Entry;
 use serde::Serialize;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
+#[serde_with::skip_serializing_none]
 #[derive(Serialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::posts)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 #[derive(ts_rs::TS)]
-#[ts(export)]
+#[ts(optional_fields, export)]
 pub struct Post {
     pub id: i32,
     pub feed_id: i32,

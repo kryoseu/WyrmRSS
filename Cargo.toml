@@ -41,3 +41,4 @@ reqwest-middleware = "0.5.2"
 futures = "0.3.32"
 feed-rs = "2.3.1"
 ts-rs = { version = "12.0.1", features = ["chrono-impl"] }
+serde_with = "3.20.0"

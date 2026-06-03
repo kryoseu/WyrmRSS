@@ -61,7 +61,7 @@ export function PostList() {
 
   const tagMap = new Map(
     (feeds ?? [])
-      .filter((f) => f.tag !== null)
+      .filter((f) => f.tag !== undefined)
       .map((f) => [f.tag!, f.tag_color])
   );
   const tags = [...tagMap.keys()];

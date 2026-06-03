@@ -7,8 +7,8 @@ import { initials } from "../utils/posts";
 
 export interface FeedMeta {
   name: string;
-  tag: string | null;
-  tagColor: string | null;
+  tag: string | undefined;
+  tagColor: string | undefined;
 }
 
 interface Props {
