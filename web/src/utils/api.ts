@@ -1,3 +1,5 @@
+import type { ListPosts } from "../types/ListPosts";
+
 const BASE = "/api/v1";
 
 function pageParam(page?: string): string {
@@ -14,7 +16,7 @@ export const ENDPOINTS = {
     poll: () => `${BASE}/feeds/poll`,
   },
   posts: {
-    list: (page?: string, tag?: string, search?: string) => {
+    list: ({ page, tag, search }: ListPosts) => {
       const params = new URLSearchParams();
       if (page) params.set("page", page);
       if (tag) params.set("tag", tag);
@@ -23,7 +25,7 @@ export const ENDPOINTS = {
       return `${BASE}/posts${qs ? `?${qs}` : ""}`;
     },
     get: (id: number) => `${BASE}/posts/${id}`,
-    getByFeed: (feedId: number, page?: string, search?: string) => {
+    getByFeed: (feedId: number, { page, search }: ListPosts) => {
       const params = new URLSearchParams();
       if (page) params.set("page", page);
       if (search) params.set("search", search);

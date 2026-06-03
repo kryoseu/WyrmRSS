@@ -22,7 +22,7 @@ export function usePosts(feedId?: number, tag?: string, search?: string) {
   return useInfiniteQuery({
     queryKey: feedId ? postKeys.byFeed(feedId) : postKeys.listed(tag, search),
     queryFn: ({ pageParam }) =>
-      feedId ? getPostsByFeed(feedId, pageParam, search) : getPosts(pageParam, tag, search),
+      feedId ? getPostsByFeed(feedId, { page: pageParam, search }) : getPosts({ page: pageParam, tag, search }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage): string | undefined =>
       lastPage.next_page ?? undefined,
