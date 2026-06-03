@@ -13,7 +13,6 @@ export function EditFeedForm({ feed, onClose }: Props) {
   const [url, setUrl] = useState(feed.url);
   const [ttl, setTtl] = useState(String(feed.ttl));
   const [tag, setTag] = useState(feed.tag ?? "");
-  console.log(feed);
   const [tagColor, setTagColor] = useState(feed.tag_color ?? "#6b7280");
   const [copied, setCopied] = useState(false);
   const [urlFilters, setUrlFilters] = useState<string[]>(
