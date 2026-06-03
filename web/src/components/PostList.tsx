@@ -18,8 +18,8 @@ export function PostList() {
 
   const { data: feeds } = useFeeds();
 
-  const pollMutation = usePollFeeds();
-  const favoritesQuery = useFavoritePosts();
+  const pollFeeds = usePollFeeds();
+  const favoritePosts = useFavoritePosts();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -42,7 +42,7 @@ export function PostList() {
   }, [search]);
 
   const showTagChips = !feedIdNum && !isFavorites;
-  const postsQuery = usePosts(feedIdNum, showTagChips ? activeTag : undefined, debouncedSearch || undefined);
+  const feedPosts = usePosts(feedIdNum, showTagChips ? activeTag : undefined, debouncedSearch || undefined);
   const {
     data,
     isLoading,
@@ -50,7 +50,7 @@ export function PostList() {
     fetchNextPage,
     isFetchingNextPage,
     isRefetching
-  } = isFavorites ? favoritesQuery : postsQuery;
+  } = isFavorites ? favoritePosts : feedPosts;
 
   const feedMap = new Map(
     (feeds ?? []).map((f): [number, FeedMeta] => [
@@ -89,11 +89,11 @@ export function PostList() {
         />
         <button
           className="posts-refresh-btn"
-          onClick={() => pollMutation.mutate()}
-          disabled={pollMutation.isPending || isRefetching || isLoading}
+          onClick={() => pollFeeds.mutate()}
+          disabled={pollFeeds.isPending || isRefetching || isLoading}
           title="Refresh"
         >
-          <TbRefresh className={pollMutation.isPending || isRefetching ? "spinning" : ""} />
+          <TbRefresh className={pollFeeds.isPending || isRefetching ? "spinning" : ""} />
         </button>
       </div>
       {showTagChips && tags.length > 0 && (
