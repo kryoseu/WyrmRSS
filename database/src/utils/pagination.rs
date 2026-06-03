@@ -5,10 +5,12 @@ use serde::{Deserialize, Serialize};
 #[ts(export)]
 pub struct PaginationCursor(pub String);
 
+#[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize, ts_rs::TS)]
 #[ts(export)]
 pub struct PagedResponse<T: ts_rs::TS> {
     pub items: T,
+    #[ts(optional)]
     pub next_page: Option<PaginationCursor>,
 }
 

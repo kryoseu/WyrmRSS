@@ -10,7 +10,7 @@ use serde::Deserialize;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 #[derive(Deserialize, ts_rs::TS)]
-#[ts(export)]
+#[ts(optional_fields, export)]
 pub struct ListPosts {
     pub page: Option<PaginationCursor>,
     pub tag: Option<String>,
