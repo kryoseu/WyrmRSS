@@ -14,8 +14,8 @@ export function PostReader({ postId, onClose, width }: Props) {
   const { data: post, isLoading } = usePost(postId ?? undefined);
   const { mutate: updatePost } = useUpdatePost();
 
-  // Track last seen postId and only update is_read if
-  // user switched to a new unread postId.
+  // Track the last seen post ID with a ref so the effect only fires
+  // when the user switches to a new post, not on every re-render.
   const lastSeenPostId = useRef<number | null>(null);
   useEffect(() => {
     if (!post) return;
