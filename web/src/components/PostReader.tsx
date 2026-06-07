@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import YouTube from "react-youtube";
 import { TbStar, TbStarFilled } from "react-icons/tb";
 import { usePost, useUpdatePost } from "../hooks/usePosts";
@@ -14,9 +14,16 @@ export function PostReader({ postId, onClose, width }: Props) {
   const { data: post, isLoading } = usePost(postId ?? undefined);
   const { mutate: updatePost } = useUpdatePost();
 
+  // Track last seen postId and only update is_read if
+  // user switched to a new unread postId.
+  const lastSeenPostId = useRef<number | null>(null);
   useEffect(() => {
-    if (post && !post.is_read) {
-      updatePost({ id: post.id, is_read: true, is_favorite: null });
+    if (!post) return;
+    if (lastSeenPostId.current !== post.id) {
+      lastSeenPostId.current = post.id;
+      if (!post.is_read) {
+        updatePost({ id: post.id, is_read: true, is_favorite: null });
+      }
     }
   }, [post, updatePost]);
 
