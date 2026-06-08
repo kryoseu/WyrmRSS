@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TbDownload } from "react-icons/tb";
 import { useImportOpml } from "../../hooks/useSettings";
 import { ENDPOINTS } from "../../utils/api";
 
@@ -54,7 +55,7 @@ export function Opml() {
 
       <h2 className="settings-section-title">Export</h2>
       <a href={ENDPOINTS.settings.export()} download="wyrm.opml" className="btn btn-ghost settings-export-btn">
-        ↓ Download OPML
+        <TbDownload /> Download OPML
       </a>
     </div>
   );

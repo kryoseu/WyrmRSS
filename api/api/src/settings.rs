@@ -20,10 +20,12 @@ pub async fn import(body: web::Bytes, ctx: Data<WyrmContext>) -> WyrmResult<Http
     let opml = Opml::from_xml(body.as_ref())?;
 
     for outline in opml.body.outlines {
+        // leaf feed, no tag
         if outline.xml_url.is_some() {
             if let Some(url) = outline.xml_url {
                 create_feed(&ctx, outline.title, url, None).await?;
             }
+        // folder - children are feeds, folder name becomes the tag
         } else {
             for child in outline.children {
                 if let Some(url) = child.xml_url {
