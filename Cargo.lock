@@ -236,11 +236,7 @@ version = "0.8.1"
 dependencies = [
  "actix-web",
  "api_utils",
- "chrono",
  "database",
- "diesel",
- "diesel-async",
- "serde",
  "tokio",
  "tracing",
  "wyrm-rss",
@@ -255,7 +251,6 @@ dependencies = [
  "api_utils",
  "database",
  "serde",
- "tracing",
  "ts-rs",
  "wyrm_utils",
 ]
@@ -267,13 +262,13 @@ dependencies = [
  "actix-web",
  "api_api",
  "api_crud",
- "serde",
 ]
 
 [[package]]
 name = "api_utils"
 version = "0.8.1"
 dependencies = [
+ "actix-web",
  "database",
  "tokio",
  "wyrm-rss",
@@ -766,7 +761,6 @@ dependencies = [
  "feed-rs",
  "serde",
  "serde_with",
- "tracing",
  "ts-rs",
  "wyrm_utils",
 ]
@@ -1014,7 +1008,7 @@ checksum = "e4c0591d23efd0d595099af69a31863ac1823046b1b021e3b06ba3aae7e00991"
 dependencies = [
  "chrono",
  "mediatype",
- "quick-xml",
+ "quick-xml 0.37.5",
  "regex",
  "serde",
  "serde_json",
@@ -2149,6 +2143,16 @@ checksum = "331e97a1af0bf59823e6eadffe373d7b27f485be8748f71471c662c1f269b7fb"
 dependencies = [
  "encoding_rs",
  "memchr",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.40.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2474bd2e5029e7ccb6abb2ba48cf2383a333851dedf495901544281590c7da7f"
+dependencies = [
+ "memchr",
+ "serde",
 ]
 
 [[package]]
@@ -3961,9 +3965,11 @@ dependencies = [
  "feed-rs",
  "futures",
  "http 1.4.1",
+ "quick-xml 0.40.1",
  "reqwest",
  "reqwest-middleware",
  "reqwest-retry",
+ "serde",
  "smart-default",
  "tokio",
  "tracing",
@@ -3980,6 +3986,7 @@ dependencies = [
  "diesel",
  "diesel-async",
  "feed-rs",
+ "quick-xml 0.40.1",
  "reqwest",
  "reqwest-middleware",
  "serde",
