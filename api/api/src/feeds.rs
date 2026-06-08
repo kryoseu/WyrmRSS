@@ -24,6 +24,7 @@ pub async fn poll(ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
     let (tx, rx) = tokio::sync::oneshot::channel();
 
     match ctx.worker_tx.try_send(WorkerCommand::PollFeeds(tx)) {
+        // channel is full, meaning a poll is in progress already
         Err(TrySendError::Full(_)) => return Ok(HttpResponse::Accepted().finish()),
         Err(TrySendError::Closed(_)) => {
             tracing::error!("feed worker channel closed");

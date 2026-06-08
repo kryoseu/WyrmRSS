@@ -84,7 +84,7 @@ impl Feed {
     }
 }
 
-#[derive(Insertable)]
+#[derive(Default, Insertable)]
 #[diesel(table_name = crate::schema::feeds)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct FeedInsertForm {

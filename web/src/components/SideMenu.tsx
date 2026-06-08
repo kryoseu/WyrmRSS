@@ -26,7 +26,12 @@ export function SideMenu({ excludedFeeds, onToggleExclude }: Props) {
         >
           Home
         </NavLink>
-        <span className="sidebar-nav-item sidebar-nav-disabled">Settings</span>
+        <NavLink
+          to="/settings"
+          className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+        >
+          Settings
+        </NavLink>
         <NavLink
           to="/favorites"
           end

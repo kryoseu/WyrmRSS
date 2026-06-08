@@ -35,6 +35,10 @@ export const ENDPOINTS = {
     getFavorites: (page?: string) => `${BASE}/posts/favorites${pageParam(page)}`,
     update: (id: number) => `${BASE}/posts/${id}`,
   },
+  settings: {
+    import: () => `${BASE}/settings/opml/import`,
+    export: () => `${BASE}/settings/opml/export`,
+  }
 } as const;
 
 export async function json<T>(res: Response): Promise<T> {

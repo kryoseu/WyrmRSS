@@ -9,6 +9,7 @@ rust-version.workspace = true
 
 [dependencies]
 tokio = { workspace = true }
+actix-web = { workspace = true }
 wyrm_utils = { path = "../../utils" }
 database = { path = "../../database" }
 wyrm-rss = { path = "../../rss" }

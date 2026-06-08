@@ -49,6 +49,10 @@ pub enum WyrmError {
     HttpClient(#[from] HttpClientError),
     #[error("rss parse feed error: {0}")]
     ParseFeedError(#[from] feed_rs::parser::ParseFeedError),
+    #[error("xml serialize error: {0}")]
+    XmlSerializeError(quick_xml::se::SeError),
+    #[error("xml deserialize error: {0}")]
+    XmlDeserializeError(quick_xml::de::DeError),
     #[error("rss worker error")]
     WorkerError,
 }
@@ -102,6 +106,7 @@ impl error::ResponseError for WyrmError {
         match self {
             WyrmError::Database(DatabaseError::NotFound) => StatusCode::NOT_FOUND,
             WyrmError::Database(DatabaseError::UniqueViolation(_)) => StatusCode::CONFLICT,
+            WyrmError::XmlDeserializeError(_) => StatusCode::BAD_REQUEST,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
