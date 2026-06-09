@@ -20,6 +20,18 @@ export function getDateLabel(iso: string): string {
   return formatted;
 }
 
+// Formats an ISO timestamp as a human-readable relative time (e.g. "2h ago", "Never").
+export function formatLastFetched(timestamp: string | undefined): string {
+  if (!timestamp) return "Never";
+  const diff = Date.now() - new Date(timestamp).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
 // Extracts the video ID from youtube.com and youtu.be URLs; returns null for non-YouTube URLs.
 export function extractYouTubeId(url: string | null): string | null {
   if (!url) return null;
