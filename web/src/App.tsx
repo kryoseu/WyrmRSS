@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { PostList } from "./components/PostList";
+import { ThemeProvider } from "./context/ThemeProvider";
 import { AppLayout } from "./pages/AppLayout";
 import { ReaderPage } from "./pages/ReaderPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -10,6 +11,7 @@ const qc = new QueryClient();
 
 export default function App() {
   return (
+    <ThemeProvider>
     <QueryClientProvider client={qc}>
       <BrowserRouter>
         <Routes>
@@ -28,5 +30,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
+    </ThemeProvider>
   );
 }

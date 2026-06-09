@@ -45,7 +45,7 @@
   align-items: center;
   justify-content: center;
   color: var(--text);
-  font-size: 14px;
+  font-size: 0.78rem;
   opacity: 0.5;
   padding: 40px 0;
 }
@@ -79,14 +79,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--accent);
   flex-shrink: 0;
 }
 
 .sidebar-name {
-  font-size: 14px;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-h);
 }
@@ -135,7 +135,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 0.83rem;
   line-height: 1;
   padding: 3px 5px;
   border-radius: 4px;
@@ -161,7 +161,7 @@
 .sidebar-nav-item {
   display: block;
   padding: 7px 10px;
-  font-size: 14px;
+  font-size: 0.78rem;
   color: var(--text);
   text-decoration: none;
   border-radius: 5px;
@@ -193,7 +193,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px 6px;
-  font-size: 11px;
+  font-size: 0.61rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.8px;
@@ -202,7 +202,7 @@
 }
 
 .sidebar-feeds-search {
-  font-size: 12px;
+  font-size: 0.67rem;
   padding: 3px 7px;
   background: var(--code-bg);
   border: 1px solid var(--border);
@@ -232,7 +232,7 @@
   padding: 9px 12px;
   text-decoration: none;
   color: var(--text);
-  font-size: 13px;
+  font-size: 0.72rem;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
 
@@ -273,7 +273,7 @@
 .feed-item-tag {
   --tag-color: var(--text);
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 0.56rem;
   font-weight: 500;
   padding: 1px 5px;
   border-radius: 3px;
@@ -292,7 +292,7 @@
   border: none;
   cursor: pointer;
   color: var(--text);
-  font-size: 12px;
+  font-size: 0.67rem;
   line-height: 1;
   padding: 0 2px;
   flex-shrink: 0;
@@ -333,7 +333,7 @@
   border: none;
   border-top: 1px solid var(--border);
   text-align: left;
-  font-size: 13px;
+  font-size: 0.72rem;
   color: var(--accent);
   cursor: pointer;
   flex-shrink: 0;
@@ -355,7 +355,7 @@
 .add-feed-form input {
   width: 100%;
   padding: 6px 8px;
-  font-size: 13px;
+  font-size: 0.72rem;
   background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -444,7 +444,7 @@
   border: none;
   cursor: pointer;
   color: var(--text);
-  font-size: 16px;
+  font-size: 0.89rem;
   line-height: 1;
   padding: 0 2px;
   flex-shrink: 0;
@@ -468,7 +468,7 @@
 .btn {
   flex: 1;
   padding: 6px 10px;
-  font-size: 13px;
+  font-size: 0.72rem;
   border-radius: 4px;
   border: 1px solid transparent;
   cursor: pointer;
@@ -522,7 +522,7 @@
   display: block;
   width: 100%;
   padding: 7px 10px;
-  font-size: 14px;
+  font-size: 0.78rem;
   font-weight: normal;
   text-align: left;
   background: none;
@@ -557,7 +557,7 @@
 }
 
 .settings-section-title {
-  font-size: 13px;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-h);
   text-transform: uppercase;
@@ -582,7 +582,7 @@
   border: 1px dashed var(--border);
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 0.72rem;
   color: var(--text);
   transition: border-color 0.15s, background 0.15s;
 
@@ -593,7 +593,7 @@
 }
 
 .settings-hint {
-  font-size: 12px;
+  font-size: 0.67rem;
   color: var(--text);
   opacity: 0.6;
   margin: 0;
@@ -601,7 +601,7 @@
 }
 
 .settings-status {
-  font-size: 13px;
+  font-size: 0.72rem;
   margin: 0;
 }
 
@@ -619,7 +619,7 @@
   gap: 12px;
 
   label {
-    font-size: 13px;
+    font-size: 0.72rem;
     color: var(--text);
     width: 160px;
     flex-shrink: 0;
@@ -628,7 +628,7 @@
   input {
     flex: 1;
     padding: 6px 8px;
-    font-size: 13px;
+    font-size: 0.72rem;
     background: var(--code-bg);
     border: 1px solid var(--border);
     border-radius: 4px;
@@ -650,9 +650,87 @@
 }
 
 .settings-empty {
-  font-size: 14px;
+  font-size: 0.78rem;
   color: var(--text);
   opacity: 0.5;
+}
+
+/* ── Segmented control ───────────────────────────────────────── */
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--code-bg);
+}
+
+.segmented-btn {
+  padding: 6px 16px;
+  font-size: 0.72rem;
+  background: none;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: background 0.15s, color 0.15s;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  &:hover:not(.active) {
+    background: var(--accent-bg);
+    color: var(--text-h);
+  }
+
+  &.active {
+    background: var(--accent);
+    color: #fff;
+  }
+}
+
+/* ── Appearance settings ─────────────────────────────────────── */
+
+.appearance-accents {
+  display: flex;
+  gap: 8px;
+}
+
+.appearance-accent-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 8px 10px;
+  transition: border-color 0.15s, background 0.15s;
+
+  &:hover {
+    background: var(--accent-bg);
+  }
+
+  &.active {
+    border-color: var(--dot-color);
+  }
+}
+
+.appearance-accent-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--dot-color);
+  display: block;
+}
+
+.appearance-accent-label {
+  font-size: 0.61rem;
+  color: var(--text);
+  text-transform: capitalize;
 }
 
 /* ── Post list ───────────────────────────────────────────────── */
@@ -668,7 +746,7 @@
 
 .posts-tag-chip {
   --tag-color: var(--text);
-  font-size: 11px;
+  font-size: 0.61rem;
   font-weight: 400;
   padding: 2px 10px;
   border-radius: 10px;
@@ -710,7 +788,7 @@
   border-radius: 6px;
   color: var(--text-h);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 0.89rem;
 
   &:hover:not(:disabled) {
     background: var(--hover-bg);
@@ -734,7 +812,7 @@
 .posts-search {
   width: 100%;
   padding: 8px 12px;
-  font-size: 14px;
+  font-size: 0.78rem;
   background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -753,7 +831,7 @@
 }
 
 .posts-group-label {
-  font-size: 12px;
+  font-size: 0.67rem;
   font-weight: 600;
   color: var(--text);
   opacity: 0.6;
@@ -766,7 +844,7 @@
 }
 
 .posts-group-count {
-  font-size: 11px;
+  font-size: 0.61rem;
   font-weight: 600;
   color: var(--accent);
   background: var(--accent-bg);
@@ -792,7 +870,7 @@
   padding: 10px 14px;
   text-decoration: none;
   color: var(--text-h);
-  font-size: 14px;
+  font-size: 0.78rem;
   border-bottom: 1px solid var(--border);
   line-height: 1.4;
 
@@ -822,7 +900,7 @@
 }
 
 .post-item-feed {
-  font-size: 10px;
+  font-size: 0.56rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   color: var(--accent);
@@ -836,7 +914,7 @@
 .post-item-tag {
   --tag-color: var(--text);
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 0.56rem;
   font-weight: 500;
   padding: 1px 5px;
   border-radius: 3px;
@@ -860,7 +938,7 @@
   border: none;
   cursor: pointer;
   color: var(--text);
-  font-size: 12px;
+  font-size: 0.67rem;
   line-height: 1;
   padding: 0 2px;
   flex-shrink: 0;
@@ -883,7 +961,7 @@
   border: none;
   cursor: pointer;
   color: var(--text);
-  font-size: 14px;
+  font-size: 0.78rem;
   line-height: 1;
   padding: 0 2px;
   flex-shrink: 0;
@@ -909,7 +987,7 @@
 
 .load-more-btn {
   padding: 7px 20px;
-  font-size: 13px;
+  font-size: 0.72rem;
   background: none;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -944,7 +1022,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 1.11rem;
   line-height: 1;
   color: var(--text);
   padding: 2px 6px;
@@ -961,7 +1039,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 1.11rem;
   line-height: 1;
   color: var(--text);
   padding: 2px 6px;
@@ -986,7 +1064,7 @@
 }
 
 .post-reader-title {
-  font-size: 22px;
+  font-size: 1.22rem;
   font-weight: 600;
   color: var(--text-h);
   line-height: 1.3;
@@ -994,7 +1072,7 @@
 }
 
 .post-reader-meta {
-  font-size: 13px;
+  font-size: 0.72rem;
   color: var(--text);
   margin-bottom: 24px;
   display: flex;
@@ -1012,7 +1090,7 @@
 }
 
 .post-reader-body {
-  font-size: 15px;
+  font-size: 0.83rem;
   line-height: 1.7;
   color: var(--text);
 
@@ -1039,14 +1117,14 @@
     padding: 12px 16px;
     border-radius: 6px;
     overflow-x: auto;
-    font-size: 14px;
+    font-size: 0.78rem;
   }
 
   code {
     background: var(--code-bg);
     padding: 2px 5px;
     border-radius: 3px;
-    font-size: 14px;
+    font-size: 0.78rem;
   }
 
   pre code {

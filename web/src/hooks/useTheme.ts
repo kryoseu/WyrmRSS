@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useContext } from "react";
+import { ThemeContext } from "../context/ThemeContext";
 
 export const PALETTES = {
   orange: { light: "#e8500a", dark: "#fb8040" },
@@ -9,50 +10,11 @@ export const PALETTES = {
 } as const;
 
 export type AccentKey = keyof typeof PALETTES;
-type Theme = "light" | "dark";
-
-function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
-function applyAccent(hex: string, isDark: boolean) {
-  const [r, g, b] = hexToRgb(hex);
-  const alpha = isDark ? 0.15 : 0.1;
-  const root = document.documentElement;
-  root.style.setProperty("--accent", hex);
-  root.style.setProperty("--accent-bg", `rgba(${r}, ${g}, ${b}, ${alpha})`);
-  root.style.setProperty("--accent-border", `rgba(${r}, ${g}, ${b}, 0.5)`);
-}
-
-function getInitialTheme(): Theme {
-  const saved = localStorage.getItem("theme");
-  if (saved === "light" || saved === "dark") return saved;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-function getInitialAccent(): AccentKey {
-  const saved = localStorage.getItem("accent");
-  if (saved && saved in PALETTES) return saved as AccentKey;
-  return "orange";
-}
+export type Theme = "light" | "dark";
+export type FontSize = "small" | "default" | "large";
 
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
-  const [accent, setAccentState] = useState<AccentKey>(getInitialAccent);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem("theme", theme);
-    applyAccent(PALETTES[accent][theme], theme === "dark");
-  }, [theme, accent]);
-
-  const toggleTheme = () => setThemeState((t) => (t === "dark" ? "light" : "dark"));
-
-  const setAccent = (key: AccentKey) => {
-    setAccentState(key);
-    localStorage.setItem("accent", key);
-  };
-
-  return { theme, toggleTheme, accent, setAccent };
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
+  return ctx;
 }

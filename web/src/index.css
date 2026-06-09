@@ -15,7 +15,9 @@
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
+  font-size: var(--font-base, 18px);
+  line-height: 145%;
+  font-family: var(--sans);
   letter-spacing: 0.18px;
   color-scheme: light dark;
   color: var(--text);
@@ -24,10 +26,6 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -118,7 +116,7 @@ code,
 }
 
 code {
-  font-size: 15px;
+  font-size: 0.83rem;
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
