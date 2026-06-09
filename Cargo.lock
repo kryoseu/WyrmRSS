@@ -238,7 +238,6 @@ dependencies = [
  "api_utils",
  "database",
  "tokio",
- "tracing",
  "wyrm-rss",
  "wyrm_utils",
 ]
