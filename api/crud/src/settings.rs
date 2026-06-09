@@ -1,7 +1,7 @@
 use actix_web::web::{Data, Json};
 use api_utils::context::WyrmContext;
 use database::{
-    models::settings::{Settings, SettingsUpdateForm},
+    models::settings::{ReadMode, Settings, SettingsUpdateForm},
     utils::settings::RuntimeSettings,
 };
 use serde::Deserialize;
@@ -13,6 +13,7 @@ use wyrm_utils::result::WyrmResult;
 pub struct UpdateSettings {
     page_size: Option<i32>,
     feed_poll_interval_secs: Option<i32>,
+    read_mode: Option<ReadMode>,
     http_timeout: Option<i32>,
     http_connect_timeout: Option<i32>,
     http_retries: Option<i32>,
@@ -28,6 +29,7 @@ pub async fn update(
         SettingsUpdateForm {
             page_size: data.page_size,
             feed_poll_interval_secs: data.feed_poll_interval_secs,
+            read_mode: data.read_mode,
             http_timeout: data.http_timeout,
             http_connect_timeout: data.http_connect_timeout,
             http_retries: data.http_retries,

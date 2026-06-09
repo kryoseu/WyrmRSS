@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { useSettings, useUpdateSettings } from "../../hooks/useSettings";
 import type { Settings } from "../../types/Settings";
+import type { ReadMode } from "../../types/ReadMode";
+
+const READ_MODE_OPTIONS: { value: ReadMode; label: string }[] = [
+  { value: "on_open", label: "On open" },
+  { value: "manually", label: "Manually" },
+  { value: "disabled", label: "Disabled" },
+];
 
 function GeneralForm({ initial }: { initial: Settings }) {
   const [pageSize, setPageSize] = useState(String(initial.page_size));
@@ -9,6 +16,7 @@ function GeneralForm({ initial }: { initial: Settings }) {
   const [connectTimeout, setConnectTimeout] = useState(String(initial.http_connect_timeout));
   const [retries, setRetries] = useState(String(initial.http_retries));
   const [userAgent, setUserAgent] = useState(initial.http_user_agent ?? "");
+  const [readMode, setReadMode] = useState<ReadMode>(initial.read_mode);
 
   const update = useUpdateSettings();
 
@@ -21,12 +29,28 @@ function GeneralForm({ initial }: { initial: Settings }) {
       http_connect_timeout: parseInt(connectTimeout),
       http_retries: parseInt(retries),
       http_user_agent: userAgent.trim() || null,
+      read_mode: readMode,
     });
   }
 
   return (
     <form className="settings-section" onSubmit={handleSubmit}>
       <h2 className="settings-section-title">Reading</h2>
+      <div className="settings-field">
+        <label>Mark as read</label>
+        <div className="segmented">
+          {READ_MODE_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              className={`segmented-btn${readMode === value ? " active" : ""}`}
+              onClick={() => setReadMode(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="settings-field">
         <label>Page size</label>
         <input type="number" min={1} value={pageSize} onChange={(e) => setPageSize(e.target.value)} required />

@@ -12,6 +12,7 @@ ts-rs = { workspace = true }
 diesel = { workspace = true }
 diesel-async = { workspace = true }
 diesel_migrations = { workspace = true }
+diesel-derive-enum = { workspace = true }
 chrono = { workspace = true }
 feed-rs = { workspace = true }
 serde = { workspace = true }

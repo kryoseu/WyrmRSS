@@ -3,6 +3,7 @@ import { HiMail, HiMailOpen } from "react-icons/hi";
 import { TbStar, TbStarFilled } from "react-icons/tb";
 import type { Post } from "../types/Post";
 import { useUpdatePost } from "../hooks/usePosts";
+import { useSettings } from "../hooks/useSettings";
 import { initials } from "../utils/posts";
 
 export interface FeedMeta {
@@ -20,6 +21,9 @@ interface Props {
 
 export function PostItem({ post, to, active, feed }: Props) {
   const { mutate: updatePost } = useUpdatePost();
+  const { data: settings } = useSettings();
+  const readMode = settings?.read_mode ?? "on_open";
+  const isRead = readMode === "disabled" ? true : post.is_read;
 
   function handleReadToggle(e: React.MouseEvent) {
     e.preventDefault();
@@ -34,14 +38,16 @@ export function PostItem({ post, to, active, feed }: Props) {
   }
 
   return (
-    <Link to={to} className={`post-item${active ? " active" : ""}${post.is_read ? " read" : ""}`}>
-      <button
-        className={`post-item-read${!post.is_read ? " unread" : ""}`}
-        onClick={handleReadToggle}
-        aria-label={post.is_read ? "Mark as unread" : "Mark as read"}
-      >
-        {post.is_read ? <HiMailOpen /> : <HiMail />}
-      </button>
+    <Link to={to} className={`post-item${active ? " active" : ""}${isRead ? " read" : ""}`}>
+      {readMode !== "disabled" && (
+        <button
+          className={`post-item-read${!post.is_read ? " unread" : ""}`}
+          onClick={handleReadToggle}
+          aria-label={post.is_read ? "Mark as unread" : "Mark as read"}
+        >
+          {post.is_read ? <HiMailOpen /> : <HiMail />}
+        </button>
+      )}
       {feed && <span className="post-item-feed">{initials(feed.name)}</span>}
       {feed?.tag && (
         <span
