@@ -53,8 +53,10 @@ pub enum WyrmError {
     XmlSerializeError(quick_xml::se::SeError),
     #[error("xml deserialize error: {0}")]
     XmlDeserializeError(quick_xml::de::DeError),
-    #[error("rss worker error")]
-    WorkerError,
+    #[error("rss worker error: {0}")]
+    WorkerError(String),
+    #[error("lock poisoned: {0}")]
+    LockPoisoned(String),
 }
 
 impl From<reqwest::Error> for WyrmError {
@@ -78,6 +80,11 @@ impl From<deadpool::managed::PoolError<diesel_async::pooled_connection::PoolErro
 impl From<diesel::result::ConnectionError> for WyrmError {
     fn from(e: diesel::result::ConnectionError) -> Self {
         WyrmError::Database(DatabaseError::ConnectionError(e))
+    }
+}
+impl<T> From<std::sync::PoisonError<T>> for WyrmError {
+    fn from(e: std::sync::PoisonError<T>) -> Self {
+        WyrmError::LockPoisoned(e.to_string())
     }
 }
 

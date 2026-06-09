@@ -16,37 +16,10 @@ pub struct DatabaseConfig {
 
 #[derive(Debug, Clone, Deserialize, SmartDefault)]
 #[serde(default)]
-pub struct HttpConfig {
-    /// Response timeout
-    #[default(30)]
-    pub timeout: u64,
-    //// Conn timeout
-    #[default(30)]
-    pub connect_timeout: u64,
-    /// Max retries
-    #[default(3)]
-    pub retries: u32,
-    #[default(concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION")).to_string())]
-    pub user_agent: String,
-}
-
-#[derive(Debug, Clone, Deserialize, SmartDefault)]
-#[serde(default)]
-pub struct FeedConfig {
-    /// Pagination size
-    #[default(100)]
-    pub page_size: i64,
-}
-
-#[derive(Debug, Clone, Deserialize, SmartDefault)]
-#[serde(default)]
-pub struct WyrmSettings {
-    /// Feed settings
-    pub feed: FeedConfig,
+/// Built from wyrm.toml or env vars
+pub struct WyrmStartupConfig {
     /// Database settings
     pub database: DatabaseConfig,
-    /// Http settings
-    pub http: HttpConfig,
     /// Bind to IP addr
     #[default(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)))]
     pub bind: IpAddr,
@@ -55,7 +28,7 @@ pub struct WyrmSettings {
     pub port: u16,
 }
 
-impl WyrmSettings {
+impl WyrmStartupConfig {
     pub fn load() -> Self {
         Config::builder()
             .add_source(File::with_name("config/wyrm.toml").required(false))

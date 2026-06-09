@@ -9,7 +9,6 @@ rust-version.workspace = true
 
 [dependencies]
 tokio = { workspace = true }
-tracing = { workspace = true }
 actix-web = { workspace = true }
 api_utils = { path = "../utils" }
 wyrm_utils = { path = "../../utils" }

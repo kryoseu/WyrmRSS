@@ -47,14 +47,6 @@ Backend configuration via  `config/wyrm.toml`:
 ```toml
 port = 3001
 
-[feed]
-page_size = 50      # posts per page, default 100
-
-[http]
-timeout = 15        # request timeout in seconds, default 30
-connect_timeout = 10
-retries = 5         # default 3
-
 [database]
 connection = "postgres://wyrm:wyrm@localhost/wyrm"
 pool_size = 25      # default 30

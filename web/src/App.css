@@ -613,6 +613,42 @@
   text-decoration: none;
 }
 
+.settings-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  label {
+    font-size: 13px;
+    color: var(--text);
+    width: 160px;
+    flex-shrink: 0;
+  }
+
+  input {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 13px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-h);
+    font-family: var(--sans);
+
+    &:focus {
+      outline: 2px solid var(--accent-border);
+      border-color: transparent;
+    }
+  }
+}
+
+.settings-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
 .settings-empty {
   font-size: 14px;
   color: var(--text);

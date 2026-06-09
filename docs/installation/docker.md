@@ -8,6 +8,7 @@ Install Wyrm using Docker compose.
 - docker-compose
 
 ## Compose
+
 Everything you need to run Wyrm is there, including PostgreSQL itself. You can also use your own database.
 
 ```yaml
@@ -34,10 +35,6 @@ services:
     environment:
       # all env vars are optional, these are default values
       WYRM_PORT: 3001 
-      WYRM_FEED_PAGE_SIZE: 100 
-      WYRM_HTTP_TIMEOUT: 30
-      WYRM_HTTP_CONNECT_TIMEOUT: 30
-      WYRM_HTTP_RETRIES: 3
       WYRM_DATABASE_CONNECTION: "postgres://wyrm:wyrm@wyrm-db/wyrm"
       WYRM_DATABASE_POOL_SIZE: 30
     ports:

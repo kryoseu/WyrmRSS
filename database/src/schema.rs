@@ -6,11 +6,11 @@ diesel::table! {
         title -> Text,
         url -> Text,
         ttl -> Int4,
-        tag -> Nullable<Text>,
-        tag_color -> Nullable<Text>,
         url_filter -> Array<Nullable<Text>>,
         last_fetched_at -> Nullable<Timestamptz>,
         created_at -> Timestamptz,
+        tag -> Nullable<Text>,
+        tag_color -> Nullable<Text>,
     }
 }
 
@@ -31,6 +31,18 @@ diesel::table! {
 }
 
 diesel::table! {
+    settings (is_singleton) {
+        is_singleton -> Bool,
+        page_size -> Int4,
+        feed_poll_interval_secs -> Int4,
+        http_timeout -> Int4,
+        http_connect_timeout -> Int4,
+        http_retries -> Int4,
+        http_user_agent -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Int4,
         username -> Text,
@@ -42,4 +54,4 @@ diesel::table! {
 
 diesel::joinable!(posts -> feeds (feed_id));
 
-diesel::allow_tables_to_appear_in_same_query!(feeds, posts, users,);
+diesel::allow_tables_to_appear_in_same_query!(feeds, posts, settings, users,);

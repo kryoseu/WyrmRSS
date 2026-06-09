@@ -27,8 +27,8 @@ pub async fn poll(ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
         // channel is full, meaning a poll is in progress already
         Err(TrySendError::Full(_)) => return Ok(HttpResponse::Accepted().finish()),
         Err(TrySendError::Closed(_)) => {
-            tracing::error!("feed worker channel closed");
-            return Err(WyrmError::WorkerError);
+            let err = "feed worker channel closed";
+            return Err(WyrmError::WorkerError(err.to_string()));
         }
         Ok(_) => {}
     }

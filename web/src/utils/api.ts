@@ -36,6 +36,8 @@ export const ENDPOINTS = {
     update: (id: number) => `${BASE}/posts/${id}`,
   },
   settings: {
+    get: () => `${BASE}/settings`,
+    update: () => `${BASE}/settings`,
     import: () => `${BASE}/settings/opml/import`,
     export: () => `${BASE}/settings/opml/export`,
   }

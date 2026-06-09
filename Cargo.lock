@@ -238,7 +238,6 @@ dependencies = [
  "api_utils",
  "database",
  "tokio",
- "tracing",
  "wyrm-rss",
  "wyrm_utils",
 ]
@@ -252,6 +251,7 @@ dependencies = [
  "database",
  "serde",
  "ts-rs",
+ "wyrm-rss",
  "wyrm_utils",
 ]
 
@@ -272,7 +272,6 @@ dependencies = [
  "database",
  "tokio",
  "wyrm-rss",
- "wyrm_utils",
 ]
 
 [[package]]
@@ -3970,7 +3969,6 @@ dependencies = [
  "reqwest-middleware",
  "reqwest-retry",
  "serde",
- "smart-default",
  "tokio",
  "tracing",
  "wyrm_utils",

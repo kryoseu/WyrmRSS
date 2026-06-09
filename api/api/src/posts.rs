@@ -18,13 +18,14 @@ pub async fn list(
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<PagedResponse<Vec<Post>>>> {
     let query = query.into_inner();
+    let page_size = ctx.runtime_settings.read()?.page_size;
     let page = PostQuery {
         cursor: query.page,
         tag: query.tag,
         search: query.search,
         ..Default::default()
     }
-    .list(&ctx.db_pool, ctx.settings.feed.page_size)
+    .list(&ctx.db_pool, page_size)
     .await?;
     Ok(Json(page))
 }
@@ -35,13 +36,14 @@ pub async fn list_by_feed(
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<PagedResponse<Vec<Post>>>> {
     let query = query.into_inner();
+    let page_size = ctx.runtime_settings.read()?.page_size;
     let page = PostQuery {
         feed_id: Some(path.into_inner()),
         cursor: query.page,
         search: query.search,
         ..Default::default()
     }
-    .list(&ctx.db_pool, ctx.settings.feed.page_size)
+    .list(&ctx.db_pool, page_size)
     .await?;
     Ok(Json(page))
 }
@@ -51,12 +53,13 @@ pub async fn list_favorites(
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<PagedResponse<Vec<Post>>>> {
     let query = query.into_inner();
+    let page_size = ctx.runtime_settings.read()?.page_size;
     let page = PostQuery {
         fav_only: true,
         cursor: query.page,
         ..Default::default()
     }
-    .list(&ctx.db_pool, ctx.settings.feed.page_size)
+    .list(&ctx.db_pool, page_size)
     .await?;
     Ok(Json(page))
 }
