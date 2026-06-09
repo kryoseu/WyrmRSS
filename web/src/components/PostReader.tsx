@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import YouTube from "react-youtube";
 import { TbStar, TbStarFilled } from "react-icons/tb";
 import { usePost, useUpdatePost } from "../hooks/usePosts";
+import { useSettings } from "../hooks/useSettings";
 import { extractYouTubeId, formatDate } from "../utils/utils";
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 export function PostReader({ postId, onClose, width }: Props) {
   const { data: post, isLoading } = usePost(postId ?? undefined);
   const { mutate: updatePost } = useUpdatePost();
+  const { data: settings } = useSettings();
 
   // Track the last seen post ID with a ref so the effect only fires
   // when the user switches to a new post, not on every re-render.
@@ -21,11 +23,11 @@ export function PostReader({ postId, onClose, width }: Props) {
     if (!post) return;
     if (lastSeenPostId.current !== post.id) {
       lastSeenPostId.current = post.id;
-      if (!post.is_read) {
+      if (!post.is_read && settings?.read_mode === "on_open") {
         updatePost({ id: post.id, is_read: true, is_favorite: null });
       }
     }
-  }, [post, updatePost]);
+  }, [post, updatePost, settings?.read_mode]);
 
   if (!postId) return null;
 

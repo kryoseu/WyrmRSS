@@ -665,6 +665,14 @@
   background: var(--code-bg);
 }
 
+.settings-field .segmented {
+  flex: 1;
+}
+
+.settings-field .segmented .segmented-btn {
+  flex: 1;
+}
+
 .segmented-btn {
   padding: 6px 16px;
   font-size: 0.72rem;
