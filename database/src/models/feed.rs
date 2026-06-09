@@ -19,11 +19,11 @@ pub struct Feed {
     pub title: String,
     pub url: String,
     pub ttl: i32,
-    pub tag: Option<String>,
-    pub tag_color: Option<String>,
     pub url_filter: Vec<Option<String>>,
     pub last_fetched_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
+    pub tag: Option<String>,
+    pub tag_color: Option<String>,
 }
 
 impl Feed {

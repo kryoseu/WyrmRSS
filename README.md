@@ -20,9 +20,10 @@
 - Browse posts per feed or across all feeds
 - URL filters per feed — exclude entries whose URL contains a given pattern
 - Mark posts as favorite
-- Background feed polling with configurable TTL and retry logic
+- OPML import and export
+- Background feed polling with configurable interval and retry logic
 - Full-text search on post titles
-  
+- Runtime settings (poll interval, HTTP timeouts, page size) configurable via the UI without a restart
   
 ## Installation
 
@@ -43,9 +44,9 @@ See [source.md](docs/installation/source.md) to build from the source code.
 
 ## Configuration
 
-All backend settings can be configured via environment variables (prefixed `WYRM_`) or `config/wyrm.toml`.
+### Startup configuration
 
-### Backend
+Startup settings can be configured via environment variables (prefixed `WYRM_`) or `config/wyrm.toml`.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -53,12 +54,20 @@ All backend settings can be configured via environment variables (prefixed `WYRM
 | `WYRM_PORT` | `3001` | Port to listen on |
 | `WYRM_DATABASE_CONNECTION` | `postgres://wyrm:wyrm@localhost/wyrm` | PostgreSQL connection URI |
 | `WYRM_DATABASE_POOL_SIZE` | `30` | Max database connection pool size |
-| `WYRM_HTTP_TIMEOUT` | `30` | HTTP response timeout in seconds |
-| `WYRM_HTTP_CONNECT_TIMEOUT` | `30` | HTTP connect timeout in seconds |
-| `WYRM_HTTP_RETRIES` | `3` | Max retries for feed fetches |
-| `WYRM_HTTP_USER_AGENT` | `wyrm/<version>` | User agent sent with feed requests |
-| `WYRM_FEED_PAGE_SIZE` | `100` | Feed entries returned per page |
 | `RUST_LOG` | `info` | Log level filter (e.g. `debug`, `wyrm=trace`) |
+
+### Runtime settings
+
+The following settings are stored in the database and can be changed at runtime via the Settings page without restarting the server.
+
+| Setting | Default | Description |
+|---|---|---|
+| Page size | `100` | Feed entries returned per page |
+| Feed poll interval | `900` | Seconds between automatic feed polls |
+| HTTP timeout | `30` | Response timeout in seconds |
+| HTTP connect timeout | `10` | Connection timeout in seconds |
+| HTTP retries | `3` | Max retries for failed feed fetches |
+| HTTP user agent | `wyrm-rss/<version>` | User agent sent with feed requests |
 
 ### Frontend
 

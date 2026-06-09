@@ -10,9 +10,9 @@ use diesel_async::{
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use std::error::Error;
 use wyrm_utils::{
+    config::WyrmStartupConfig,
     error::{DatabaseError, WyrmError},
     result::WyrmResult,
-    settings::WyrmSettings,
 };
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../migrations/");
@@ -26,14 +26,13 @@ pub fn run_migrations(
     Ok(())
 }
 
-pub fn establish_sync_connection(settings: &WyrmSettings) -> WyrmResult<PgConnection> {
-    let conn = PgConnection::establish(&settings.database.connection)?;
+pub fn establish_sync_connection(conf: &WyrmStartupConfig) -> WyrmResult<PgConnection> {
+    let conn = PgConnection::establish(&conf.database.connection)?;
     Ok(conn)
 }
 
-pub async fn create_pool(settings: &WyrmSettings) -> WyrmResult<DatabasePool> {
-    let config =
-        AsyncDieselConnectionManager::<AsyncPgConnection>::new(&settings.database.connection);
+pub async fn create_pool(conf: &WyrmStartupConfig) -> WyrmResult<DatabasePool> {
+    let config = AsyncDieselConnectionManager::<AsyncPgConnection>::new(&conf.database.connection);
     Pool::builder(config)
         .build()
         .map_err(|e| WyrmError::Database(DatabaseError::PoolBuildError(e)))

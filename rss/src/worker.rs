@@ -1,4 +1,4 @@
-use crate::http::HttpClient;
+use crate::http::{HttpClient, HttpConfig};
 use chrono::Utc;
 use database::{
     DatabasePool,
@@ -6,47 +6,55 @@ use database::{
         feed::{Feed, FeedUpdateForm},
         post::{Post, PostInsertForm},
     },
+    utils::settings::RuntimeSettings,
 };
 use futures::future::join_all;
-use std::time::Duration;
+use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc::Receiver;
 use tracing::{error, info};
 use wyrm_utils::result::WyrmResult;
 
 #[derive(Debug)]
 pub enum WorkerCommand {
+    /// Trigger an immediate feed poll.
+    /// The sender is notified when polling completes.
     PollFeeds(tokio::sync::oneshot::Sender<()>),
+    /// Reload runtime settings (e.g. HTTP client config)
+    /// without restarting the worker.
+    Reconfigure,
 }
 
-const INTERVAL: Duration = Duration::from_secs(900); // 15 min
-
-/// Background worker responsible for polling RSS feeds on a scheduled interval.
-///
-/// The worker runs indefinitely, waking every [`INTERVAL`] seconds to check
-/// which feeds are due for polling and fetching new posts from them.
+/// Polls due feeds every `feed_poll_interval_secs`, spawning a concurrent task per feed.
+/// Accepts [`WorkerCommand`]s to trigger an immediate poll or apply updated runtime
+/// settings without waiting for the current interval to expire.
 pub struct FeedWorker {
     pub db_pool: DatabasePool,
     pub http: HttpClient,
+    pub runtime_settings: Arc<RwLock<RuntimeSettings>>,
 }
 
 impl FeedWorker {
-    /// Creates a new [`FeedWorker`] with the given database pool.
-    pub fn new(pool: DatabasePool, http: HttpClient) -> Self {
+    pub fn new(
+        pool: DatabasePool,
+        http: HttpClient,
+        runtime_settings: Arc<RwLock<RuntimeSettings>>,
+    ) -> Self {
         Self {
             db_pool: pool,
             http,
+            runtime_settings,
         }
     }
 
     /// Starts the feed polling loop.
-    ///
-    /// Runs indefinitely, polling due feeds every [`INTERVAL`] seconds or when a
-    /// [`FeedCommand::Fetch`] is received. Errors are logged but do not stop the worker.
-    pub async fn run(&mut self, mut rx: Receiver<WorkerCommand>) {
-        let mut interval = tokio::time::interval(INTERVAL);
+    pub async fn run(&mut self, mut rx: Receiver<WorkerCommand>) -> WyrmResult<()> {
         loop {
+            let interval = {
+                let secs = self.runtime_settings.read()?.feed_poll_interval_secs;
+                std::time::Duration::from_secs(secs as u64)
+            };
             tokio::select! {
-                _ = interval.tick() => {
+                _ = tokio::time::sleep(interval) => {
                     if let Err(e) = self.poll_feeds().await {
                         error!("Feed worker error: {e}");
                     }
@@ -58,6 +66,10 @@ impl FeedWorker {
                                 error!("Feed worker error: {e}");
                             }
                             let _ = reply.send(());
+                        }
+                        WorkerCommand::Reconfigure => {
+                            let rs = self.runtime_settings.read()?;
+                            self.http = HttpClient::new(&HttpConfig::from(&*rs))?;
                         }
                     }
                 }

@@ -1,9 +1,12 @@
 use actix_web::{
     HttpResponse,
-    web::{self, Data},
+    web::{self, Data, Json},
 };
 use api_utils::{context::WyrmContext, response::XmlResponse};
-use database::models::feed::{Feed, FeedInsertForm};
+use database::models::{
+    feed::{Feed, FeedInsertForm},
+    settings::Settings,
+};
 use std::collections::HashMap;
 use wyrm_rss::{
     opml::{Opml, Outline},
@@ -14,8 +17,13 @@ use wyrm_utils::{
     result::WyrmResult,
 };
 
-/// Imports feeds from a raw OPML request body. Duplicate URLs are skipped; all other errors
-/// propagate. Triggers a best-effort poll after import.
+pub async fn get(ctx: Data<WyrmContext>) -> WyrmResult<Json<Settings>> {
+    let settings = Settings::get(&ctx.db_pool).await?;
+    Ok(Json(settings))
+}
+
+/// Imports feeds from a raw OPML request body. Duplicate URLs are skipped;
+/// all other errors propagate. Triggers a best-effort poll after import.
 pub async fn import(body: web::Bytes, ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
     let opml = Opml::from_xml(body.as_ref())?;
 

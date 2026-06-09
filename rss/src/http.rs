@@ -1,12 +1,12 @@
 use bytes::Bytes;
+use database::utils::settings::RuntimeSettings;
 use http::Extensions;
 use reqwest::{Request, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next, Result};
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
-use smart_default::SmartDefault;
 use std::time::Duration;
 use tracing::info;
-use wyrm_utils::{result::WyrmResult, settings::WyrmSettings};
+use wyrm_utils::result::WyrmResult;
 
 struct LoggingMiddleware;
 
@@ -23,48 +23,52 @@ impl Middleware for LoggingMiddleware {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct HttpConfig {
+    /// Response timeout
+    pub timeout: u64,
+    //// Conn timeout
+    pub connect_timeout: u64,
+    /// Max retries
+    pub retries: u32,
+    /// User Agent header
+    pub user_agent: Option<String>,
+}
+
+impl From<&RuntimeSettings> for HttpConfig {
+    fn from(s: &RuntimeSettings) -> Self {
+        HttpConfig {
+            timeout: s.http_timeout as u64,
+            connect_timeout: s.http_connect_timeout as u64,
+            retries: s.http_retries as u32,
+            user_agent: s.http_user_agent.clone(),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct HttpClient {
     inner: ClientWithMiddleware,
 }
 
-#[derive(Debug, SmartDefault)]
-pub struct HttpClientBuilder {
-    timeout: Duration,
-    connect_timeout: Duration,
-    retries: u32,
-    user_agent: String,
-}
+impl HttpClient {
+    pub fn new(config: &HttpConfig) -> WyrmResult<HttpClient> {
+        let retry_policy = ExponentialBackoff::builder().build_with_max_retries(config.retries);
 
-impl HttpClientBuilder {
-    pub fn timeout(mut self, secs: u64) -> Self {
-        self.timeout = Duration::from_secs(secs);
-        self
-    }
+        let user_agent = config.user_agent.as_deref().unwrap_or(concat!(
+            env!("CARGO_PKG_NAME"),
+            "/",
+            env!("CARGO_PKG_VERSION")
+        ));
 
-    pub fn connect_timeout(mut self, secs: u64) -> Self {
-        self.connect_timeout = Duration::from_secs(secs);
-        self
-    }
-
-    pub fn retries(mut self, max: u32) -> Self {
-        self.retries = max;
-        self
-    }
-
-    pub fn user_agent(mut self, ua: impl Into<String>) -> Self {
-        self.user_agent = ua.into();
-        self
-    }
-
-    pub fn build(&self) -> WyrmResult<HttpClient> {
-        let retry_policy = ExponentialBackoff::builder().build_with_max_retries(self.retries);
+        let timeout = Duration::from_secs(config.timeout);
+        let connect_timeout = Duration::from_secs(config.connect_timeout);
 
         let client = ClientBuilder::new(
             reqwest::Client::builder()
-                .timeout(self.timeout)
-                .connect_timeout(self.connect_timeout)
-                .user_agent(self.user_agent.clone())
+                .timeout(timeout)
+                .connect_timeout(connect_timeout)
+                .user_agent(user_agent)
                 .gzip(true)
                 .build()?,
         )
@@ -73,19 +77,6 @@ impl HttpClientBuilder {
         .build();
 
         Ok(HttpClient { inner: client })
-    }
-}
-
-impl HttpClient {
-    pub fn builder(settings: &WyrmSettings) -> HttpClientBuilder {
-        let mut builder = HttpClientBuilder::default();
-
-        builder = builder.timeout(settings.http.timeout);
-        builder = builder.connect_timeout(settings.http.connect_timeout);
-        builder = builder.retries(settings.http.retries);
-        builder = builder.user_agent(settings.http.user_agent.clone());
-
-        builder
     }
 
     pub async fn fetch(&self, url: &str) -> WyrmResult<Bytes> {

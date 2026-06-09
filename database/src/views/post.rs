@@ -30,7 +30,7 @@ impl PostQuery {
     pub async fn list(
         self,
         pool: &DatabasePool,
-        page_size: i64,
+        page_size: i32,
     ) -> WyrmResult<PagedResponse<Vec<Post>>> {
         let mut conn = pool.get().await?;
 
@@ -39,7 +39,7 @@ impl PostQuery {
         let mut query = posts::table
             .select(Post::as_select())
             .order((posts::published_at.desc(), posts::id.desc()))
-            .limit(page_size + 1)
+            .limit(page_size as i64 + 1)
             .into_boxed();
 
         if let Some(feed_id) = self.feed_id {
@@ -69,7 +69,7 @@ impl PostQuery {
         }
 
         let mut items: Vec<Post> = query.load(&mut conn).await.map_err(WyrmError::from)?;
-        let next_page = if items.len() as i64 > page_size {
+        let next_page = if items.len() > page_size as usize {
             items.truncate(page_size as usize);
             items
                 .last()
