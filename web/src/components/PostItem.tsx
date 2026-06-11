@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { HiMail, HiMailOpen } from "react-icons/hi";
-import { TbStar, TbStarFilled } from "react-icons/tb";
+import { TbArchive, TbArchiveOff, TbStar, TbStarFilled } from "react-icons/tb";
 import type { Post } from "../types/Post";
-import { useUpdatePost } from "../hooks/usePosts";
+import { useArchivePost, useUnarchivePost, useUpdatePost } from "../hooks/usePosts";
 import { useSettings } from "../hooks/useSettings";
 import { initials } from "../utils/posts";
 
@@ -21,6 +21,8 @@ interface Props {
 
 export function PostItem({ post, to, active, feed }: Props) {
   const { mutate: updatePost } = useUpdatePost();
+  const { mutate: archivePost } = useArchivePost();
+  const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
   const readMode = settings?.read_mode ?? "on_open";
   const isRead = readMode === "disabled" ? true : post.is_read;
@@ -37,33 +39,57 @@ export function PostItem({ post, to, active, feed }: Props) {
     updatePost({ id: post.id, is_favorite: !post.is_favorite, is_read: null });
   }
 
+  function handleArchiveToggle(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    post.is_archived ? unarchivePost(post.id) : archivePost(post.id);
+  }
+
+  const mailIcon = post.is_read ? <HiMailOpen /> : <HiMail />;
+  const readLabel = post.is_read ? "Mark as unread" : "Mark as read";
+
+  const archiveIcon = post.is_archived ? <TbArchiveOff /> : <TbArchive />;
+  const archiveLabel = post.is_archived ? "Unarchive" : "Archive";
+
+  const favoriteIcon = post.is_favorite ? <TbStarFilled /> : <TbStar />;
+  const favoriteLabel = post.is_favorite ? "Unfavorite" : "Favorite";
+
+  const tagColor = feed?.tagColor ? ({ '--tag-color': feed.tagColor } as React.CSSProperties) : undefined;
+
   return (
     <Link to={to} className={`post-item${active ? " active" : ""}${isRead ? " read" : ""}`}>
       {readMode !== "disabled" && (
         <button
           className={`post-item-read${!post.is_read ? " unread" : ""}`}
           onClick={handleReadToggle}
-          aria-label={post.is_read ? "Mark as unread" : "Mark as read"}
+          aria-label={readLabel}
         >
-          {post.is_read ? <HiMailOpen /> : <HiMail />}
+          {mailIcon}
         </button>
       )}
       {feed && <span className="post-item-feed">{initials(feed.name)}</span>}
       {feed?.tag && (
         <span
           className="post-item-tag"
-          style={feed.tagColor ? ({ '--tag-color': feed.tagColor } as React.CSSProperties) : undefined}
+          style={tagColor}
         >
           {feed.tag}
         </span>
       )}
       <span className="post-item-title">{post.title ?? "Untitled"}</span>
       <button
+        className={`post-item-archive${post.is_archived ? " archived" : ""}`}
+        onClick={handleArchiveToggle}
+        aria-label={archiveLabel}
+      >
+        {archiveIcon}
+      </button>
+      <button
         className={`post-item-fav${post.is_favorite ? " favorited" : ""}`}
         onClick={handleFavToggle}
-        aria-label={post.is_favorite ? "Unfavorite" : "Favorite"}
+        aria-label={favoriteLabel}
       >
-        {post.is_favorite ? <TbStarFilled /> : <TbStar />}
+        {favoriteIcon}
       </button>
     </Link>
   );

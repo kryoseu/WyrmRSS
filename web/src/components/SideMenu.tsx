@@ -39,6 +39,13 @@ export function SideMenu({ excludedFeeds, onToggleExclude }: Props) {
         >
           Favorite Posts
         </NavLink>
+        <NavLink
+          to="/archive"
+          end
+          className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+        >
+          Archive
+        </NavLink>
       </nav>
 
       <FeedList excludedFeeds={excludedFeeds} onToggleExclude={onToggleExclude} />

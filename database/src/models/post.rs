@@ -27,6 +27,7 @@ pub struct Post {
     pub content: Option<String>,
     pub is_favorite: bool,
     pub is_read: bool,
+    pub is_archived: bool,
 }
 
 impl Post {
