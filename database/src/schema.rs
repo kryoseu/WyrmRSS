@@ -21,6 +21,21 @@ diesel::table! {
 }
 
 diesel::table! {
+    post_archive (id) {
+        id -> Int4,
+        title -> Nullable<Text>,
+        url -> Nullable<Text>,
+        authors -> Nullable<Text>,
+        published_at -> Timestamptz,
+        description -> Nullable<Text>,
+        content -> Nullable<Text>,
+        tag -> Nullable<Text>,
+        tag_color -> Nullable<Text>,
+        archived_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     posts (id) {
         id -> Int4,
         feed_id -> Int4,
@@ -33,6 +48,7 @@ diesel::table! {
         content -> Nullable<Text>,
         is_favorite -> Bool,
         is_read -> Bool,
+        is_archived -> Bool,
     }
 }
 
@@ -64,4 +80,4 @@ diesel::table! {
 
 diesel::joinable!(posts -> feeds (feed_id));
 
-diesel::allow_tables_to_appear_in_same_query!(feeds, posts, settings, users,);
+diesel::allow_tables_to_appear_in_same_query!(feeds, post_archive, posts, settings, users,);

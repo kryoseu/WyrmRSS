@@ -1,9 +1,14 @@
+import type { ListPostArchive } from "../types/ListPostArchive";
 import type { ListPosts } from "../types/ListPosts";
 
 const BASE = "/api/v1";
 
-function pageParam(page?: string): string {
-  return page ? `?page=${encodeURIComponent(page)}` : "";
+// Drops undefined params before building the query string,
+// e.g. { page: "1", tag: undefined, search: "foo" } → "page=1&search=foo".
+function buildUrl(base: string, params: Record<string, string | undefined>): string {
+  const qs = new URLSearchParams(
+    Object.entries(params).filter(([, v]) => v !== undefined) as [string, string][]);
+  return qs ? `${base}?${qs}` : base;
 }
 
 export const ENDPOINTS = {
@@ -16,24 +21,24 @@ export const ENDPOINTS = {
     poll: () => `${BASE}/feeds/poll`,
   },
   posts: {
-    list: ({ page, tag, search }: ListPosts) => {
-      const params = new URLSearchParams();
-      if (page) params.set("page", page);
-      if (tag) params.set("tag", tag);
-      if (search) params.set("search", search);
-      const qs = params.toString();
-      return `${BASE}/posts${qs ? `?${qs}` : ""}`;
-    },
+    list: ({ page, tag, search }: ListPosts) =>
+      buildUrl(`${BASE}/posts`, { page, tag, search }),
+
     get: (id: number) => `${BASE}/posts/${id}`,
-    getByFeed: (feedId: number, { page, search }: ListPosts) => {
-      const params = new URLSearchParams();
-      if (page) params.set("page", page);
-      if (search) params.set("search", search);
-      const qs = params.toString();
-      return `${BASE}/feeds/${feedId}/posts${qs ? `?${qs}` : ""}`;
-    },
-    getFavorites: (page?: string) => `${BASE}/posts/favorites${pageParam(page)}`,
+
+    listByFeed: (feedId: number, { page, search }: ListPosts) =>
+      buildUrl(`${BASE}/feeds/${feedId}/posts`, { page, search }),
+
+    listFavorites: (page?: string) =>
+      buildUrl(`${BASE}/posts/favorites`, { page }),
+
+    listArchived: ({ page, tag, search }: ListPostArchive) =>
+      buildUrl(`${BASE}/posts/archive`, { page, tag, search }),
+
+    getArchivedPost: (id: number) => `${BASE}/posts/archive/${id}`,
     update: (id: number) => `${BASE}/posts/${id}`,
+    archive: (id: number) => `${BASE}/posts/archive/${id}`,
+    unarchive: (id: number) => `${BASE}/posts/archive/${id}`,
   },
   settings: {
     get: () => `${BASE}/settings`,
