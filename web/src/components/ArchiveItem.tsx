@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 import { TbArchiveOff } from "react-icons/tb";
 import type { PostArchive } from "../types/PostArchive";
@@ -8,7 +9,7 @@ interface Props {
   active: boolean;
 }
 
-export function ArchiveItem({ archive, active }: Props) {
+export const ArchiveItem = memo(function ArchiveItem({ archive, active }: Props) {
   const { mutate: unarchive } = useUnarchivePost();
 
   function handleUnarchive(e: React.MouseEvent) {
@@ -40,4 +41,4 @@ export function ArchiveItem({ archive, active }: Props) {
       </button>
     </Link>
   );
-}
+});

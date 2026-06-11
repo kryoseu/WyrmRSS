@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useOutletContext, useParams } from "react-router-dom";
 import { TbRefresh } from "react-icons/tb";
 import { useFavoritePosts, usePosts } from "../hooks/usePosts";
 import { useFeeds, usePollFeeds } from "../hooks/useFeeds";
 import { PostItem, type FeedMeta } from "./PostItem";
+import { VirtualGroupedList } from "./VirtualGroupedList";
 import type { ReaderOutletContext } from "../pages/ReaderPage";
-import { groupByDate, postPath } from "../utils/posts";
+import { postPath } from "../utils/posts";
 
 export function PostList() {
   const { excludedFeeds, activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
@@ -17,12 +18,12 @@ export function PostList() {
   const feedIdNum = feedId ? Number(feedId) : undefined;
 
   const { data: feeds } = useFeeds();
-
   const pollFeeds = usePollFeeds();
   const favoritePosts = useFavoritePosts();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const [activeTag, setActiveTag] = useState<string | undefined>(undefined);
 
   // Reset activeTag on navigation. setState during render (vs. useEffect) avoids rendering once
@@ -37,7 +38,7 @@ export function PostList() {
 
   // Delay search query until the user stops typing
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search || ""), 300);
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
   }, [search]);
 
@@ -49,34 +50,41 @@ export function PostList() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
-    isRefetching
+    isRefetching,
   } = isFavorites ? favoritePosts : feedPosts;
 
-  const feedMap = new Map(
-    (feeds ?? []).map((f): [number, FeedMeta] => [
-      f.id,
-      { name: f.title, tag: f.tag, tagColor: f.tag_color },
-    ])
+  // Keep the same FeedMeta object references between renders so React.memo on PostItem can bail out
+  const feedMap = useMemo(
+    () =>
+      new Map(
+        (feeds ?? []).map((f): [number, FeedMeta] => [
+          f.id,
+          { name: f.title, tag: f.tag, tagColor: f.tag_color },
+        ])
+      ),
+    [feeds]
   );
 
-  const tagMap = new Map(
-    (feeds ?? [])
-      .filter((f) => f.tag !== undefined)
-      .map((f) => [f.tag!, f.tag_color])
-  );
-  const tags = [...tagMap.keys()];
+  // Same — avoid recreating tag arrays on every render
+  const { tagMap, tags } = useMemo(() => {
+    const tagMap = new Map(
+      (feeds ?? [])
+        .filter((f) => f.tag !== undefined)
+        .map((f) => [f.tag!, f.tag_color])
+    );
+    return { tagMap, tags: [...tagMap.keys()] };
+  }, [feeds]);
 
   useEffect(() => {
     if (postId) onOpenPost(Number(postId));
   }, [postId, onOpenPost]);
 
-  const posts = data?.pages.flatMap((p) => p.items);
-  // Filter out posts whose feed.id are in the excluded list, 
-  // unless we're on the favorites or on a feed page.
-  const filtered = posts?.filter((p) =>
-    isFavorites || feedIdNum !== undefined || !excludedFeeds.has(p.feed_id)
-  );
-  const groups = filtered ? groupByDate(filtered) : [];
+  const items = useMemo(() => {
+    const posts = data?.pages.flatMap((p) => p.items);
+    return posts?.filter(
+      (p) => isFavorites || feedIdNum !== undefined || !excludedFeeds.has(p.feed_id)
+    );
+  }, [data, excludedFeeds, isFavorites, feedIdNum]);
 
   return (
     <div className="pane pane-posts">
@@ -102,7 +110,7 @@ export function PostList() {
             <button
               key={tag}
               className={`posts-tag-chip${activeTag === tag ? " active" : ""}`}
-              style={{ '--tag-color': tagMap.get(tag) ?? 'var(--text)' } as React.CSSProperties}
+              style={{ "--tag-color": tagMap.get(tag) ?? "var(--text)" } as React.CSSProperties}
               onClick={() => setActiveTag((prev) => (prev === tag ? undefined : tag))}
             >
               {tag}
@@ -110,42 +118,22 @@ export function PostList() {
           ))}
         </div>
       )}
-      <div className="pane-scroll">
-        {isLoading && <div className="pane-empty">Loading…</div>}
-        {!isLoading && groups.length === 0 && (
-          <div className="pane-empty">{isFavorites ? "No favorites yet" : "No posts"}</div>
+      <VirtualGroupedList
+        items={items}
+        isLoading={isLoading}
+        hasNextPage={hasNextPage}
+        fetchNextPage={fetchNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        emptyMessage={isFavorites ? "No favorites yet" : "No posts"}
+        renderItem={(post) => (
+          <PostItem
+            post={post}
+            to={postPath(post, feedIdNum, isFavorites)}
+            active={activePostId === post.id}
+            feed={feedIdNum === undefined ? feedMap.get(post.feed_id) : undefined}
+          />
         )}
-        {groups.map(([label, groupPosts]) => (
-          <div key={label} className="posts-group">
-            <div className="posts-group-label">
-              <span>{label}</span>
-              <span className="posts-group-count">{groupPosts.length}</span>
-            </div>
-            <div className="posts-group-items">
-              {groupPosts.map((p) => (
-                <PostItem
-                  key={p.id}
-                  post={p}
-                  to={postPath(p, feedIdNum, isFavorites)}
-                  active={activePostId === p.id}
-                  feed={feedIdNum === undefined ? feedMap.get(p.feed_id) : undefined}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-        {hasNextPage && (
-          <div className="load-more">
-            <button
-              className="load-more-btn"
-              onClick={() => fetchNextPage()}
-              disabled={isFetchingNextPage}
-            >
-              {isFetchingNextPage ? "Loading…" : "Load more"}
-            </button>
-          </div>
-        )}
-      </div>
+      />
     </div>
   );
 }

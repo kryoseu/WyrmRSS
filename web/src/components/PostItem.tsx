@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 import { HiMail, HiMailOpen } from "react-icons/hi";
 import { TbArchive, TbArchiveOff, TbStar, TbStarFilled } from "react-icons/tb";
@@ -19,7 +20,7 @@ interface Props {
   feed?: FeedMeta;
 }
 
-export function PostItem({ post, to, active, feed }: Props) {
+export const PostItem = memo(function PostItem({ post, to, active, feed }: Props) {
   const { mutate: updatePost } = useUpdatePost();
   const { mutate: archivePost } = useArchivePost();
   const { mutate: unarchivePost } = useUnarchivePost();
@@ -97,4 +98,4 @@ export function PostItem({ post, to, active, feed }: Props) {
       </button>
     </Link>
   );
-}
+});

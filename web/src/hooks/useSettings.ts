@@ -6,6 +6,7 @@ export function useSettings() {
   return useQuery({
     queryKey: ["settings"],
     queryFn: getSettings,
+    staleTime: Infinity,
   });
 }
 
