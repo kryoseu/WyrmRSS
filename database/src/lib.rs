@@ -37,20 +37,3 @@ pub async fn create_pool(conf: &WyrmStartupConfig) -> WyrmResult<DatabasePool> {
         .build()
         .map_err(|e| WyrmError::Database(DatabaseError::PoolBuildError(e)))
 }
-
-// use diesel_async::AsyncConnection;
-// pub async fn transaction(pool: &DatabasePool, feed_id: i32) -> WyrmResult<()> {
-//     let mut conn = pool.get().await?;
-//     let conn = &mut *conn;
-//     conn.transaction(async move |conn| {
-//         diesel::delete(posts::table.filter(posts::feed_id.eq(feed_id)))
-//             .execute(conn)
-//             .await?;
-//         diesel::delete(feeds::table.find(feed_id))
-//             .execute(conn)
-//             .await?;
-//         Ok::<(), diesel::result::Error>(())
-//     })
-//     .await
-//     .map_err(WyrmError::from)
-// }

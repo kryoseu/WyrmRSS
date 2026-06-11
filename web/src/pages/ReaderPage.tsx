@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import { Outlet, useOutletContext } from "react-router-dom";
+import { Outlet, useLocation, useOutletContext } from "react-router-dom";
+import { ArchiveReader } from "../components/ArchiveReader";
 import { PostReader } from "../components/PostReader";
 import type { AppLayoutContext } from "./AppLayout";
 
@@ -15,7 +16,15 @@ const MAX_WIDTH = Math.round(window.innerWidth * 0.65);
 
 export function ReaderPage() {
   const { excludedFeeds, onToggleExclude } = useOutletContext<AppLayoutContext>();
+  const { pathname } = useLocation();
+  const isArchive = pathname.startsWith("/archive");
   const [activePostId, setActivePostId] = useState<number | null>(null);
+  const [lastIsArchive, setLastIsArchive] = useState(isArchive);
+
+  if (lastIsArchive !== isArchive) {
+    setLastIsArchive(isArchive);
+    setActivePostId(null);
+  }
   const [readerWidth, setReaderWidth] = useState(() => Math.round(window.innerWidth * 0.40));
   const dragStart = useRef<{ x: number; width: number } | null>(null);
 
@@ -45,7 +54,10 @@ export function ReaderPage() {
           onPointerUp={onResizeEnd}
         />
       )}
-      <PostReader postId={activePostId} onClose={() => setActivePostId(null)} width={readerWidth} />
+      {isArchive
+        ? <ArchiveReader postId={activePostId} onClose={() => setActivePostId(null)} width={readerWidth} />
+        : <PostReader postId={activePostId} onClose={() => setActivePostId(null)} width={readerWidth} />
+      }
     </>
   );
 }

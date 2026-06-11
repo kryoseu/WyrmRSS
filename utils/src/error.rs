@@ -33,6 +33,8 @@ pub enum DatabaseError {
     QueryFailed(diesel::result::Error),
     #[error("unique violation: {0}")]
     UniqueViolation(diesel::result::Error),
+    #[error("conflict: {0}")]
+    Conflict(String),
     #[error("not found")]
     NotFound,
     #[error("connection timeout")]
@@ -113,6 +115,7 @@ impl error::ResponseError for WyrmError {
         match self {
             WyrmError::Database(DatabaseError::NotFound) => StatusCode::NOT_FOUND,
             WyrmError::Database(DatabaseError::UniqueViolation(_)) => StatusCode::CONFLICT,
+            WyrmError::Database(DatabaseError::Conflict(_)) => StatusCode::CONFLICT,
             WyrmError::XmlDeserializeError(_) => StatusCode::BAD_REQUEST,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }

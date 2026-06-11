@@ -5,16 +5,31 @@ import {
   useQueryClient,
   type InfiniteData,
 } from "@tanstack/react-query";
-import { getFavoritePosts, getPost, getPosts, getPostsByFeed, updatePost } from "../api/posts";
+import { archivePost, getArchivedPost, listArchivedPosts, listFavoritePosts, getPost, listPosts, listPostsByFeed, unarchivePost, updatePost } from "../api/posts";
 import type { Post } from "../types/Post";
+import type { PostArchive } from "../types/PostArchive";
 import type { PagedResponse } from "../types/PagedResponse";
 import type { UpdatePost } from "../types/UpdatePost";
+
+type PostPages = InfiniteData<PagedResponse<Post[]>> | undefined;
+
+function patchPostInPages(cached: PostPages, patch: (post: Post) => Post): PostPages {
+  if (!cached) return cached;
+  return {
+    ...cached,
+    pages: cached.pages.map((page) => ({
+      ...page,
+      items: page.items.map(patch),
+    })),
+  };
+}
 
 export const postKeys = {
   all: ["posts"] as const,
   listed: (tag?: string, search?: string) => ["posts", "list", { tag, search }] as const,
   byFeed: (feedId: number) => ["posts", "feed", feedId] as const,
   favorites: ["posts", "favorites"] as const,
+  archived: ["posts", "archived"] as const,
   detail: (id: number) => ["posts", id] as const,
 };
 
@@ -22,7 +37,7 @@ export function usePosts(feedId?: number, tag?: string, search?: string) {
   return useInfiniteQuery({
     queryKey: feedId ? postKeys.byFeed(feedId) : postKeys.listed(tag, search),
     queryFn: ({ pageParam }) =>
-      feedId ? getPostsByFeed(feedId, { page: pageParam, search }) : getPosts({ page: pageParam, tag, search }),
+      feedId ? listPostsByFeed(feedId, { page: pageParam, search }) : listPosts({ page: pageParam, tag, search }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage): string | undefined =>
       lastPage.next_page ?? undefined,
@@ -32,7 +47,17 @@ export function usePosts(feedId?: number, tag?: string, search?: string) {
 export function useFavoritePosts() {
   return useInfiniteQuery({
     queryKey: postKeys.favorites,
-    queryFn: ({ pageParam }) => getFavoritePosts(pageParam),
+    queryFn: ({ pageParam }) => listFavoritePosts(pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage): string | undefined =>
+      lastPage.next_page ?? undefined,
+  });
+}
+
+export function useArchivedPosts() {
+  return useInfiniteQuery({
+    queryKey: postKeys.archived,
+    queryFn: ({ pageParam }) => listArchivedPosts({ page: pageParam }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage): string | undefined =>
       lastPage.next_page ?? undefined,
@@ -47,26 +72,56 @@ export function usePost(id?: number) {
   });
 }
 
+export function useArchivedPost(id?: number) {
+  return useQuery({
+    queryKey: ["posts", "archive", id!],
+    queryFn: () => getArchivedPost(id!),
+    enabled: id !== undefined,
+  });
+}
+
+export function useArchivePost() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (postId: number) => archivePost(postId),
+    onSuccess: (archive: PostArchive) => {
+      const patch = (p: Post) => p.id === archive.id ? { ...p, is_archived: true } : p;
+      queryClient.setQueryData(postKeys.detail(archive.id), (cached: Post | undefined) =>
+        cached ? { ...cached, is_archived: true } : cached,
+      );
+      queryClient.setQueriesData({ queryKey: ["posts", "list"] }, (cached: PostPages) => patchPostInPages(cached, patch));
+      queryClient.setQueriesData({ queryKey: ["posts", "feed"] }, (cached: PostPages) => patchPostInPages(cached, patch));
+      queryClient.invalidateQueries({ queryKey: postKeys.archived });
+    },
+  });
+}
+
+export function useUnarchivePost() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (postId: number) => unarchivePost(postId),
+    onSuccess: (_, postId: number) => {
+      const patch = (p: Post) => p.id === postId ? { ...p, is_archived: false } : p;
+      queryClient.setQueryData(postKeys.detail(postId), (cached: Post | undefined) =>
+        cached ? { ...cached, is_archived: false } : cached,
+      );
+      queryClient.setQueriesData({ queryKey: ["posts", "list"] }, (cached: PostPages) => patchPostInPages(cached, patch));
+      queryClient.setQueriesData({ queryKey: ["posts", "feed"] }, (cached: PostPages) => patchPostInPages(cached, patch));
+      queryClient.invalidateQueries({ queryKey: postKeys.archived });
+      queryClient.removeQueries({ queryKey: ["posts", "archive", postId] });
+    },
+  });
+}
+
 export function useUpdatePost() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }: { id: number } & UpdatePost) => updatePost(id, data),
     onSuccess: (post: Post) => {
+      const patch = (p: Post) => p.id === post.id ? post : p;
       queryClient.setQueryData(postKeys.detail(post.id), post);
-
-      const updatePages = (old: InfiniteData<PagedResponse<Array<Post>>> | undefined) => {
-        if (!old) return old;
-        return {
-          ...old,
-          pages: old.pages.map((page) => ({
-            ...page,
-            items: page.items.map((p) => (p.id === post.id ? post : p)),
-          })),
-        };
-      };
-
-      queryClient.setQueriesData({ queryKey: ["posts", "list"] }, updatePages);
-      queryClient.setQueryData(postKeys.byFeed(post.feed_id), updatePages);
+      queryClient.setQueriesData({ queryKey: ["posts", "list"] }, (cached: PostPages) => patchPostInPages(cached, patch));
+      queryClient.setQueryData(postKeys.byFeed(post.feed_id), (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.invalidateQueries({ queryKey: postKeys.favorites });
     },
   });

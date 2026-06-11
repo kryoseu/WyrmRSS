@@ -16,12 +16,12 @@ export function initials(name: string): string {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
-export function groupByDate(posts: Post[]): [string, Post[]][] {
-  const map = new Map<string, Post[]>();
-  for (const post of posts) {
-    const label = getDateLabel(post.published_at);
+export function groupByDate<T extends { published_at: string }>(items: T[]): [string, T[]][] {
+  const map = new Map<string, T[]>();
+  for (const item of items) {
+    const label = getDateLabel(item.published_at);
     if (!map.has(label)) map.set(label, []);
-    map.get(label)!.push(post);
+    map.get(label)!.push(item);
   }
   return Array.from(map.entries());
 }
