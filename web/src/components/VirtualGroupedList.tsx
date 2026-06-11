@@ -39,6 +39,7 @@ export function VirtualGroupedList<T extends { published_at: string }>({
   }, [items, hasNextPage]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
