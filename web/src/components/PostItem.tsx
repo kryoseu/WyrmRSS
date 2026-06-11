@@ -42,7 +42,11 @@ export function PostItem({ post, to, active, feed }: Props) {
   function handleArchiveToggle(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    post.is_archived ? unarchivePost(post.id) : archivePost(post.id);
+    if (post.is_archived) {
+      unarchivePost(post.id);
+    } else {
+      archivePost(post.id);
+    }
   }
 
   const mailIcon = post.is_read ? <HiMailOpen /> : <HiMail />;

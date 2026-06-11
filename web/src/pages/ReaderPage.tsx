@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Outlet, useLocation, useOutletContext } from "react-router-dom";
 import { ArchiveReader } from "../components/ArchiveReader";
 import { PostReader } from "../components/PostReader";
@@ -19,10 +19,12 @@ export function ReaderPage() {
   const { pathname } = useLocation();
   const isArchive = pathname.startsWith("/archive");
   const [activePostId, setActivePostId] = useState<number | null>(null);
+  const [lastIsArchive, setLastIsArchive] = useState(isArchive);
 
-  useEffect(() => {
+  if (lastIsArchive !== isArchive) {
+    setLastIsArchive(isArchive);
     setActivePostId(null);
-  }, [isArchive]);
+  }
   const [readerWidth, setReaderWidth] = useState(() => Math.round(window.innerWidth * 0.40));
   const dragStart = useRef<{ x: number; width: number } | null>(null);
 
