@@ -119,12 +119,14 @@ export function useUpdatePost() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }: { id: number } & UpdatePost) => updatePost(id, data),
-    onSuccess: (post: Post) => {
+    onSuccess: (post: Post, variables) => {
       const patch = (p: Post) => p.id === post.id ? post : p;
       queryClient.setQueryData(postKeys.detail(post.id), post);
       queryClient.setQueriesData({ queryKey: ["posts", "list"] }, (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.setQueryData(postKeys.byFeed(post.feed_id), (cached: PostPages) => patchPostInPages(cached, patch));
-      queryClient.invalidateQueries({ queryKey: postKeys.favorites });
+      if (variables.is_favorite !== null) {
+        queryClient.invalidateQueries({ queryKey: postKeys.favorites });
+      }
     },
   });
 }
