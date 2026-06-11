@@ -29,7 +29,7 @@ export const postKeys = {
   listed: (tag?: string, search?: string) => ["posts", "list", { tag, search }] as const,
   byFeed: (feedId: number) => ["posts", "feed", feedId] as const,
   favorites: ["posts", "favorites"] as const,
-  archived: ["posts", "archived"] as const,
+  archived: (search?: string, tag?: string) => ["posts", "archived", { search, tag }] as const,
   detail: (id: number) => ["posts", id] as const,
 };
 
@@ -54,10 +54,10 @@ export function useFavoritePosts() {
   });
 }
 
-export function useArchivedPosts() {
+export function useArchivedPosts(search?: string, tag?: string) {
   return useInfiniteQuery({
-    queryKey: postKeys.archived,
-    queryFn: ({ pageParam }) => listArchivedPosts({ page: pageParam }),
+    queryKey: postKeys.archived(search, tag),
+    queryFn: ({ pageParam }) => listArchivedPosts({ page: pageParam, search, tag }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage): string | undefined =>
       lastPage.next_page ?? undefined,
@@ -91,7 +91,7 @@ export function useArchivePost() {
       );
       queryClient.setQueriesData({ queryKey: ["posts", "list"] }, (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.setQueriesData({ queryKey: ["posts", "feed"] }, (cached: PostPages) => patchPostInPages(cached, patch));
-      queryClient.invalidateQueries({ queryKey: postKeys.archived });
+      queryClient.invalidateQueries({ queryKey: ["posts", "archived"] });
     },
   });
 }
@@ -107,7 +107,7 @@ export function useUnarchivePost() {
       );
       queryClient.setQueriesData({ queryKey: ["posts", "list"] }, (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.setQueriesData({ queryKey: ["posts", "feed"] }, (cached: PostPages) => patchPostInPages(cached, patch));
-      queryClient.invalidateQueries({ queryKey: postKeys.archived });
+      queryClient.invalidateQueries({ queryKey: ["posts", "archived"] });
       queryClient.removeQueries({ queryKey: ["posts", "archive", postId] });
     },
   });
