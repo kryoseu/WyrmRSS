@@ -91,6 +91,7 @@ export function useArchivePost() {
       );
       queryClient.setQueriesData({ queryKey: ["posts", "list"] }, (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.setQueriesData({ queryKey: ["posts", "feed"] }, (cached: PostPages) => patchPostInPages(cached, patch));
+      queryClient.setQueriesData({ queryKey: postKeys.favorites }, (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.invalidateQueries({ queryKey: ["posts", "archived"] });
     },
   });
@@ -107,6 +108,7 @@ export function useUnarchivePost() {
       );
       queryClient.setQueriesData({ queryKey: ["posts", "list"] }, (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.setQueriesData({ queryKey: ["posts", "feed"] }, (cached: PostPages) => patchPostInPages(cached, patch));
+      queryClient.setQueriesData({ queryKey: postKeys.favorites }, (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.invalidateQueries({ queryKey: ["posts", "archived"] });
       queryClient.removeQueries({ queryKey: ["posts", "archive", postId] });
     },
