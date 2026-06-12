@@ -1,10 +1,7 @@
 use actix_web::{App, HttpServer, dev::ServerHandle, web};
 use api_utils::context::WyrmContext;
 use database::{models::settings::Settings, utils::settings::RuntimeSettings};
-use std::{
-    net::IpAddr,
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 use tracing::info;
 use wyrm_rss::{
     http::{HttpClient, HttpConfig},
@@ -53,7 +50,7 @@ pub async fn start_server() -> WyrmResult<()> {
     });
 
     info!("Starting up HTTP server");
-    let server_handle = spin_up_http_server(startup_conf.bind, startup_conf.port, ctx)?;
+    let server_handle = spin_up_http_server(startup_conf, ctx)?;
 
     tokio::select! {
         _ = tokio::signal::ctrl_c() => server_handle.stop(true).await
@@ -63,13 +60,15 @@ pub async fn start_server() -> WyrmResult<()> {
 }
 
 fn spin_up_http_server(
-    bind: IpAddr,
-    port: u16,
+    startup_conf: WyrmStartupConfig,
     ctx: web::Data<WyrmContext>,
 ) -> WyrmResult<ServerHandle> {
+    let bind = startup_conf.bind;
+    let port = startup_conf.port;
     let server = HttpServer::new(move || {
         App::new()
             .app_data(ctx.clone())
+            .app_data(web::Data::new(startup_conf.api_key.clone()))
             .configure(api_routes::config)
     })
     .bind((bind, port))

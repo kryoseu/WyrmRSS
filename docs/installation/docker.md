@@ -34,9 +34,10 @@ services:
     container_name: wyrm-rss
     environment:
       # all env vars are optional, these are default values
-      WYRM_PORT: 3001 
+      WYRM_PORT: 3001
       WYRM_DATABASE_CONNECTION: "postgres://wyrm:wyrm@wyrm-db/wyrm"
       WYRM_DATABASE_POOL_SIZE: 30
+      # WYRM_API_KEY: "changeme"  # set to protect the API
     ports:
       - 3001:3001
     volumes:
@@ -52,6 +53,7 @@ services:
     environment:
       WYRM_WEB_PORT: 3000
       WYRM_BACKEND_URL: "http://wyrm-server:3001"
+      # WYRM_API_KEY: "changeme"  # must match the server's WYRM_API_KEY
     ports:
       - 3000:3000
     restart: unless-stopped

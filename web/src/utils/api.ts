@@ -1,5 +1,6 @@
 import type { ListPostArchive } from "../types/ListPostArchive";
 import type { ListPosts } from "../types/ListPosts";
+import { handleUnauthorized } from "./auth";
 
 const BASE = "/api/v1";
 
@@ -48,11 +49,20 @@ export const ENDPOINTS = {
   }
 } as const;
 
+
 export async function json<T>(res: Response): Promise<T> {
+  if (res.status === 401) {
+    handleUnauthorized();
+    throw new Error("Unauthorized");
+  }
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json();
 }
 
 export async function noContent(res: Response): Promise<void> {
+  if (res.status === 401) {
+    handleUnauthorized();
+    throw new Error("Unauthorized");
+  }
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
 }

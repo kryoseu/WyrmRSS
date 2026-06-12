@@ -1,5 +1,4 @@
-port = 3002 # default 3001
-
-[database]
-connection = "postgres://wyrm:wyrm@localhost/wyrm"
-pool_size = 25                                     # default 30
+port = 3002                                                     # default 3001
+# api_key = "secret123!"                                         # optional, protects the API
+database_connection = "postgres://wyrm:wyrm@localhost/wyrm"
+database_pool_size = 25                                         # default 30

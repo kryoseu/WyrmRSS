@@ -56,7 +56,10 @@ Startup settings can be configured via environment variables (prefixed `WYRM_`) 
 | `WYRM_PORT` | `3001` | Port to listen on |
 | `WYRM_DATABASE_CONNECTION` | `postgres://wyrm:wyrm@localhost/wyrm` | PostgreSQL connection URI |
 | `WYRM_DATABASE_POOL_SIZE` | `30` | Max database connection pool size |
-| `RUST_LOG` | `info` | Log level filter (e.g. `debug`, `wyrm=trace`) |
+| `WYRM_API_KEY` | _(none)_ | API key required by clients; unset means the API is open and any key is accepted |
+
+> [!NOTE]
+> Setting `WYRM_API_KEY` on the backend is enough to restrict access. Setting it on the frontend too skips the in-app key prompt. If left unset on the backend, the API is open and any key entered in the prompt will be accepted.
 
 ### Runtime settings
 
@@ -75,7 +78,8 @@ The following settings are stored in the database and can be changed at runtime 
 
 | Variable | Default | Description |
 |---|---|---|
-| `WYRM_BACKEND_URL` | `http://localhost:3001` | Backend URL used by the Vite preview proxy |
+| `WYRM_BACKEND_URL` | `http://localhost:3001` | Backend URL, must match where the backend is running |
+| `WYRM_API_KEY` | _(none)_ | Bake an API key into the frontend build, skipping the key prompt entirely |
 
 ## YouTube
 
