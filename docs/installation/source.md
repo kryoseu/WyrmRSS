@@ -26,13 +26,13 @@ cargo run -p server
 The server reads configuration from `config/wyrm.toml` in the working directory. Copy and edit the example:
 
 ```bash
-cp config/wyrm.toml.example config/wyrm.toml
+cp config/wyrm-example.toml config/wyrm.toml
 ```
 
 Then install dependencies and run the frontend:
 
 ```bash
-export WYRM_BACKEND_URL: "http://localhost:3001"
+export WYRM_BACKEND_URL="http://localhost:3001"
 
 cd web
 pnpm install
@@ -46,10 +46,9 @@ Backend configuration via  `config/wyrm.toml`:
 
 ```toml
 port = 3001
-
-[database]
-connection = "postgres://wyrm:wyrm@localhost/wyrm"
-pool_size = 25      # default 30
+# api_key = "secret123!"
+database_connection = "postgres://wyrm:wyrm@localhost/wyrm"
+database_pool_size = 25      # default 30
 ```
 
 Settings can also be overridden with environment variables prefixed `WYRM_`, e.g. `WYRM_PORT=8080`.

@@ -27,13 +27,14 @@ pub fn run_migrations(
 }
 
 pub fn establish_sync_connection(conf: &WyrmStartupConfig) -> WyrmResult<PgConnection> {
-    let conn = PgConnection::establish(&conf.database.connection)?;
+    let conn = PgConnection::establish(&conf.database_connection)?;
     Ok(conn)
 }
 
 pub async fn create_pool(conf: &WyrmStartupConfig) -> WyrmResult<DatabasePool> {
-    let config = AsyncDieselConnectionManager::<AsyncPgConnection>::new(&conf.database.connection);
+    let config = AsyncDieselConnectionManager::<AsyncPgConnection>::new(&conf.database_connection);
     Pool::builder(config)
+        .max_size(conf.database_pool_size)
         .build()
         .map_err(|e| WyrmError::Database(DatabaseError::PoolBuildError(e)))
 }

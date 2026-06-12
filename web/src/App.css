@@ -1331,3 +1331,59 @@
     font-style: italic;
   }
 }
+
+/* ── API Key Gate ────────────────────────────────────────────── */
+
+.api-key-gate {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  z-index: 1000;
+}
+
+.api-key-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 320px;
+  padding: 28px 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--code-bg);
+
+  h2 {
+    margin: 0;
+    font-size: 0.94rem;
+    font-weight: 600;
+    color: var(--text-h);
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--text);
+    line-height: 1.5;
+
+    &.api-key-error {
+      color: #ef4444;
+    }
+  }
+
+  input {
+    padding: 7px 10px;
+    font-size: 0.78rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-h);
+    font-family: var(--sans);
+
+    &:focus {
+      outline: 2px solid var(--accent-border);
+      border-color: transparent;
+    }
+  }
+}

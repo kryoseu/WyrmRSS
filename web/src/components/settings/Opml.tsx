@@ -2,6 +2,7 @@ import { useState } from "react";
 import { TbDownload } from "react-icons/tb";
 import { useImportOpml } from "../../hooks/useSettings";
 import { ENDPOINTS } from "../../utils/api";
+import { fetchWithAuth } from "../../utils/auth";
 
 export function Opml() {
   const { mutate, isPending, isSuccess, isError } = useImportOpml();
@@ -54,9 +55,22 @@ export function Opml() {
       {isError && <p className="settings-status settings-status-err">Import failed.</p>}
 
       <h2 className="settings-section-title">Export</h2>
-      <a href={ENDPOINTS.settings.export()} download="wyrm.opml" className="btn btn-ghost settings-export-btn">
+      <button
+        className="btn btn-ghost settings-export-btn"
+        onClick={async () => {
+          const res = await fetchWithAuth(ENDPOINTS.settings.export());
+          if (!res.ok) return;
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "wyrm.opml";
+          a.click();
+          URL.revokeObjectURL(url);
+        }}
+      >
         <TbDownload /> Download OPML
-      </a>
+      </button>
     </div>
   );
 }
