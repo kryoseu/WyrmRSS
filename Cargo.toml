@@ -12,7 +12,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.13.0"
+version = "0.13.1"
 edition = "2024"
 description = "A self-hosted RSS reader and aggregator"
 license = "GPL-3.0-only"
