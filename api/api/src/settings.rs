@@ -101,7 +101,7 @@ async fn create_feed(
         FeedInsertForm {
             title,
             url,
-            ttl: 900,
+            ttl: 60,
             tag,
             ..Default::default()
         },

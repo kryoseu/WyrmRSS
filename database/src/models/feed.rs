@@ -16,13 +16,22 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[ts(optional_fields, export)]
 pub struct Feed {
     pub id: i32,
+    /// Human-readable feed name shown in the UI.
     pub title: String,
+    /// URL the feed is fetched from.
     pub url: String,
+    /// Refresh interval in minutes; the feed is polled once this much time has
+    /// elapsed since `last_fetched_at`.
     pub ttl: i32,
+    /// Substrings that exclude a post when matched against its URL.
     pub url_filter: Vec<Option<String>>,
+    /// Timestamp of the last successful poll; `None` until the feed is first fetched.
     pub last_fetched_at: Option<DateTime<Utc>>,
+    /// Timestamp the feed was added.
     pub created_at: DateTime<Utc>,
+    /// Optional label used to group and filter feeds.
     pub tag: Option<String>,
+    /// Hex color associated with `tag` for display.
     pub tag_color: Option<String>,
 }
 
