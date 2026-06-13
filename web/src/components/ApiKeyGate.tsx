@@ -1,19 +1,21 @@
-import { useEffect, useRef, useState } from "react";
-import { clearApiKey, getApiKey, setApiKey, verifyApiKey } from "../utils/auth";
+import { type SubmitEvent, useEffect, useRef, useState } from "react";
+import { setApiKey, verifyApiKey } from "../utils/auth";
 
 export function ApiKeyGate({ children }: { children: React.ReactNode }) {
-  const [show, setShow] = useState(() => !getApiKey());
+  // Assume access until a request comes back 401. utils/api.ts dispatches
+  // "wyrm:unauthorized" on any 401, which locks the gate.
+  const [locked, setLocked] = useState(false);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const handle = () => { clearApiKey(); setShow(true); };
+    const handle = () => setLocked(true);
     window.addEventListener("wyrm:unauthorized", handle);
     return () => window.removeEventListener("wyrm:unauthorized", handle);
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     const key = inputRef.current?.value.trim();
     if (!key) return;
@@ -23,13 +25,13 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
     setLoading(false);
     if (valid) {
       setApiKey(key);
-      setShow(false);
+      setLocked(false);
     } else {
       setError(true);
     }
   }
 
-  if (!show) return <>{children}</>;
+  if (!locked) return <>{children}</>;
 
   return (
     <div className="api-key-gate">
