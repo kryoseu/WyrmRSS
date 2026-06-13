@@ -1,4 +1,4 @@
-use actix_web::{App, HttpServer, dev::ServerHandle, web};
+use actix_web::{App, HttpServer, dev::ServerHandle, middleware::from_fn, web};
 use api_utils::context::WyrmContext;
 use database::{models::settings::Settings, utils::settings::RuntimeSettings};
 use std::sync::{Arc, RwLock};
@@ -10,6 +10,7 @@ use wyrm_rss::{
 use wyrm_utils::{
     config::WyrmStartupConfig,
     error::{DatabaseError, HttpServerError},
+    middleware::api_key_middleware,
     result::WyrmResult,
 };
 
@@ -69,6 +70,7 @@ fn spin_up_http_server(
         App::new()
             .app_data(ctx.clone())
             .app_data(web::Data::new(startup_conf.api_key.clone()))
+            .wrap(from_fn(api_key_middleware))
             .configure(api_routes::config)
     })
     .bind((bind, port))

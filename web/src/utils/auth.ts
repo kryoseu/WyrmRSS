@@ -13,7 +13,7 @@ export function clearApiKey(): void {
 export function fetchWithAuth(url: string, init: RequestInit = {}): Promise<Response> {
   const key = getApiKey();
   const headers = new Headers(init.headers);
-  if (key) headers.set("Authorization", `Bearer ${key}`);
+  if (key) headers.set("x-api-key", `${key}`);
   return fetch(url, { ...init, headers });
 }
 
@@ -24,7 +24,7 @@ export function handleUnauthorized(): void {
 
 export async function verifyApiKey(key: string): Promise<boolean> {
   const res = await fetch("/api/v1/auth/verify", {
-    headers: { "Authorization": `Bearer ${key}` },
+    headers: { "x-api-key": `${key}` },
   });
   return res.ok;
 }
