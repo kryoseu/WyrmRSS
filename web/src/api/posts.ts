@@ -16,8 +16,8 @@ export const getPost = (id: number): Promise<Post> =>
 export const listPostsByFeed = (feedId: number, params: ListPosts): Promise<PagedResponse<Array<Post>>> =>
   fetchWithAuth(ENDPOINTS.posts.listByFeed(feedId, params)).then<PagedResponse<Array<Post>>>(json);
 
-export const listFavoritePosts = (page?: string): Promise<PagedResponse<Array<Post>>> =>
-  fetchWithAuth(ENDPOINTS.posts.listFavorites(page)).then<PagedResponse<Array<Post>>>(json);
+export const listFavoritePosts = (params: ListPosts): Promise<PagedResponse<Array<Post>>> =>
+  fetchWithAuth(ENDPOINTS.posts.listFavorites(params)).then<PagedResponse<Array<Post>>>(json);
 
 export const listArchivedPosts = (params: ListPostArchive): Promise<PagedResponse<Array<PostArchive>>> =>
   fetchWithAuth(ENDPOINTS.posts.listArchived(params)).then<PagedResponse<Array<PostArchive>>>(json);

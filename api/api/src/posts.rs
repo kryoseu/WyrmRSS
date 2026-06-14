@@ -76,6 +76,7 @@ pub async fn list_favorites(
     let page = PostQuery {
         fav_only: true,
         cursor: query.page,
+        search: query.search,
         ..Default::default()
     }
     .list(&ctx.db_pool, page_size)
