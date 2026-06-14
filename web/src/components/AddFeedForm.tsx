@@ -59,7 +59,6 @@ export function AddFeedForm({ onClose }: Props) {
         placeholder="Refresh (min)"
         type="number"
         min={1}
-        required
       />
       <div className="feed-tag-row">
         <input
