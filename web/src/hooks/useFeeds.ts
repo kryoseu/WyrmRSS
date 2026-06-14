@@ -17,13 +17,15 @@ export function useFeeds() {
 
 /** Extracts tags from feeds into a Tag array */
 export function useFeedTags(feeds: Feed[] | undefined): Tag[] {
-  return useMemo(
-    () =>
-      (feeds ?? [])
-        .filter((f) => f.tag !== undefined)
-        .map((f) => ({ name: f.tag!, color: f.tag_color })),
-    [feeds]
-  );
+  return useMemo(() => {
+    const byName = new Map<string, Tag>();
+    for (const f of feeds ?? []) {
+      if (f.tag !== undefined && !byName.has(f.tag)) {
+        byName.set(f.tag, { name: f.tag, color: f.tag_color });
+      }
+    }
+    return [...byName.values()];
+  }, [feeds]);
 }
 
 export function useCreateFeed() {
