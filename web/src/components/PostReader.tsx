@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import YouTube from "react-youtube";
 import { TbArchive, TbArchiveOff, TbStar, TbStarFilled } from "react-icons/tb";
 import { usePost } from "../hooks/usePosts";
-import { useArchivePost, useUnarchivePost, useUpdatePost } from "../hooks/usePostMutations";
+import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostFavorite } from "../hooks/usePostMutations";
 import { useSettings } from "../hooks/useSettings";
 import { extractYouTubeId, formatDate } from "../utils/utils";
 import { ReaderPane } from "./ReaderPane";
@@ -15,7 +15,8 @@ interface Props {
 
 export function PostReader({ postId, onClose, width }: Props) {
   const { data: post, isLoading } = usePost(postId ?? undefined);
-  const { mutate: updatePost } = useUpdatePost();
+  const { mutate: setRead } = useSetPostRead();
+  const { mutate: setFavorite } = useSetPostFavorite();
   const { mutate: archivePost } = useArchivePost();
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
@@ -28,10 +29,10 @@ export function PostReader({ postId, onClose, width }: Props) {
     if (lastSeenPostId.current !== post.id) {
       lastSeenPostId.current = post.id;
       if (!post.is_read && settings?.read_mode === "on_open") {
-        updatePost({ id: post.id, is_read: true, is_favorite: null });
+        setRead({ id: post.id, isRead: true });
       }
     }
-  }, [post, updatePost, settings?.read_mode]);
+  }, [post, setRead, settings?.read_mode]);
 
   if (!postId) return null;
 
@@ -43,7 +44,7 @@ export function PostReader({ postId, onClose, width }: Props) {
     <>
       <button
         className={`pane-reader-fav${post.is_favorite ? " favorited" : ""}`}
-        onClick={() => updatePost({ id: post.id, is_favorite: !post.is_favorite, is_read: null })}
+        onClick={() => setFavorite({ id: post.id, isFavorite: !post.is_favorite })}
         aria-label={post.is_favorite ? "Unfavorite" : "Favorite"}
       >
         {post.is_favorite ? <TbStarFilled /> : <TbStar />}

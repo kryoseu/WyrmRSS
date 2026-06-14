@@ -21,12 +21,12 @@
  *                  is either a `*Prefix` (matches *every* variant of a list,
  *                  e.g. all tag/search combos — used for bulk updates) or a
  *                  function that builds the exact key one query is stored under.
- *  - patch helpers (`patchPostInPages`, `patchPostInLists`) — edit the cached
- *                  copies in place so the UI updates without a request fired.
- *  - intent helpers (`setPostArchived`, `applyPostEdit`) — what the mutation
- *                  hooks actually call; each describes one user action and does
- *                  the right mix of patching (for changed fields) and
- *                  invalidating (when a list gains or loses the post).
+ *  - patch helpers (`patchPostInPages`, `patchPostInLists`, `patchPost`) — edit
+ *                  the cached copies in place so the UI updates without a refetch.
+ *  - actions (`setPostArchived`, `setPostRead`, `setPostFavorite`) — what the
+ *                  mutation hooks call; each is one user action and does the right
+ *                  mix of patching (changed fields) and invalidating (when a list
+ *                  gains or loses the post).
  *
  * Rule of thumb: patch when a post's *fields* change but it stays in the same
  * lists; invalidate (refetch) when a list's *membership* changes, because a
@@ -36,30 +36,34 @@ import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 import type { Post } from "../types/Post";
 import type { PagedResponse } from "../types/PagedResponse";
 
+// ─── Cache keys ───
+// Every query key in one place. A `*Prefix` is a partial key matching a whole
+// group at once — e.g. favoritesPrefix = ["posts","favorites"] hits every
+// favorites query. A builder fills in the filters for the one exact key a query
+// uses — e.g. favorites("rust") = ["posts","favorites",{ search:"rust" }].
 export const postKeys = {
   all: ["posts"] as const,
 
-  // Prefixes match every variant of a list (any tag/search) for bulk cache updates;
-  // the functions below build the exact key a given query is cached under.
   listPrefix: ["posts", "list"] as const,
-  listed: (tag?: string, search?: string) => ["posts", "list", { tag, search }] as const,
+  listed: (tag?: string, search?: string) => [...postKeys.listPrefix, { tag, search }] as const,
 
   feedPrefix: ["posts", "feed"] as const,
-  byFeed: (feedId: number) => ["posts", "feed", feedId] as const,
+  byFeed: (feedId: number) => [...postKeys.feedPrefix, feedId] as const,
 
   favoritesPrefix: ["posts", "favorites"] as const,
-  favorites: (search?: string) => ["posts", "favorites", { search }] as const,
+  favorites: (search?: string) => [...postKeys.favoritesPrefix, { search }] as const,
 
   archivedPrefix: ["posts", "archived"] as const,
-  archived: (search?: string, tag?: string) => ["posts", "archived", { search, tag }] as const,
+  archived: (search?: string, tag?: string) => [...postKeys.archivedPrefix, { search, tag }] as const,
 
-  detail: (id: number) => ["posts", id] as const,
-  archiveDetail: (id: number) => ["posts", "archive", id] as const,
+  detail: (id: number) => [...postKeys.all, id] as const,
+  archiveDetail: (id: number) => [...postKeys.all, "archive", id] as const,
 };
 
-export type PostPages = InfiniteData<PagedResponse<Post[]>> | undefined;
+// ─── Cache writers (internal functions) ───
+type PostPages = InfiniteData<PagedResponse<Post[]>> | undefined;
 
-export function patchPostInPages(cached: PostPages, patch: (post: Post) => Post): PostPages {
+function patchPostInPages(cached: PostPages, patch: (post: Post) => Post): PostPages {
   if (!cached) return cached;
   return {
     ...cached,
@@ -79,13 +83,19 @@ function patchPostInLists(queryClient: QueryClient, postId: number, changes: Par
   }
 }
 
-// Reflects an archive/unarchive in the cache: flips is_archived everywhere the
-// post is cached, and refreshes the archived list.
-export function setPostArchived(queryClient: QueryClient, postId: number, isArchived: boolean) {
+// Apply field changes to a post wherever it's cached — its detail entry and every list.
+function patchPost(queryClient: QueryClient, postId: number, changes: Partial<Post>) {
   queryClient.setQueryData(postKeys.detail(postId), (cached: Post | undefined) =>
-    cached ? { ...cached, is_archived: isArchived } : cached,
+    cached ? { ...cached, ...changes } : cached,
   );
-  patchPostInLists(queryClient, postId, { is_archived: isArchived });
+  patchPostInLists(queryClient, postId, changes);
+}
+
+// ─── Actions (called by the mutation hooks) ───
+
+// Archiving/unarchiving also changes the archived list's membership.
+export function setPostArchived(queryClient: QueryClient, postId: number, isArchived: boolean) {
+  patchPost(queryClient, postId, { is_archived: isArchived });
   queryClient.invalidateQueries({ queryKey: postKeys.archivedPrefix });
 
   // a cached single archived-post is only valid while it's archived
@@ -94,15 +104,13 @@ export function setPostArchived(queryClient: QueryClient, postId: number, isArch
   }
 }
 
-// Reflects an edited post (title/read/favorite) across every list it appears in
-// — all-posts, by-feed, and favorites.
-export function applyPostEdit(queryClient: QueryClient, post: Post, favoriteChanged: boolean) {
-  queryClient.setQueryData(postKeys.detail(post.id), post);
-  patchPostInLists(queryClient, post.id, post);
+// Read is a field-only change — patch in place; nothing joins or leaves a list.
+export function setPostRead(queryClient: QueryClient, postId: number, isRead: boolean) {
+  patchPost(queryClient, postId, { is_read: isRead });
+}
 
-  // Favoriting adds the post to the favorites list; unfavoriting removes it.
-  // Patching only updates rows already there, so refetch to add/drop the post.
-  if (favoriteChanged) {
-    queryClient.invalidateQueries({ queryKey: postKeys.favoritesPrefix });
-  }
+// Favoriting also changes the favorites list's membership, so refetch it.
+export function setPostFavorite(queryClient: QueryClient, postId: number, isFavorite: boolean) {
+  patchPost(queryClient, postId, { is_favorite: isFavorite });
+  queryClient.invalidateQueries({ queryKey: postKeys.favoritesPrefix });
 }
