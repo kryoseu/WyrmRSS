@@ -30,8 +30,8 @@ export const ENDPOINTS = {
     listByFeed: (feedId: number, { page, search }: ListPosts) =>
       buildUrl(`${BASE}/feeds/${feedId}/posts`, { page, search }),
 
-    listFavorites: (page?: string) =>
-      buildUrl(`${BASE}/posts/favorites`, { page }),
+    listFavorites: ({ page, search }: ListPosts) =>
+      buildUrl(`${BASE}/posts/favorites`, { page, search }),
 
     listArchived: ({ page, tag, search }: ListPostArchive) =>
       buildUrl(`${BASE}/posts/archive`, { page, tag, search }),

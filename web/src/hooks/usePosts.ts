@@ -28,7 +28,7 @@ export const postKeys = {
   all: ["posts"] as const,
   listed: (tag?: string, search?: string) => ["posts", "list", { tag, search }] as const,
   byFeed: (feedId: number) => ["posts", "feed", feedId] as const,
-  favorites: ["posts", "favorites"] as const,
+  favorites: (search?: string) => ["posts", "favorites", { search }] as const,
   archived: (search?: string, tag?: string) => ["posts", "archived", { search, tag }] as const,
   detail: (id: number) => ["posts", id] as const,
 };
@@ -44,10 +44,10 @@ export function usePosts(feedId?: number, tag?: string, search?: string) {
   });
 }
 
-export function useFavoritePosts() {
+export function useFavoritePosts(search?: string) {
   return useInfiniteQuery({
-    queryKey: postKeys.favorites,
-    queryFn: ({ pageParam }) => listFavoritePosts(pageParam),
+    queryKey: postKeys.favorites(search),
+    queryFn: ({ pageParam }) => listFavoritePosts({ page: pageParam, search }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage): string | undefined =>
       lastPage.next_page ?? undefined,
@@ -91,7 +91,7 @@ export function useArchivePost() {
       );
       queryClient.setQueriesData({ queryKey: ["posts", "list"] }, (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.setQueriesData({ queryKey: ["posts", "feed"] }, (cached: PostPages) => patchPostInPages(cached, patch));
-      queryClient.setQueriesData({ queryKey: postKeys.favorites }, (cached: PostPages) => patchPostInPages(cached, patch));
+      queryClient.setQueriesData({ queryKey: ["posts", "favorites"] }, (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.invalidateQueries({ queryKey: ["posts", "archived"] });
     },
   });
@@ -108,7 +108,7 @@ export function useUnarchivePost() {
       );
       queryClient.setQueriesData({ queryKey: ["posts", "list"] }, (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.setQueriesData({ queryKey: ["posts", "feed"] }, (cached: PostPages) => patchPostInPages(cached, patch));
-      queryClient.setQueriesData({ queryKey: postKeys.favorites }, (cached: PostPages) => patchPostInPages(cached, patch));
+      queryClient.setQueriesData({ queryKey: ["posts", "favorites"] }, (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.invalidateQueries({ queryKey: ["posts", "archived"] });
       queryClient.removeQueries({ queryKey: ["posts", "archive", postId] });
     },
@@ -125,7 +125,7 @@ export function useUpdatePost() {
       queryClient.setQueriesData({ queryKey: ["posts", "list"] }, (cached: PostPages) => patchPostInPages(cached, patch));
       queryClient.setQueryData(postKeys.byFeed(post.feed_id), (cached: PostPages) => patchPostInPages(cached, patch));
       if (variables.is_favorite !== null) {
-        queryClient.invalidateQueries({ queryKey: postKeys.favorites });
+        queryClient.invalidateQueries({ queryKey: ["posts", "favorites"] });
       }
     },
   });
