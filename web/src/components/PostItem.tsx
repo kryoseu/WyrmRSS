@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { HiMail, HiMailOpen } from "react-icons/hi";
 import { TbArchive, TbArchiveOff, TbStar, TbStarFilled } from "react-icons/tb";
 import type { Post } from "../types/Post";
-import { useArchivePost, useUnarchivePost, useUpdatePost } from "../hooks/usePostMutations";
+import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostFavorite } from "../hooks/usePostMutations";
 import { useSettings } from "../hooks/useSettings";
 import { initials } from "../utils/posts";
 
@@ -21,7 +21,8 @@ interface Props {
 }
 
 export const PostItem = memo(function PostItem({ post, to, active, feed }: Props) {
-  const { mutate: updatePost } = useUpdatePost();
+  const { mutate: setRead } = useSetPostRead();
+  const { mutate: setFavorite } = useSetPostFavorite();
   const { mutate: archivePost } = useArchivePost();
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
@@ -31,13 +32,13 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   function handleReadToggle(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    updatePost({ id: post.id, is_read: !post.is_read, is_favorite: null });
+    setRead({ id: post.id, isRead: !post.is_read });
   }
 
   function handleFavToggle(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    updatePost({ id: post.id, is_favorite: !post.is_favorite, is_read: null });
+    setFavorite({ id: post.id, isFavorite: !post.is_favorite });
   }
 
   function handleArchiveToggle(e: React.MouseEvent) {

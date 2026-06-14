@@ -9,15 +9,14 @@
  * the already-rendered lists in sync after an action.
  *
  * The actual cache reconciliation lives in `cache/posts.ts` (`setPostArchived`,
- * `applyPostEdit`); see that file for the patch-vs-invalidate logic. In
+ * `setPostRead`, `setPostFavorite`); see that file for the patch-vs-invalidate logic. In
  * short: a field change (e.g. mark-as-read) patches the cached rows in place,
  * while a change to which list a post belongs to (e.g. (un)favorite) invalidates
  * that list so the subscribed hook refetches and the row appears/disappears.
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { archivePost, unarchivePost, updatePost } from "../api/posts";
-import type { UpdatePost } from "../types/UpdatePost";
-import { setPostArchived, applyPostEdit } from "../cache/posts";
+import { setPostArchived, setPostRead, setPostFavorite } from "../cache/posts";
 
 export function useArchivePost() {
   const queryClient = useQueryClient();
@@ -35,12 +34,20 @@ export function useUnarchivePost() {
   });
 }
 
-export function useUpdatePost() {
+export function useSetPostRead() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number } & UpdatePost) => updatePost(id, data),
-    // is_favorite is null when this edit didn't touch the favorite flag (e.g. a
-    // read toggle); a non-null value means the user (un)favorited the post.
-    onSuccess: (post, variables) => applyPostEdit(queryClient, post, variables.is_favorite !== null),
+    mutationFn: ({ id, isRead }: { id: number; isRead: boolean }) =>
+      updatePost(id, { is_read: isRead, is_favorite: null }),
+    onSuccess: (post) => setPostRead(queryClient, post.id, post.is_read),
+  });
+}
+
+export function useSetPostFavorite() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isFavorite }: { id: number; isFavorite: boolean }) =>
+      updatePost(id, { is_favorite: isFavorite, is_read: null }),
+    onSuccess: (post) => setPostFavorite(queryClient, post.id, post.is_favorite),
   });
 }
