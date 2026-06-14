@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import { TbArchiveOff } from "react-icons/tb";
 import type { PostArchive } from "../types/PostArchive";
-import { useUnarchivePost } from "../hooks/usePosts";
+import { useUnarchivePost } from "../hooks/usePostMutations";
 
 interface Props {
   archive: PostArchive;

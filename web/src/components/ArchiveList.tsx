@@ -1,75 +1,47 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
-import { useArchivedPosts } from "../hooks/usePosts";
+import { useArchivedPosts, useArchiveTags } from "../hooks/usePosts";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
+import { useOpenPostFromRoute } from "../hooks/useOpenPostFromRoute";
+import { useFlattenedPages } from "../hooks/useFlattenedPages";
 import { ArchiveItem } from "./ArchiveItem";
+import { PostsToolbar } from "./PostsToolbar";
+import { PostsTagChips } from "./PostsTagChips";
 import { VirtualGroupedList } from "./VirtualGroupedList";
 import type { ReaderOutletContext } from "../pages/ReaderPage";
 
 export function ArchiveList() {
   const { activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
+
   const { postId } = useParams();
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeTag, setActiveTag] = useState<string | undefined>(undefined);
 
-  // Delay search query until the user stops typing
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => clearTimeout(timer);
-  }, [search]);
+  const { search, setSearch, debouncedSearch } = useDebouncedSearch();
 
-  // Data kept in cache for tag chip discovery.
-  // PostList doesn't need this because tags are derived from feeds.
-  const { data: cachedData } = useArchivedPosts();
-  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useArchivedPosts(debouncedSearch || undefined, activeTag);
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage
+  } = useArchivedPosts({ tag: activeTag, search: debouncedSearch || undefined });
 
-  useEffect(() => {
-    if (postId) onOpenPost(Number(postId));
-  }, [postId, onOpenPost]);
+  useOpenPostFromRoute(postId, onOpenPost);
 
-  const items = useMemo(
-    () => data?.pages.flatMap((p) => p.items),
-    [data]
-  );
-
-  const { tagMap, tagKeys } = useMemo(() => {
-    const tagMap = new Map<string, string | undefined>();
-    for (const page of cachedData?.pages ?? []) {
-      for (const item of page.items) {
-        if (item.tag) tagMap.set(item.tag, item.tag_color ?? undefined);
-      }
-    }
-    return { tagMap, tagKeys: [...tagMap.keys()] };
-  }, [cachedData]);
+  const archives = useFlattenedPages(data);
+  const tags = useArchiveTags();
 
   return (
     <div className="pane pane-posts">
-      <div className="posts-toolbar">
-        <input
-          className="posts-search"
-          placeholder="Search archive…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-      {tagKeys.length > 0 && (
-        <div className="posts-tags">
-          {tagKeys.map((tag) => (
-            <button
-              key={tag}
-              className={`posts-tag-chip${activeTag === tag ? " active" : ""}`}
-              style={{ "--tag-color": tagMap.get(tag) ?? "var(--text)" } as React.CSSProperties}
-              onClick={() => setActiveTag((prev) => (prev === tag ? undefined : tag))}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
-      )}
+      <PostsToolbar value={search} onChange={setSearch} placeholder="Search archive…" />
+      <PostsTagChips
+        tags={tags}
+        activeTag={activeTag}
+        onToggle={(tag) => setActiveTag((prev) => (prev === tag ? undefined : tag))}
+      />
       <VirtualGroupedList
-        items={items}
+        items={archives}
         isLoading={isLoading}
         hasNextPage={hasNextPage}
         fetchNextPage={fetchNextPage}

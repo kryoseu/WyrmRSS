@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { HiMail, HiMailOpen } from "react-icons/hi";
 import { TbArchive, TbArchiveOff, TbStar, TbStarFilled } from "react-icons/tb";
 import type { Post } from "../types/Post";
-import { useArchivePost, useUnarchivePost, useUpdatePost } from "../hooks/usePosts";
+import { useArchivePost, useUnarchivePost, useUpdatePost } from "../hooks/usePostMutations";
 import { useSettings } from "../hooks/useSettings";
 import { initials } from "../utils/posts";
 

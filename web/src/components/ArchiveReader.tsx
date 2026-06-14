@@ -1,5 +1,6 @@
 import { TbArchiveOff } from "react-icons/tb";
-import { useArchivedPost, useUnarchivePost } from "../hooks/usePosts";
+import { useArchivedPost } from "../hooks/usePosts";
+import { useUnarchivePost } from "../hooks/usePostMutations";
 import { formatDate } from "../utils/utils";
 import { ReaderPane } from "./ReaderPane";
 
