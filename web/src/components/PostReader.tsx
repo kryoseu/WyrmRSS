@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import YouTube from "react-youtube";
 import { TbArchive, TbArchiveOff, TbStar, TbStarFilled } from "react-icons/tb";
-import { useArchivePost, usePost, useUnarchivePost, useUpdatePost } from "../hooks/usePosts";
+import { usePost } from "../hooks/usePosts";
+import { useArchivePost, useUnarchivePost, useUpdatePost } from "../hooks/usePostMutations";
 import { useSettings } from "../hooks/useSettings";
 import { extractYouTubeId, formatDate } from "../utils/utils";
 import { ReaderPane } from "./ReaderPane";

@@ -1,8 +1,11 @@
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFeed, deleteFeed, getFeeds, pollFeeds, updateFeed } from "../api/feeds";
-import { postKeys } from "./usePosts";
+import { postKeys } from "../cache/posts";
 import type { CreateFeed } from "../types/CreateFeed";
 import type { UpdateFeed } from "../types/UpdateFeed";
+import type { Feed } from "../types/Feed";
+import type { Tag } from "../components/PostsTagChips";
 
 export const feedKeys = {
   all: ["feeds"] as const,
@@ -10,6 +13,17 @@ export const feedKeys = {
 
 export function useFeeds() {
   return useQuery({ queryKey: feedKeys.all, queryFn: getFeeds });
+}
+
+/** Extracts tags from feeds into a Tag array */
+export function useFeedTags(feeds: Feed[] | undefined): Tag[] {
+  return useMemo(
+    () =>
+      (feeds ?? [])
+        .filter((f) => f.tag !== undefined)
+        .map((f) => ({ name: f.tag!, color: f.tag_color })),
+    [feeds]
+  );
 }
 
 export function useCreateFeed() {

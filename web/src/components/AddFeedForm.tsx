@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { useCreateFeed } from "../hooks/useFeeds";
 
 interface Props {
@@ -22,7 +22,7 @@ export function AddFeedForm({ onClose }: Props) {
     setUrlFilters(urlFilters.filter((_, i) => i !== index));
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     create.mutate(
       {
