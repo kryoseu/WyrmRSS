@@ -10,7 +10,7 @@ use database::{
 };
 use futures::future::join_all;
 use std::sync::{Arc, RwLock};
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::{Semaphore, mpsc::Receiver};
 use tracing::{error, info};
 use wyrm_utils::result::WyrmResult;
 
@@ -85,12 +85,19 @@ impl FeedWorker {
 
         info!("Processing {} due feeds", due_feeds.len());
 
+        // Each in-flight feed holds ~1 pool connection. Reserve headroom so polling
+        // can never starve the API handlers of the shared pool.
+        let permits = (self.db_pool.status().max_size / 2).max(1);
+        let semaphore = Arc::new(Semaphore::new(permits));
+
         let tasks: Vec<_> = due_feeds
             .into_iter()
             .map(|feed| {
                 let http = self.http.clone();
                 let pool = self.db_pool.clone();
+                let semaphore = semaphore.clone();
                 tokio::spawn(async move {
+                    let _permit = semaphore.acquire().await.unwrap();
                     if let Err(e) = process_feed(&http, &pool, &feed).await {
                         error!("Failed to process feed {}: {e}", feed.url);
                     }
@@ -102,8 +109,6 @@ impl FeedWorker {
 
         Ok(())
     }
-
-    // async fn fetch_feed(&self, feed: Feed) -> WyrmResult<()> { ... }
 }
 
 /// Fetch -> Parse -> Store -> Update
@@ -114,23 +119,22 @@ async fn process_feed(http: &HttpClient, pool: &DatabasePool, feed: &Feed) -> Wy
 
     let parsed = feed_rs::parser::parse(&bytes[..])?;
 
-    for entry in parsed.entries {
-        let url = entry.links.first().map(|l| l.href.as_str()).unwrap_or("");
+    let forms: Vec<PostInsertForm> = parsed
+        .entries
+        .into_iter()
+        .filter(|entry| {
+            let url = entry.links.first().map(|l| l.href.as_str()).unwrap_or("");
+            !feed
+                .url_filter
+                .iter()
+                .filter_map(|f| f.as_deref())
+                .any(|f| url.contains(f))
+        })
+        .map(|entry| PostInsertForm::from_entry(entry, feed.id))
+        .collect();
 
-        let filtered = feed
-            .url_filter
-            .iter()
-            .filter_map(|f| f.as_deref())
-            .any(|f| url.contains(f));
-
-        if filtered {
-            continue;
-        }
-
-        if let Err(e) = Post::create(pool, PostInsertForm::from_entry(entry, feed.id)).await {
-            error!("Failed to insert post: {e}");
-        }
-    }
+    let inserted = Post::create_many(pool, forms).await?;
+    info!("Inserted {inserted} new posts for feed {}", feed.title);
 
     Feed::update(
         pool,
