@@ -162,7 +162,50 @@ impl PostInsertForm {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{models::feed::Feed, setup_test_db};
     use feed_rs::parser;
+
+    macro_rules! unique {
+        () => {
+            Utc::now()
+                .timestamp_nanos_opt()
+                .expect("timestamp in range")
+        };
+    }
+
+    /// A minimal insertable post with the given url.
+    macro_rules! post_form {
+        ($feed_id:expr, $url:expr) => {
+            PostInsertForm {
+                feed_id: $feed_id,
+                title: Some("test post".to_string()),
+                url: Some($url.to_string()),
+                authors: None,
+                published_at: Some(Utc::now()),
+                updated_at: None,
+                description: None,
+                content: None,
+            }
+        };
+    }
+
+    /// Creates a feed for a test to attach posts to; returns the `Feed`. Delete
+    /// it with `Feed::delete` to clean up (cascades to its posts).
+    macro_rules! test_feed {
+        ($pool:expr) => {
+            Feed::create(
+                $pool,
+                crate::models::feed::FeedInsertForm {
+                    title: "test feed".to_string(),
+                    url: format!("https://example.com/feed/{}", unique!()),
+                    ttl: 60,
+                    ..Default::default()
+                },
+            )
+            .await
+            .expect("should create test feed")
+        };
+    }
 
     fn atom_entry(entry_body: &str) -> Entry {
         let xml = format!(
@@ -206,6 +249,187 @@ mod tests {
             form.published_at,
             Some("2026-01-02T03:04:05Z".parse::<DateTime<Utc>>().unwrap()),
         );
+    }
+
+    #[tokio::test]
+    async fn get_returns_created_post() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+        let url = format!("https://example.com/post/{}", unique!());
+
+        Post::create(
+            &pool,
+            PostInsertForm {
+                feed_id: feed.id,
+                title: Some("Get Me".to_string()),
+                url: Some(url.clone()),
+                authors: None,
+                published_at: Some("2026-01-02T03:04:05Z".parse::<DateTime<Utc>>().unwrap()),
+                updated_at: None,
+                description: Some("A description.".to_string()),
+                content: Some("Body.".to_string()),
+            },
+        )
+        .await
+        .expect("should create post");
+
+        let id: i32 = {
+            let mut conn = pool.get().await.expect("should get conn");
+            posts::table
+                .filter(posts::feed_id.eq(feed.id))
+                .filter(posts::url.eq(&url))
+                .select(posts::id)
+                .first(&mut conn)
+                .await
+                .expect("post should exist")
+        };
+        let got = Post::get(&pool, id).await.expect("get should succeed");
+
+        assert_eq!(got.id, id);
+        assert_eq!(got.feed_id, feed.id);
+        assert_eq!(got.title.as_deref(), Some("Get Me"));
+        assert_eq!(got.url.as_deref(), Some(url.as_str()));
+        assert_eq!(got.description.as_deref(), Some("A description."));
+        assert_eq!(got.content.as_deref(), Some("Body."));
+        assert!(!got.is_read);
+        assert!(!got.is_favorite);
+        assert!(!got.is_archived);
+
+        // Deleting the feed cascades to the post, so a follow-up get fails.
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
+        assert!(Post::get(&pool, id).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn create_inserts_and_skips_conflicts() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+        let url = format!("https://example.com/post/{}", unique!());
+
+        Post::create(&pool, post_form!(feed.id, &url))
+            .await
+            .expect("first insert should succeed");
+        // Same (feed_id, url) hits ON CONFLICT DO NOTHING: no error, no dup.
+        Post::create(&pool, post_form!(feed.id, &url))
+            .await
+            .expect("conflicting insert should be a no-op");
+
+        let count: i64 = {
+            let mut conn = pool.get().await.expect("should get conn");
+            posts::table
+                .filter(posts::feed_id.eq(feed.id))
+                .count()
+                .get_result(&mut conn)
+                .await
+                .expect("should count posts")
+        };
+        assert_eq!(count, 1);
+
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
+    }
+
+    #[tokio::test]
+    async fn create_many_inserts_batch_and_skips_conflicts() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+
+        // Empty input is a no-op.
+        assert_eq!(Post::create_many(&pool, vec![]).await.unwrap(), 0);
+
+        let urls: Vec<String> = (0..3)
+            .map(|i| format!("https://example.com/post/{}-{i}", unique!()))
+            .collect();
+        let forms: Vec<PostInsertForm> = urls.iter().map(|u| post_form!(feed.id, u)).collect();
+        assert_eq!(Post::create_many(&pool, forms).await.unwrap(), 3);
+
+        // Re-inserting the same urls all conflict, so nothing new is inserted.
+        let dups: Vec<PostInsertForm> = urls.iter().map(|u| post_form!(feed.id, u)).collect();
+        assert_eq!(Post::create_many(&pool, dups).await.unwrap(), 0);
+
+        let count: i64 = {
+            let mut conn = pool.get().await.expect("should get conn");
+            posts::table
+                .filter(posts::feed_id.eq(feed.id))
+                .count()
+                .get_result(&mut conn)
+                .await
+                .expect("should count posts")
+        };
+        assert_eq!(count, 3);
+
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
+    }
+
+    #[tokio::test]
+    async fn update_changes_flags() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+        let url = format!("https://example.com/post/{}", unique!());
+        Post::create(&pool, post_form!(feed.id, &url))
+            .await
+            .expect("should create test post");
+        let id: i32 = {
+            let mut conn = pool.get().await.expect("should get conn");
+            posts::table
+                .filter(posts::feed_id.eq(feed.id))
+                .filter(posts::url.eq(&url))
+                .select(posts::id)
+                .first(&mut conn)
+                .await
+                .expect("post should exist")
+        };
+
+        let updated = Post::update(
+            &pool,
+            PostUpdateForm {
+                id,
+                is_favorite: Some(true),
+                is_read: Some(true),
+            },
+        )
+        .await
+        .expect("update should succeed");
+
+        assert!(updated.is_favorite);
+        assert!(updated.is_read);
+
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
+    }
+
+    #[tokio::test]
+    async fn toggle_is_read_flips_value() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+        let url = format!("https://example.com/post/{}", unique!());
+        Post::create(&pool, post_form!(feed.id, &url))
+            .await
+            .expect("should create test post");
+        let id: i32 = {
+            let mut conn = pool.get().await.expect("should get conn");
+            posts::table
+                .filter(posts::feed_id.eq(feed.id))
+                .filter(posts::url.eq(&url))
+                .select(posts::id)
+                .first(&mut conn)
+                .await
+                .expect("post should exist")
+        };
+
+        // Defaults to false: first toggle -> true, second -> false.
+        assert!(Post::toggle_is_read(&pool, id).await.unwrap().is_read);
+        assert!(!Post::toggle_is_read(&pool, id).await.unwrap().is_read);
+
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
     }
 
     #[test]
