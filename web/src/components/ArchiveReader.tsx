@@ -3,6 +3,7 @@ import { useArchivedPost } from "../hooks/usePosts";
 import { useUnarchivePost } from "../hooks/usePostMutations";
 import { formatDate } from "../utils/utils";
 import { ReaderPane } from "./ReaderPane";
+import { SanitizedHtml } from "./SanitizedHtml";
 
 interface Props {
   postId: number | null;
@@ -44,7 +45,7 @@ export function ArchiveReader({ postId, onClose, width }: Props) {
             )}
           </div>
           {body && (
-            <div className="post-reader-body" dangerouslySetInnerHTML={{ __html: body }} />
+            <SanitizedHtml className="post-reader-body" html={body} />
           )}
         </div>
       )}

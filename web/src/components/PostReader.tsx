@@ -6,6 +6,7 @@ import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostFavorite } 
 import { useSettings } from "../hooks/useSettings";
 import { extractYouTubeId, formatDate } from "../utils/utils";
 import { ReaderPane } from "./ReaderPane";
+import { SanitizedHtml } from "./SanitizedHtml";
 
 interface Props {
   postId: number | null;
@@ -79,7 +80,7 @@ export function PostReader({ postId, onClose, width }: Props) {
             </div>
           )}
           {body && !youtubeId && (
-            <div className="post-reader-body" dangerouslySetInnerHTML={{ __html: body }} />
+            <SanitizedHtml className="post-reader-body" html={body} />
           )}
           {body && youtubeId && (
             <p className="post-reader-body" style={{ whiteSpace: "pre-wrap" }}>{body}</p>
