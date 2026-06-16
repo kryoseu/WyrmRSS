@@ -67,10 +67,7 @@ impl FeedWorker {
                             }
                             let _ = reply.send(());
                         }
-                        WorkerCommand::Reconfigure => {
-                            let rs = self.runtime_settings.read()?;
-                            self.http = HttpClient::new(&HttpConfig::from(&*rs))?;
-                        }
+                        WorkerCommand::Reconfigure => {}  // interrupts the sleep; interval re-read at loop top
                     }
                 }
             }
@@ -84,6 +81,10 @@ impl FeedWorker {
         let due_feeds: Vec<Feed> = feeds.into_iter().filter(|f| f.is_due()).collect();
 
         info!("Processing {} due feeds", due_feeds.len());
+
+        // Re-configure the http client from in-memory runtime settings
+        // as settings may have been updated.
+        self.http = HttpClient::new(&HttpConfig::from(&*self.runtime_settings.read()?))?;
 
         // Each in-flight feed holds ~1 pool connection. Reserve headroom so polling
         // can never starve the API handlers of the shared pool.
