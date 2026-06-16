@@ -102,11 +102,33 @@ impl From<diesel::result::Error> for WyrmError {
     }
 }
 
+impl WyrmError {
+    /// A safe, client-facing message. Server faults collapse to a generic
+    /// string so internal diesel/pool detail never reaches the response body;
+    /// client errors expose only curated text.
+    fn client_message(&self) -> &str {
+        match self {
+            WyrmError::Database(DatabaseError::NotFound) => "not found",
+            WyrmError::Database(DatabaseError::Conflict(msg)) => msg,
+            WyrmError::Database(DatabaseError::UniqueViolation(_)) => "conflict",
+            WyrmError::XmlDeserializeError(_) => "invalid request body",
+            _ => "internal server error",
+        }
+    }
+}
+
 impl error::ResponseError for WyrmError {
     fn error_response(&self) -> HttpResponse {
-        tracing::error!("{}", self);
-        let body = serde_json::json!({ "error": self.to_string() }).to_string();
-        HttpResponse::build(self.status_code())
+        let status = self.status_code();
+        // Log the full internal error for server faults; client errors
+        // (404/409/400) are expected, so keep them at debug to avoid noise.
+        if status.is_server_error() {
+            tracing::error!("{self}");
+        } else {
+            tracing::debug!("{self}");
+        }
+        let body = serde_json::json!({ "error": self.client_message() }).to_string();
+        HttpResponse::build(status)
             .insert_header(ContentType::json())
             .body(body)
     }
