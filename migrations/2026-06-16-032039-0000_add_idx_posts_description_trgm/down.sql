@@ -1,0 +1,1 @@
+DROP INDEX idx_posts_description_trgm;
