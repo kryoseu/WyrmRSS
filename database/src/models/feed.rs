@@ -118,3 +118,109 @@ pub struct FeedUpdateForm {
     pub url_filter: Option<Vec<Option<String>>>,
     pub last_fetched_at: Option<DateTime<Utc>>,
 }
+
+/// Test helper: inserts a feed with a unique url and returns the `Feed`. Lives
+/// here (with the `Feed` model) and is shared with the post tests via
+/// `#[macro_use]` on this module in `models/mod.rs`. Delete the feed to clean
+/// up (the cascade removes any posts attached to it).
+#[cfg(test)]
+macro_rules! test_feed {
+    ($pool:expr) => {
+        $crate::models::feed::Feed::create(
+            $pool,
+            $crate::models::feed::FeedInsertForm {
+                title: "test feed".to_string(),
+                url: format!(
+                    "https://example.com/feed/{}",
+                    chrono::Utc::now()
+                        .timestamp_nanos_opt()
+                        .expect("timestamp in range")
+                ),
+                ttl: 60,
+                ..Default::default()
+            },
+        )
+        .await
+        .expect("should create test feed")
+    };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::setup_test_db;
+
+    #[tokio::test]
+    async fn create_then_get_roundtrips() {
+        let pool = setup_test_db().await;
+        let created = test_feed!(&pool);
+
+        let got = Feed::get(&pool, created.id)
+            .await
+            .expect("get should succeed");
+        assert_eq!(got.id, created.id);
+        assert_eq!(got.url, created.url);
+        assert_eq!(got.ttl, created.ttl);
+
+        Feed::delete(&pool, created.id)
+            .await
+            .expect("should delete feed");
+    }
+
+    #[tokio::test]
+    async fn update_changes_given_fields() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+
+        let updated = Feed::update(
+            &pool,
+            FeedUpdateForm {
+                id: feed.id,
+                title: Some("Renamed".to_string()),
+                url: None,
+                ttl: Some(120),
+                tag: Some("news".to_string()),
+                tag_color: None,
+                url_filter: None,
+                last_fetched_at: None,
+            },
+        )
+        .await
+        .expect("update should succeed");
+
+        assert_eq!(updated.title, "Renamed");
+        assert_eq!(updated.ttl, 120);
+        assert_eq!(updated.tag.as_deref(), Some("news"));
+        // A `None` field is left unchanged.
+        assert_eq!(updated.url, feed.url);
+
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
+    }
+
+    #[tokio::test]
+    async fn delete_returns_and_removes_feed() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+
+        let deleted = Feed::delete(&pool, feed.id)
+            .await
+            .expect("delete should succeed");
+        assert_eq!(deleted.id, feed.id);
+        assert!(Feed::get(&pool, feed.id).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn get_all_includes_created_feed() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+
+        let all = Feed::get_all(&pool).await.expect("get_all should succeed");
+        assert!(all.iter().any(|f| f.id == feed.id));
+
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
+    }
+}

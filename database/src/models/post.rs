@@ -15,18 +15,36 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[diesel(check_for_backend(diesel::pg::Pg))]
 #[derive(ts_rs::TS)]
 #[ts(optional_fields, export)]
+/// A single entry fetched from a feed.
 pub struct Post {
+    /// Primary key.
     pub id: i32,
+    /// The feed this post belongs to; the row is removed when that feed is
+    /// deleted (`ON DELETE CASCADE`).
     pub feed_id: i32,
+    /// Post title, or `None` if the feed entry has none.
     pub title: Option<String>,
+    /// Link to the original post. Forms the `(feed_id, url)` uniqueness
+    /// constraint used to dedupe on re-fetch.
     pub url: Option<String>,
+    /// Comma-separated author list, each formatted as `name (email)` (or just
+    /// `name`); `None` if the entry lists no authors.
     pub authors: Option<String>,
+    /// When the entry was published; defaults to insertion time if the feed
+    /// omits it.
     pub published_at: DateTime<Utc>,
+    /// When the entry was last updated, if the feed provides it.
     pub updated_at: Option<DateTime<Utc>>,
+    /// Short summary or excerpt (the feed's summary, falling back to a media
+    /// description for media feeds).
     pub description: Option<String>,
+    /// Full post body, if the feed includes it.
     pub content: Option<String>,
+    /// Whether the user has favorited this post.
     pub is_favorite: bool,
+    /// Whether the post has been marked read.
     pub is_read: bool,
+    /// Whether the post has been archived.
     pub is_archived: bool,
 }
 
@@ -159,10 +177,81 @@ impl PostInsertForm {
     }
 }
 
+/// Test helper: inserts a post under `feed_id` and returns the created `Post`.
+/// Lives with the `Post` model and is shared with the archive tests via
+/// `#[macro_use]` on this module in `models/mod.rs`.
+#[cfg(test)]
+macro_rules! test_post {
+    ($pool:expr, $feed_id:expr) => {{
+        let url = format!(
+            "https://example.com/post/{}",
+            chrono::Utc::now()
+                .timestamp_nanos_opt()
+                .expect("timestamp in range")
+        );
+        $crate::models::post::Post::create(
+            $pool,
+            $crate::models::post::PostInsertForm {
+                feed_id: $feed_id,
+                title: Some("test post".to_string()),
+                url: Some(url.clone()),
+                authors: None,
+                published_at: Some(chrono::Utc::now()),
+                updated_at: None,
+                description: None,
+                content: None,
+            },
+        )
+        .await
+        .expect("should create test post");
+
+        let id = {
+            use diesel::prelude::*;
+            use diesel_async::RunQueryDsl;
+            let mut conn = $pool.get().await.expect("should get conn");
+            $crate::schema::posts::table
+                .filter($crate::schema::posts::feed_id.eq($feed_id))
+                .filter($crate::schema::posts::url.eq(&url))
+                .select($crate::schema::posts::id)
+                .first::<i32>(&mut conn)
+                .await
+                .expect("post should exist")
+        };
+        $crate::models::post::Post::get($pool, id)
+            .await
+            .expect("should get post")
+    }};
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{models::feed::Feed, setup_test_db};
     use feed_rs::parser;
+
+    macro_rules! unique {
+        () => {
+            Utc::now()
+                .timestamp_nanos_opt()
+                .expect("timestamp in range")
+        };
+    }
+
+    /// A minimal insertable post with the given url.
+    macro_rules! post_form {
+        ($feed_id:expr, $url:expr) => {
+            PostInsertForm {
+                feed_id: $feed_id,
+                title: Some("test post".to_string()),
+                url: Some($url.to_string()),
+                authors: None,
+                published_at: Some(Utc::now()),
+                updated_at: None,
+                description: None,
+                content: None,
+            }
+        };
+    }
 
     fn atom_entry(entry_body: &str) -> Entry {
         let xml = format!(
@@ -206,6 +295,161 @@ mod tests {
             form.published_at,
             Some("2026-01-02T03:04:05Z".parse::<DateTime<Utc>>().unwrap()),
         );
+    }
+
+    #[tokio::test]
+    async fn get_returns_created_post() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+        let url = format!("https://example.com/post/{}", unique!());
+
+        Post::create(
+            &pool,
+            PostInsertForm {
+                feed_id: feed.id,
+                title: Some("Get Me".to_string()),
+                url: Some(url.clone()),
+                authors: None,
+                published_at: Some("2026-01-02T03:04:05Z".parse::<DateTime<Utc>>().unwrap()),
+                updated_at: None,
+                description: Some("A description.".to_string()),
+                content: Some("Body.".to_string()),
+            },
+        )
+        .await
+        .expect("should create post");
+
+        let id: i32 = {
+            let mut conn = pool.get().await.expect("should get conn");
+            posts::table
+                .filter(posts::feed_id.eq(feed.id))
+                .filter(posts::url.eq(&url))
+                .select(posts::id)
+                .first(&mut conn)
+                .await
+                .expect("post should exist")
+        };
+        let got = Post::get(&pool, id).await.expect("get should succeed");
+
+        assert_eq!(got.id, id);
+        assert_eq!(got.feed_id, feed.id);
+        assert_eq!(got.title.as_deref(), Some("Get Me"));
+        assert_eq!(got.url.as_deref(), Some(url.as_str()));
+        assert_eq!(got.description.as_deref(), Some("A description."));
+        assert_eq!(got.content.as_deref(), Some("Body."));
+        assert!(!got.is_read);
+        assert!(!got.is_favorite);
+        assert!(!got.is_archived);
+
+        // Deleting the feed cascades to the post, so a follow-up get fails.
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
+        assert!(Post::get(&pool, id).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn create_inserts_and_skips_conflicts() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+        let url = format!("https://example.com/post/{}", unique!());
+
+        Post::create(&pool, post_form!(feed.id, &url))
+            .await
+            .expect("first insert should succeed");
+        // Same (feed_id, url) hits ON CONFLICT DO NOTHING: no error, no dup.
+        Post::create(&pool, post_form!(feed.id, &url))
+            .await
+            .expect("conflicting insert should be a no-op");
+
+        let count: i64 = {
+            let mut conn = pool.get().await.expect("should get conn");
+            posts::table
+                .filter(posts::feed_id.eq(feed.id))
+                .count()
+                .get_result(&mut conn)
+                .await
+                .expect("should count posts")
+        };
+        assert_eq!(count, 1);
+
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
+    }
+
+    #[tokio::test]
+    async fn create_many_inserts_batch_and_skips_conflicts() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+
+        // Empty input is a no-op.
+        assert_eq!(Post::create_many(&pool, vec![]).await.unwrap(), 0);
+
+        let urls: Vec<String> = (0..3)
+            .map(|i| format!("https://example.com/post/{}-{i}", unique!()))
+            .collect();
+        let forms: Vec<PostInsertForm> = urls.iter().map(|u| post_form!(feed.id, u)).collect();
+        assert_eq!(Post::create_many(&pool, forms).await.unwrap(), 3);
+
+        // Re-inserting the same urls all conflict, so nothing new is inserted.
+        let dups: Vec<PostInsertForm> = urls.iter().map(|u| post_form!(feed.id, u)).collect();
+        assert_eq!(Post::create_many(&pool, dups).await.unwrap(), 0);
+
+        let count: i64 = {
+            let mut conn = pool.get().await.expect("should get conn");
+            posts::table
+                .filter(posts::feed_id.eq(feed.id))
+                .count()
+                .get_result(&mut conn)
+                .await
+                .expect("should count posts")
+        };
+        assert_eq!(count, 3);
+
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
+    }
+
+    #[tokio::test]
+    async fn update_changes_flags() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+        let id = test_post!(&pool, feed.id).id;
+
+        let updated = Post::update(
+            &pool,
+            PostUpdateForm {
+                id,
+                is_favorite: Some(true),
+                is_read: Some(true),
+            },
+        )
+        .await
+        .expect("update should succeed");
+
+        assert!(updated.is_favorite);
+        assert!(updated.is_read);
+
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
+    }
+
+    #[tokio::test]
+    async fn toggle_is_read_flips_value() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+        let id = test_post!(&pool, feed.id).id;
+
+        // Defaults to false: first toggle -> true, second -> false.
+        assert!(Post::toggle_is_read(&pool, id).await.unwrap().is_read);
+        assert!(!Post::toggle_is_read(&pool, id).await.unwrap().is_read);
+
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
     }
 
     #[test]

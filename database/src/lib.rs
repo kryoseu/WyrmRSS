@@ -38,3 +38,33 @@ pub async fn create_pool(conf: &WyrmStartupConfig) -> WyrmResult<DatabasePool> {
         .build()
         .map_err(|e| WyrmError::Database(DatabaseError::PoolBuildError(e)))
 }
+
+/// Builds a connection pool against the configured test database, ensuring the
+/// schema is migrated first.
+///
+/// Migrations are applied at most once per test process (via [`Once`]), so it's
+/// cheap for every database test to call this — the first call sets up the
+/// schema, later calls just hand back a fresh pool. Applying the embedded
+/// migrations mirrors what the server does on startup, so a blank database
+/// (e.g. CI's Postgres service) gets set up the same way `diesel migration run`
+/// would, without needing the diesel CLI installed.
+#[cfg(test)]
+pub(crate) async fn setup_test_db() -> DatabasePool {
+    static INIT: std::sync::Once = std::sync::Once::new();
+
+    INIT.call_once(|| {
+        // `load()` resolves config/wyrm.toml relative to the cwd, but tests run
+        // from the crate dir — point at the workspace root so we read the same
+        // config the server uses. Done once, before any `load()` below.
+        std::env::set_current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."))
+            .expect("should cd to workspace root");
+
+        let conf = WyrmStartupConfig::load();
+        let mut conn = establish_sync_connection(&conf).expect("should connect for migrations");
+        run_migrations(&mut conn).expect("should run migrations");
+    });
+
+    create_pool(&WyrmStartupConfig::load())
+        .await
+        .expect("should build pool against the test database")
+}
