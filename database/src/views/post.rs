@@ -53,7 +53,11 @@ impl PostQuery {
         }
 
         if let Some(search) = self.search {
-            query = query.filter(posts::title.ilike(format!("%{search}%")));
+            query = query.filter(
+                posts::title
+                    .ilike(format!("%{search}%"))
+                    .or(posts::description.ilike(format!("%{search}%"))),
+            );
         }
 
         if self.fav_only {

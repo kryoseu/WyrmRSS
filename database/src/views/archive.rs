@@ -52,7 +52,11 @@ impl PostArchiveQuery {
         }
 
         if let Some(search) = self.search {
-            query = query.filter(post_archive::title.ilike(format!("%{search}%")));
+            query = query.filter(
+                post_archive::title
+                    .ilike(format!("%{search}%"))
+                    .or(post_archive::description.ilike(format!("%{search}%"))),
+            );
         }
 
         if let Some((timestamp, post_id)) = cursor {
