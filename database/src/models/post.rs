@@ -15,18 +15,36 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[diesel(check_for_backend(diesel::pg::Pg))]
 #[derive(ts_rs::TS)]
 #[ts(optional_fields, export)]
+/// A single entry fetched from a feed.
 pub struct Post {
+    /// Primary key.
     pub id: i32,
+    /// The feed this post belongs to; the row is removed when that feed is
+    /// deleted (`ON DELETE CASCADE`).
     pub feed_id: i32,
+    /// Post title, or `None` if the feed entry has none.
     pub title: Option<String>,
+    /// Link to the original post. Forms the `(feed_id, url)` uniqueness
+    /// constraint used to dedupe on re-fetch.
     pub url: Option<String>,
+    /// Comma-separated author list, each formatted as `name (email)` (or just
+    /// `name`); `None` if the entry lists no authors.
     pub authors: Option<String>,
+    /// When the entry was published; defaults to insertion time if the feed
+    /// omits it.
     pub published_at: DateTime<Utc>,
+    /// When the entry was last updated, if the feed provides it.
     pub updated_at: Option<DateTime<Utc>>,
+    /// Short summary or excerpt (the feed's summary, falling back to a media
+    /// description for media feeds).
     pub description: Option<String>,
+    /// Full post body, if the feed includes it.
     pub content: Option<String>,
+    /// Whether the user has favorited this post.
     pub is_favorite: bool,
+    /// Whether the post has been marked read.
     pub is_read: bool,
+    /// Whether the post has been archived.
     pub is_archived: bool,
 }
 
@@ -186,24 +204,6 @@ mod tests {
                 description: None,
                 content: None,
             }
-        };
-    }
-
-    /// Creates a feed for a test to attach posts to; returns the `Feed`. Delete
-    /// it with `Feed::delete` to clean up (cascades to its posts).
-    macro_rules! test_feed {
-        ($pool:expr) => {
-            Feed::create(
-                $pool,
-                crate::models::feed::FeedInsertForm {
-                    title: "test feed".to_string(),
-                    url: format!("https://example.com/feed/{}", unique!()),
-                    ttl: 60,
-                    ..Default::default()
-                },
-            )
-            .await
-            .expect("should create test feed")
         };
     }
 
