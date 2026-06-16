@@ -1,3 +1,4 @@
+use crate::result::WyrmResult;
 use config::{Config, Environment, File};
 use serde::Deserialize;
 use smart_default::SmartDefault;
@@ -24,13 +25,12 @@ pub struct WyrmStartupConfig {
 }
 
 impl WyrmStartupConfig {
-    pub fn load() -> Self {
+    pub fn load() -> WyrmResult<Self> {
         Config::builder()
             .add_source(File::with_name("config/wyrm.toml").required(false))
             .add_source(Environment::with_prefix("WYRM"))
-            .build()
-            .unwrap()
+            .build()?
             .try_deserialize()
-            .unwrap()
+            .map_err(Into::into)
     }
 }

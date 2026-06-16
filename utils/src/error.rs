@@ -59,6 +59,8 @@ pub enum WyrmError {
     WorkerError(String),
     #[error("lock poisoned: {0}")]
     LockPoisoned(String),
+    #[error("invalid config: {0}")]
+    StartupConfigError(#[from] config::ConfigError),
 }
 
 impl From<reqwest::Error> for WyrmError {

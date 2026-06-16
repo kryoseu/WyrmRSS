@@ -16,7 +16,7 @@ use wyrm_utils::{
 
 pub async fn start_server() -> WyrmResult<()> {
     info!("Loading settings");
-    let startup_conf = WyrmStartupConfig::load();
+    let startup_conf = WyrmStartupConfig::load()?;
 
     info!("Establishing database connection for migrations");
     let mut db_sync_conn = database::establish_sync_connection(&startup_conf)?;
