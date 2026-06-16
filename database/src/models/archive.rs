@@ -18,16 +18,30 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[diesel(check_for_backend(diesel::pg::Pg))]
 #[derive(ts_rs::TS)]
 #[ts(optional_fields, export)]
+/// A snapshot of an archived post, kept independently of the `posts` table so
+/// it survives the original post (and its feed) being deleted.
 pub struct PostArchive {
+    /// The original post's id, reused as this row's primary key — there is no
+    /// foreign key back to `posts`, so the archive outlives the post.
     pub id: i32,
+    /// Post title at the time it was archived.
     pub title: Option<String>,
+    /// Link to the original post.
     pub url: Option<String>,
+    /// Comma-separated author list captured from the post.
     pub authors: Option<String>,
+    /// The post's original publish timestamp.
     pub published_at: DateTime<Utc>,
+    /// Short summary or excerpt captured from the post.
     pub description: Option<String>,
+    /// Full post body captured from the post.
     pub content: Option<String>,
+    /// Tag copied from the owning feed when archived, so it persists even after
+    /// the feed is gone.
     pub tag: Option<String>,
+    /// Hex color for `tag`, likewise copied from the feed.
     pub tag_color: Option<String>,
+    /// When the post was archived.
     pub archived_at: DateTime<Utc>,
 }
 
@@ -121,5 +135,42 @@ impl From<(Post, Feed)> for PostArchiveInsertForm {
             tag: f.tag,
             tag_color: f.tag_color,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::setup_test_db;
+
+    #[tokio::test]
+    async fn archive_and_unarchive_roundtrip() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+        let feed_id = feed.id;
+        let post = test_post!(&pool, feed_id);
+        let post_id = post.id;
+
+        let archived = PostArchive::create(&pool, (post, feed).into())
+            .await
+            .expect("archive should succeed");
+        assert_eq!(archived.id, post_id);
+        assert_eq!(archived.title.as_deref(), Some("test post"));
+        assert!(Post::get(&pool, post_id).await.unwrap().is_archived);
+        assert_eq!(
+            PostArchive::get(&pool, post_id).await.unwrap().id,
+            post_id,
+            "get should return the archived row"
+        );
+
+        PostArchive::delete(&pool, post_id)
+            .await
+            .expect("unarchive should succeed");
+        assert!(PostArchive::get(&pool, post_id).await.is_err());
+        assert!(!Post::get(&pool, post_id).await.unwrap().is_archived);
+
+        Feed::delete(&pool, feed_id)
+            .await
+            .expect("should delete feed");
     }
 }

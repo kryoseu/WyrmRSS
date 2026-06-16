@@ -177,6 +177,52 @@ impl PostInsertForm {
     }
 }
 
+/// Test helper: inserts a post under `feed_id` and returns the created `Post`.
+/// Lives with the `Post` model and is shared with the archive tests via
+/// `#[macro_use]` on this module in `models/mod.rs`.
+#[cfg(test)]
+macro_rules! test_post {
+    ($pool:expr, $feed_id:expr) => {{
+        let url = format!(
+            "https://example.com/post/{}",
+            chrono::Utc::now()
+                .timestamp_nanos_opt()
+                .expect("timestamp in range")
+        );
+        $crate::models::post::Post::create(
+            $pool,
+            $crate::models::post::PostInsertForm {
+                feed_id: $feed_id,
+                title: Some("test post".to_string()),
+                url: Some(url.clone()),
+                authors: None,
+                published_at: Some(chrono::Utc::now()),
+                updated_at: None,
+                description: None,
+                content: None,
+            },
+        )
+        .await
+        .expect("should create test post");
+
+        let id = {
+            use diesel::prelude::*;
+            use diesel_async::RunQueryDsl;
+            let mut conn = $pool.get().await.expect("should get conn");
+            $crate::schema::posts::table
+                .filter($crate::schema::posts::feed_id.eq($feed_id))
+                .filter($crate::schema::posts::url.eq(&url))
+                .select($crate::schema::posts::id)
+                .first::<i32>(&mut conn)
+                .await
+                .expect("post should exist")
+        };
+        $crate::models::post::Post::get($pool, id)
+            .await
+            .expect("should get post")
+    }};
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -370,20 +416,7 @@ mod tests {
     async fn update_changes_flags() {
         let pool = setup_test_db().await;
         let feed = test_feed!(&pool);
-        let url = format!("https://example.com/post/{}", unique!());
-        Post::create(&pool, post_form!(feed.id, &url))
-            .await
-            .expect("should create test post");
-        let id: i32 = {
-            let mut conn = pool.get().await.expect("should get conn");
-            posts::table
-                .filter(posts::feed_id.eq(feed.id))
-                .filter(posts::url.eq(&url))
-                .select(posts::id)
-                .first(&mut conn)
-                .await
-                .expect("post should exist")
-        };
+        let id = test_post!(&pool, feed.id).id;
 
         let updated = Post::update(
             &pool,
@@ -408,20 +441,7 @@ mod tests {
     async fn toggle_is_read_flips_value() {
         let pool = setup_test_db().await;
         let feed = test_feed!(&pool);
-        let url = format!("https://example.com/post/{}", unique!());
-        Post::create(&pool, post_form!(feed.id, &url))
-            .await
-            .expect("should create test post");
-        let id: i32 = {
-            let mut conn = pool.get().await.expect("should get conn");
-            posts::table
-                .filter(posts::feed_id.eq(feed.id))
-                .filter(posts::url.eq(&url))
-                .select(posts::id)
-                .first(&mut conn)
-                .await
-                .expect("post should exist")
-        };
+        let id = test_post!(&pool, feed.id).id;
 
         // Defaults to false: first toggle -> true, second -> false.
         assert!(Post::toggle_is_read(&pool, id).await.unwrap().is_read);
