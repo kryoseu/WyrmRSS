@@ -68,16 +68,6 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    users (id) {
-        id -> Int4,
-        username -> Text,
-        email -> Text,
-        password_hash -> Text,
-        created_at -> Timestamptz,
-    }
-}
-
 diesel::joinable!(posts -> feeds (feed_id));
 
-diesel::allow_tables_to_appear_in_same_query!(feeds, post_archive, posts, settings, users,);
+diesel::allow_tables_to_appear_in_same_query!(feeds, post_archive, posts, settings,);
