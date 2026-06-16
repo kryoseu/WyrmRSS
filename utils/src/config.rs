@@ -1,9 +1,8 @@
+use crate::result::WyrmResult;
 use config::{Config, Environment, File};
 use serde::Deserialize;
 use smart_default::SmartDefault;
 use std::net::{IpAddr, Ipv4Addr};
-
-use crate::result::WyrmResult;
 
 #[derive(Debug, Clone, Deserialize, SmartDefault)]
 #[serde(default)]
