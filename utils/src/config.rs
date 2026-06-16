@@ -3,6 +3,8 @@ use serde::Deserialize;
 use smart_default::SmartDefault;
 use std::net::{IpAddr, Ipv4Addr};
 
+use crate::result::WyrmResult;
+
 #[derive(Debug, Clone, Deserialize, SmartDefault)]
 #[serde(default)]
 /// Built from wyrm.toml or env vars
@@ -24,13 +26,12 @@ pub struct WyrmStartupConfig {
 }
 
 impl WyrmStartupConfig {
-    pub fn load() -> Self {
+    pub fn load() -> WyrmResult<Self> {
         Config::builder()
             .add_source(File::with_name("config/wyrm.toml").required(false))
             .add_source(Environment::with_prefix("WYRM"))
-            .build()
-            .unwrap()
+            .build()?
             .try_deserialize()
-            .unwrap()
+            .map_err(Into::into)
     }
 }

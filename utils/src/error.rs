@@ -1,6 +1,5 @@
 use actix_web::{
-    HttpResponse,
-    error,
+    HttpResponse, error,
     http::{StatusCode, header::ContentType},
 };
 use diesel::result::DatabaseErrorKind;
@@ -59,6 +58,8 @@ pub enum WyrmError {
     WorkerError(String),
     #[error("lock poisoned: {0}")]
     LockPoisoned(String),
+    #[error("invalid config: {0}")]
+    StartupConfigError(#[from] config::ConfigError),
 }
 
 impl From<reqwest::Error> for WyrmError {

@@ -59,12 +59,13 @@ pub(crate) async fn setup_test_db() -> DatabasePool {
         std::env::set_current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."))
             .expect("should cd to workspace root");
 
-        let conf = WyrmStartupConfig::load();
+        let conf = WyrmStartupConfig::load().expect("should load test config");
         let mut conn = establish_sync_connection(&conf).expect("should connect for migrations");
         run_migrations(&mut conn).expect("should run migrations");
     });
 
-    create_pool(&WyrmStartupConfig::load())
+    let conf = WyrmStartupConfig::load().expect("should load test config");
+    create_pool(&conf)
         .await
         .expect("should build pool against the test database")
 }
