@@ -34,6 +34,20 @@ jobs:
   build-backend:
     needs: [get-version]
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: wyrm
+          POSTGRES_PASSWORD: wyrm
+          POSTGRES_DB: wyrm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U wyrm"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v6.0.3
         with:
@@ -50,6 +64,8 @@ jobs:
         run: cargo build --verbose
       - name: Test
         run: cargo test --verbose
+        env:
+          WYRM_DATABASE_CONNECTION: postgres://wyrm:wyrm@localhost:5432/wyrm
 
   build-frontend:
     needs: [get-version]
