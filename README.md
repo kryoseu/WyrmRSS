@@ -21,9 +21,10 @@
 - URL filters per feed — exclude entries whose URL contains a given pattern
 - Mark posts as favorite
 - Archive posts
+- Webhooks - get notified on new posts (Discord, Slack and custom)
 - OPML import and export
 - Background feed polling with configurable interval and retry logic
-- Full-text search on post titles
+- Full-text search on post titles and description
 - Hot-reloaded settings (poll interval, HTTP timeouts, page size, reading mode) configurable via the UI
 - Easy to install
   
