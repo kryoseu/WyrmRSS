@@ -9,7 +9,7 @@ use serde::Serialize;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 #[serde_with::skip_serializing_none]
-#[derive(Debug, Serialize, Queryable, Selectable)]
+#[derive(Clone, Serialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::feeds)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 #[derive(ts_rs::TS)]

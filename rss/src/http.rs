@@ -85,4 +85,15 @@ impl HttpClient {
 
         Ok(bytes)
     }
+
+    pub async fn post_json(&self, url: &str, body: &serde_json::Value) -> WyrmResult<()> {
+        self.inner
+            .post(url)
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body.to_string())
+            .send()
+            .await?
+            .error_for_status()?;
+        Ok(())
+    }
 }

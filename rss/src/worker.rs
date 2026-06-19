@@ -5,13 +5,15 @@ use database::{
     models::{
         feed::{Feed, FeedUpdateForm},
         post::{Post, PostInsertForm},
+        webhook::Webhook,
     },
     utils::settings::RuntimeSettings,
+    views,
 };
 use futures::future::join_all;
 use std::sync::{Arc, RwLock};
 use tokio::sync::{Semaphore, mpsc::Receiver};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use wyrm_utils::result::WyrmResult;
 
 #[derive(Debug)]
@@ -86,6 +88,8 @@ impl FeedWorker {
         // as settings may have been updated.
         self.http = HttpClient::new(&HttpConfig::from(&*self.runtime_settings.read()?))?;
 
+        let webhooks = views::webhook::all_by_feed(&self.db_pool).await?;
+
         // Each in-flight feed holds ~1 pool connection. Reserve headroom so polling
         // can never starve the API handlers of the shared pool.
         let permits = (self.db_pool.status().max_size / 2).max(1);
@@ -96,10 +100,11 @@ impl FeedWorker {
             .map(|feed| {
                 let http = self.http.clone();
                 let pool = self.db_pool.clone();
+                let feed_webhooks = webhooks.get(&feed.id).cloned().unwrap_or_default();
                 let semaphore = semaphore.clone();
                 tokio::spawn(async move {
                     let _permit = semaphore.acquire().await.unwrap();
-                    if let Err(e) = process_feed(&http, &pool, &feed).await {
+                    if let Err(e) = process_feed(&pool, &http, &feed, &feed_webhooks).await {
                         error!("Failed to process feed {}: {e}", feed.url);
                     }
                 })
@@ -113,7 +118,12 @@ impl FeedWorker {
 }
 
 /// Fetch -> Parse -> Store -> Update
-async fn process_feed(http: &HttpClient, pool: &DatabasePool, feed: &Feed) -> WyrmResult<()> {
+async fn process_feed(
+    pool: &DatabasePool,
+    http: &HttpClient,
+    feed: &Feed,
+    webhooks: &[Webhook],
+) -> WyrmResult<()> {
     info!("Processing feed {}", feed.title);
 
     let bytes = http.fetch(&feed.url).await?;
@@ -134,8 +144,8 @@ async fn process_feed(http: &HttpClient, pool: &DatabasePool, feed: &Feed) -> Wy
         .map(|entry| PostInsertForm::from_entry(entry, feed.id))
         .collect();
 
-    let inserted = Post::create_many(pool, forms).await?;
-    info!("Inserted {inserted} new posts for feed {}", feed.title);
+    let new_posts = Post::create_many(pool, forms).await?;
+    info!("Got {} new posts for feed {}", new_posts.len(), feed.title);
 
     Feed::update(
         pool,
@@ -151,6 +161,27 @@ async fn process_feed(http: &HttpClient, pool: &DatabasePool, feed: &Feed) -> Wy
         },
     )
     .await?;
+
+    if new_posts.is_empty() {
+        return Ok(());
+    }
+
+    for webhook in webhooks {
+        // A broken custom template must not abort the poll or send garbage:
+        // log and skip this delivery.
+        match wyrm_webhook::get_payload(webhook, feed, &new_posts) {
+            Ok(payload) => {
+                let http = http.clone();
+                let webhook = webhook.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = http.post_json(&webhook.url, &payload).await {
+                        warn!("webhook {} delivery error: {e}", webhook.name);
+                    }
+                });
+            }
+            Err(e) => error!("skipping webhook for feed {}: {e}", feed.title),
+        }
+    }
 
     Ok(())
 }

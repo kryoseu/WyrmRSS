@@ -4,3 +4,4 @@ pub mod feed;
 pub mod post;
 pub mod archive;
 pub mod settings;
+pub mod webhook;

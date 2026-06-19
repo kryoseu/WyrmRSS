@@ -1,6 +1,7 @@
 /target
 .claude/
 migrations/.diesel_lock
+mprocs.log
 
 config/*.toml
 !config/*-example.toml

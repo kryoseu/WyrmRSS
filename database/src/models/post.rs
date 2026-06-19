@@ -86,18 +86,22 @@ impl Post {
     ///
     /// An empty `forms` is a no-op and returns `Ok(0)` without touching the
     /// pool.
-    pub async fn create_many(pool: &DatabasePool, forms: Vec<PostInsertForm>) -> WyrmResult<usize> {
+    pub async fn create_many(
+        pool: &DatabasePool,
+        forms: Vec<PostInsertForm>,
+    ) -> WyrmResult<Vec<Post>> {
         if forms.is_empty() {
-            return Ok(0);
+            return Ok(vec![]);
         }
         let mut conn = pool.get().await?;
-        let inserted = diesel::insert_into(posts::table)
+        diesel::insert_into(posts::table)
             .values(&forms)
             .on_conflict((posts::feed_id, posts::url))
             .do_nothing()
-            .execute(&mut conn)
-            .await?;
-        Ok(inserted)
+            .returning(Post::as_select())
+            .get_results(&mut conn)
+            .await
+            .map_err(WyrmError::from)
     }
 
     pub async fn update(pool: &DatabasePool, form: PostUpdateForm) -> WyrmResult<Self> {
@@ -384,17 +388,17 @@ mod tests {
         let feed = test_feed!(&pool);
 
         // Empty input is a no-op.
-        assert_eq!(Post::create_many(&pool, vec![]).await.unwrap(), 0);
+        assert_eq!(Post::create_many(&pool, vec![]).await.unwrap().len(), 0);
 
         let urls: Vec<String> = (0..3)
             .map(|i| format!("https://example.com/post/{}-{i}", unique!()))
             .collect();
         let forms: Vec<PostInsertForm> = urls.iter().map(|u| post_form!(feed.id, u)).collect();
-        assert_eq!(Post::create_many(&pool, forms).await.unwrap(), 3);
+        assert_eq!(Post::create_many(&pool, forms).await.unwrap().len(), 3);
 
         // Re-inserting the same urls all conflict, so nothing new is inserted.
         let dups: Vec<PostInsertForm> = urls.iter().map(|u| post_form!(feed.id, u)).collect();
-        assert_eq!(Post::create_many(&pool, dups).await.unwrap(), 0);
+        assert_eq!(Post::create_many(&pool, dups).await.unwrap().len(), 0);
 
         let count: i64 = {
             let mut conn = pool.get().await.expect("should get conn");

@@ -12,7 +12,15 @@ export const feedKeys = {
 };
 
 export function useFeeds() {
-  return useQuery({ queryKey: feedKeys.all, queryFn: getFeeds });
+  return useQuery({
+    queryKey: feedKeys.all,
+    queryFn: getFeeds,
+    // Don't refetch on every mount (settings/sidebar remount often). Mutations
+    // — create/update/delete/poll — invalidate this key, which refetches even
+    // under `Infinity`. Only an autonomous background poll won't be reflected
+    // until the next user action or reload.
+    staleTime: Infinity,
+  });
 }
 
 /** Extracts tags from feeds into a Tag array */

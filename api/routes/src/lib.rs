@@ -4,6 +4,7 @@ mod auth;
 mod feeds;
 mod posts;
 mod settings;
+mod webhooks;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -11,6 +12,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .configure(auth::config)
             .configure(posts::config)
             .configure(feeds::config)
+            .configure(webhooks::config)
             .configure(settings::config),
     );
 }

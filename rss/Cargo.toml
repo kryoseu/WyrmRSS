@@ -17,8 +17,10 @@ reqwest-middleware = { workspace = true }
 feed-rs = { workspace = true }
 chrono = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 quick-xml = { workspace = true }
 wyrm_utils = { path = "../utils" }
+wyrm_webhook = { path = "../webhook" }
 database = { path = "../database" }
 async-trait = "0.1.89"
 http = "1.4.1"

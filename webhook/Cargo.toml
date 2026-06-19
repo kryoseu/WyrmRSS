@@ -1,0 +1,17 @@
+[package]
+name = "wyrm_webhook"
+version.workspace = true
+edition.workspace = true
+description.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+database = { path = "../database" }
+
+[dev-dependencies]
+chrono = { workspace = true }

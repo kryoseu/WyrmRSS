@@ -7,7 +7,7 @@ use diesel::result::DatabaseErrorKind;
 
 #[derive(thiserror::Error, Debug)]
 pub enum HttpClientError {
-    #[error("bind error: {0}")]
+    #[error("http error: {0}")]
     ClientError(#[from] reqwest::Error),
     #[error("middleware error: {0}")]
     MiddlewareError(#[from] reqwest_middleware::Error),
@@ -59,6 +59,8 @@ pub enum WyrmError {
     WorkerError(String),
     #[error("lock poisoned: {0}")]
     LockPoisoned(String),
+    #[error("invalid webhook template: {0}")]
+    WebhookTemplate(String),
     #[error("invalid config: {0}")]
     StartupConfigError(#[from] config::ConfigError),
 }
@@ -114,6 +116,7 @@ impl WyrmError {
             WyrmError::Database(DatabaseError::Conflict(msg)) => msg,
             WyrmError::Database(DatabaseError::UniqueViolation(_)) => "conflict",
             WyrmError::XmlDeserializeError(_) => "invalid request body",
+            WyrmError::WebhookTemplate(msg) => msg,
             _ => "internal server error",
         }
     }
@@ -141,6 +144,7 @@ impl error::ResponseError for WyrmError {
             WyrmError::Database(DatabaseError::UniqueViolation(_)) => StatusCode::CONFLICT,
             WyrmError::Database(DatabaseError::Conflict(_)) => StatusCode::CONFLICT,
             WyrmError::XmlDeserializeError(_) => StatusCode::BAD_REQUEST,
+            WyrmError::WebhookTemplate(_) => StatusCode::BAD_REQUEST,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
