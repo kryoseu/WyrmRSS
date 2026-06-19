@@ -46,7 +46,19 @@ export const ENDPOINTS = {
     update: () => `${BASE}/settings`,
     import: () => `${BASE}/settings/opml/import`,
     export: () => `${BASE}/settings/opml/export`,
-  }
+  },
+  webhooks: {
+    list: () => `${BASE}/webhooks`,
+    get: (id: number) => `${BASE}/webhooks/${id}`,
+    create: () => `${BASE}/webhooks`,
+    update: (id: number) => `${BASE}/webhooks/${id}`,
+    delete: (id: number) => `${BASE}/webhooks/${id}`,
+    listForFeed: (feedId: number) => `${BASE}/feeds/${feedId}/webhooks`,
+    attach: (feedId: number, webhookId: number) =>
+      `${BASE}/feeds/${feedId}/webhooks/${webhookId}`,
+    detach: (feedId: number, webhookId: number) =>
+      `${BASE}/feeds/${feedId}/webhooks/${webhookId}`,
+  },
 } as const;
 
 

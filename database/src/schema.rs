@@ -4,6 +4,17 @@ pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "read_mode"))]
     pub struct ReadMode;
+
+    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "webhook_kind"))]
+    pub struct WebhookKind;
+}
+
+diesel::table! {
+    feed_webhooks (feed_id, webhook_id) {
+        feed_id -> Int4,
+        webhook_id -> Int4,
+    }
 }
 
 diesel::table! {
@@ -68,6 +79,29 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::WebhookKind;
+
+    webhooks (id) {
+        id -> Int4,
+        name -> Text,
+        url -> Text,
+        kind -> WebhookKind,
+        payload_template -> Nullable<Text>,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::joinable!(feed_webhooks -> feeds (feed_id));
+diesel::joinable!(feed_webhooks -> webhooks (webhook_id));
 diesel::joinable!(posts -> feeds (feed_id));
 
-diesel::allow_tables_to_appear_in_same_query!(feeds, post_archive, posts, settings,);
+diesel::allow_tables_to_appear_in_same_query!(
+    feed_webhooks,
+    feeds,
+    post_archive,
+    posts,
+    settings,
+    webhooks,
+);

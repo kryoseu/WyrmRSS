@@ -1,7 +1,11 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { FiCheck, FiCopy } from "react-icons/fi";
 import { useUpdateFeed } from "../hooks/useFeeds";
+import { useFeedWebhooks, webhookKeys } from "../hooks/useWebhooks";
+import { attachWebhook, detachWebhook } from "../api/webhooks";
 import type { Feed } from "../types/Feed";
+import { FeedWebhooks } from "./webhook/FeedWebhooks";
 
 interface Props {
   feed: Feed;
@@ -19,6 +23,20 @@ export function EditFeedForm({ feed, onClose }: Props) {
     feed.url_filter.filter((f): f is string => f !== null)
   );
   const update = useUpdateFeed();
+  const qc = useQueryClient();
+
+  // Webhook assignments are staged locally and only committed on Save (so
+  // Cancel discards them). Seed the selection from the feed's current webhooks
+  // once they load, using the setState-during-render pattern.
+  const { data: attachedWebhooks } = useFeedWebhooks(feed.id);
+  const [selectedWebhooks, setSelectedWebhooks] = useState<Set<number>>(new Set());
+  const [seeded, setSeeded] = useState(false);
+  if (attachedWebhooks && !seeded) {
+    setSeeded(true);
+    setSelectedWebhooks(new Set(attachedWebhooks.map((w) => w.id)));
+  }
+
+  const [saving, setSaving] = useState(false);
 
   function updateFilter(index: number, value: string) {
     setUrlFilters(urlFilters.map((f, i) => (i === index ? value : f)));
@@ -28,10 +46,20 @@ export function EditFeedForm({ feed, onClose }: Props) {
     setUrlFilters(urlFilters.filter((_, i) => i !== index));
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function toggleWebhook(webhookId: number, checked: boolean) {
+    setSelectedWebhooks((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(webhookId);
+      else next.delete(webhookId);
+      return next;
+    });
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    update.mutate(
-      {
+    setSaving(true);
+    try {
+      await update.mutateAsync({
         id: feed.id,
         body: {
           title: title.trim() || null,
@@ -41,9 +69,23 @@ export function EditFeedForm({ feed, onClose }: Props) {
           tag_color: tag.trim() ? tagColor : null,
           url_filter: urlFilters.map((f) => f.trim()).filter(Boolean),
         },
-      },
-      { onSuccess: onClose }
-    );
+      });
+
+      // Commit only the webhook changes: attach the added, detach the removed.
+      const original = new Set((attachedWebhooks ?? []).map((w) => w.id));
+      const toAttach = [...selectedWebhooks].filter((id) => !original.has(id));
+      const toDetach = [...original].filter((id) => !selectedWebhooks.has(id));
+      await Promise.all([
+        ...toAttach.map((id) => attachWebhook(feed.id, id)),
+        ...toDetach.map((id) => detachWebhook(feed.id, id)),
+      ]);
+      if (toAttach.length || toDetach.length) {
+        qc.invalidateQueries({ queryKey: webhookKeys.forFeed(feed.id) });
+      }
+      onClose();
+    } catch {
+      setSaving(false);
+    }
   }
 
   return (
@@ -116,13 +158,17 @@ export function EditFeedForm({ feed, onClose }: Props) {
           + URL filter
         </button>
       </div>
+      <div className="feed-webhooks-section">
+        <span className="feed-webhooks-label">Webhooks</span>
+        <FeedWebhooks selected={selectedWebhooks} onToggle={toggleWebhook} />
+      </div>
       <div className="add-feed-form-actions">
         <button
           className="btn btn-primary"
           type="submit"
-          disabled={update.isPending}
+          disabled={saving}
         >
-          {update.isPending ? "Saving…" : "Save"}
+          {saving ? "Saving…" : "Save"}
         </button>
         <button
           className="btn btn-ghost"

@@ -253,6 +253,7 @@ dependencies = [
  "ts-rs",
  "wyrm-rss",
  "wyrm_utils",
+ "wyrm_webhook",
 ]
 
 [[package]]
@@ -3989,9 +3990,11 @@ dependencies = [
  "reqwest-middleware",
  "reqwest-retry",
  "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "wyrm_utils",
+ "wyrm_webhook",
 ]
 
 [[package]]
@@ -4012,6 +4015,17 @@ dependencies = [
  "smart-default",
  "thiserror",
  "tracing",
+]
+
+[[package]]
+name = "wyrm_webhook"
+version = "0.15.0"
+dependencies = [
+ "chrono",
+ "database",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

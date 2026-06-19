@@ -352,7 +352,9 @@
   flex-shrink: 0;
 }
 
-.add-feed-form input {
+.add-feed-form input,
+.add-feed-form select,
+.add-feed-form textarea {
   width: 100%;
   padding: 6px 8px;
   font-size: 0.72rem;
@@ -891,6 +893,105 @@
   border-top: 1px solid var(--border);
   padding: 16px;
   background: var(--code-bg);
+}
+
+/* ── Webhooks ────────────────────────────────────────────────── */
+
+/* Reuse the feeds-table look, but with webhook columns: name · kind · url · actions */
+.webhooks-table .feeds-table-header,
+.webhooks-table .feeds-table-row {
+  grid-template-columns: 180px 90px 1fr 60px;
+}
+
+.webhook-kind {
+  display: inline-block;
+  width: 72px;
+  text-align: center;
+  box-sizing: border-box;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.add-webhook-form .webhook-template {
+  font-family: var(--mono);
+  font-size: 12px;
+  resize: vertical;
+}
+
+.add-webhook-form .webhook-vars {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.8;
+
+  & code {
+    font-size: 11px;
+  }
+}
+
+.add-webhook-form .form-error {
+  margin: 0;
+  font-size: 12px;
+  color: #ef4444;
+}
+
+.feed-webhooks-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feed-webhooks-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.feed-webhooks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.feed-webhook-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.feed-webhook-option .feed-webhook-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The shared `.add-feed-form input` rule stretches inputs full-width; reset for checkboxes. */
+.add-feed-form .feed-webhook-option input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.feed-webhooks-empty {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text);
+  opacity: 0.8;
 }
 
 /* ── Post list ───────────────────────────────────────────────── */
