@@ -4,6 +4,7 @@ import { createFeed, deleteFeed, getFeeds, pollFeeds, updateFeed } from "../api/
 import { postKeys } from "../cache/posts";
 import type { CreateFeed } from "../types/CreateFeed";
 import type { UpdateFeed } from "../types/UpdateFeed";
+import type { FeedId } from "../types/FeedId";
 import type { Feed } from "../types/Feed";
 import type { Tag } from "../components/PostsTagChips";
 
@@ -51,7 +52,7 @@ export function useCreateFeed() {
 export function useUpdateFeed() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: number; body: UpdateFeed }) =>
+    mutationFn: ({ id, body }: { id: FeedId; body: UpdateFeed }) =>
       updateFeed(id, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: feedKeys.all }),
   });
@@ -60,7 +61,7 @@ export function useUpdateFeed() {
 export function useDeleteFeed() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => deleteFeed(id),
+    mutationFn: (id: FeedId) => deleteFeed(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: feedKeys.all }),
   });
 }

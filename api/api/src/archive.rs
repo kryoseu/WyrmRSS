@@ -2,12 +2,13 @@ use actix_web::web::{Data, Json, Path, Query};
 use api_utils::context::WyrmContext;
 use database::{
     models::archive::PostArchive,
+    newtypes::PostId,
     utils::pagination::PagedResponse,
     views::archive::{ListPostArchive, PostArchiveQuery},
 };
 use wyrm_utils::result::WyrmResult;
 
-pub async fn get(path: Path<i32>, ctx: Data<WyrmContext>) -> WyrmResult<Json<PostArchive>> {
+pub async fn get(path: Path<PostId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<PostArchive>> {
     let post_id = path.into_inner();
     let archive = PostArchive::get(&ctx.db_pool, post_id).await?;
     Ok(Json(archive))

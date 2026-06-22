@@ -3,13 +3,13 @@ use actix_web::{
     web::{Data, Json, Path},
 };
 use api_utils::context::WyrmContext;
-use database::models::feed::Feed;
+use database::{models::feed::Feed, newtypes::FeedId};
 use std::time::Duration;
 use tokio::sync::mpsc::error::TrySendError;
 use wyrm_rss::worker::WorkerCommand;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
-pub async fn get(path: Path<i32>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Feed>> {
+pub async fn get(path: Path<FeedId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Feed>> {
     let feed = Feed::get(&ctx.db_pool, path.into_inner()).await?;
     Ok(Json(feed))
 }

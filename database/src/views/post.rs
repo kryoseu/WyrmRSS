@@ -77,7 +77,7 @@ impl PostQuery {
             items.truncate(page_size as usize);
             items
                 .last()
-                .map(|p| PaginationCursor::encode(p.published_at, p.id))
+                .map(|p| PaginationCursor::encode(p.published_at, p.id.0))
         } else {
             None
         };

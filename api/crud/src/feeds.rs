@@ -1,6 +1,9 @@
 use actix_web::web::{Data, Json, Path};
 use api_utils::context::WyrmContext;
-use database::models::feed::{Feed, FeedInsertForm, FeedUpdateForm};
+use database::{
+    models::feed::{Feed, FeedInsertForm, FeedUpdateForm},
+    newtypes::FeedId,
+};
 use serde::Deserialize;
 use wyrm_utils::result::WyrmResult;
 
@@ -46,7 +49,7 @@ pub async fn create(
 }
 
 pub async fn update(
-    path: Path<i32>,
+    path: Path<FeedId>,
     Json(data): Json<UpdateFeed>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<Feed>> {
@@ -67,7 +70,7 @@ pub async fn update(
     Ok(Json(feed))
 }
 
-pub async fn delete(path: Path<i32>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Feed>> {
+pub async fn delete(path: Path<FeedId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Feed>> {
     let feed = Feed::delete(&ctx.db_pool, path.into_inner()).await?;
     Ok(Json(feed))
 }

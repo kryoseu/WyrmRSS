@@ -1,6 +1,7 @@
 use crate::{
     DatabasePool,
     models::{feed::Feed, post::Post},
+    newtypes::PostId,
     schema::{
         post_archive,
         posts::{self},
@@ -23,7 +24,7 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 pub struct PostArchive {
     /// The original post's id, reused as this row's primary key — there is no
     /// foreign key back to `posts`, so the archive outlives the post.
-    pub id: i32,
+    pub id: PostId,
     /// Post title at the time it was archived.
     pub title: Option<String>,
     /// Link to the original post.
@@ -46,7 +47,7 @@ pub struct PostArchive {
 }
 
 impl PostArchive {
-    pub async fn get(pool: &DatabasePool, id: i32) -> WyrmResult<Self> {
+    pub async fn get(pool: &DatabasePool, id: PostId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         post_archive::table
             .find(id)
@@ -85,7 +86,7 @@ impl PostArchive {
     /// Unarchives a post: deletes the `post_archive` row and sets `posts.is_archived = false`
     /// atomically. If the original post no longer exists (e.g. feed was deleted), the archive
     /// row is still removed.
-    pub async fn delete(pool: &DatabasePool, post_id: i32) -> WyrmResult<()> {
+    pub async fn delete(pool: &DatabasePool, post_id: PostId) -> WyrmResult<()> {
         let mut conn = pool.get().await?;
         let conn = &mut *conn;
 
@@ -111,7 +112,7 @@ impl PostArchive {
 #[diesel(table_name = crate::schema::post_archive)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct PostArchiveInsertForm {
-    pub id: i32,
+    pub id: PostId,
     pub title: Option<String>,
     pub url: Option<String>,
     pub authors: Option<String>,

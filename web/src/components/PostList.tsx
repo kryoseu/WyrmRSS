@@ -12,6 +12,7 @@ import { PostsToolbar } from "./PostsToolbar";
 import { PostsTagChips } from "./PostsTagChips";
 import { VirtualGroupedList } from "./VirtualGroupedList";
 import type { ReaderOutletContext } from "../pages/ReaderPage";
+import type { FeedId } from "../types/FeedId";
 import { postPath } from "../utils/posts";
 
 export function PostList() {
@@ -19,7 +20,7 @@ export function PostList() {
 
   const { feedId, postId } = useParams();
 
-  const feedIdNum = feedId ? Number(feedId) : undefined;
+  const feedIdNum: FeedId | undefined = feedId ? Number(feedId) : undefined;
 
   const { data: feeds } = useFeeds();
 

@@ -127,10 +127,11 @@ fn resolve<'a>(ctx: &'a Value, path: &str) -> Option<&'a Value> {
 mod tests {
     use super::*;
     use chrono::Utc;
+    use database::newtypes::{FeedId, PostId};
 
     fn feed() -> Feed {
         Feed {
-            id: 1,
+            id: FeedId(1),
             title: "MyFeed".to_string(),
             url: "https://feed.test".to_string(),
             ttl: 60,
@@ -144,8 +145,8 @@ mod tests {
 
     fn post(title: &str, url: &str) -> Post {
         Post {
-            id: 1,
-            feed_id: 1,
+            id: PostId(1),
+            feed_id: FeedId(1),
             title: Some(title.to_string()),
             url: Some(url.to_string()),
             authors: None,

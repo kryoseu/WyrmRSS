@@ -3,12 +3,14 @@ import { Outlet, useLocation, useOutletContext } from "react-router-dom";
 import { ArchiveReader } from "../components/ArchiveReader";
 import { PostReader } from "../components/PostReader";
 import type { AppLayoutContext } from "./AppLayout";
+import type { FeedId } from "../types/FeedId";
+import type { PostId } from "../types/PostId";
 
 export type ReaderOutletContext = {
-  excludedFeeds: Set<number>;
-  onToggleExclude: (feedId: number) => void;
-  activePostId: number | null;
-  onOpenPost: (id: number) => void;
+  excludedFeeds: Set<FeedId>;
+  onToggleExclude: (id: FeedId) => void;
+  activePostId: PostId | null;
+  onOpenPost: (id: PostId) => void;
 };
 
 const MIN_WIDTH = 280;
@@ -18,7 +20,7 @@ export function ReaderPage() {
   const { excludedFeeds, onToggleExclude } = useOutletContext<AppLayoutContext>();
   const { pathname } = useLocation();
   const isArchive = pathname.startsWith("/archive");
-  const [activePostId, setActivePostId] = useState<number | null>(null);
+  const [activePostId, setActivePostId] = useState<PostId | null>(null);
   const [lastIsArchive, setLastIsArchive] = useState(isArchive);
 
   if (lastIsArchive !== isArchive) {

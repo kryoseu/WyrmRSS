@@ -3,10 +3,11 @@ import { useFeeds } from "../hooks/useFeeds";
 import { FeedItem } from "./FeedItem";
 import { useParams } from "react-router-dom";
 import { AddFeedForm } from "./AddFeedForm";
+import type { FeedId } from "../types/FeedId";
 
 interface Props {
-  excludedFeeds: Set<number>;
-  onToggleExclude: (feedId: number) => void;
+  excludedFeeds: Set<FeedId>;
+  onToggleExclude: (id: FeedId) => void;
 }
 
 export function FeedList({ excludedFeeds, onToggleExclude }: Props) {

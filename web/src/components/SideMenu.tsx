@@ -2,10 +2,11 @@ import { NavLink } from "react-router-dom";
 import { useTheme, PALETTES } from "../hooks/useTheme";
 import type { AccentKey } from "../hooks/useTheme";
 import { FeedList } from "./FeedList";
+import type { FeedId } from "../types/FeedId";
 
 interface Props {
-  excludedFeeds: Set<number>;
-  onToggleExclude: (feedId: number) => void;
+  excludedFeeds: Set<FeedId>;
+  onToggleExclude: (id: FeedId) => void;
 }
 
 export function SideMenu({ excludedFeeds, onToggleExclude }: Props) {

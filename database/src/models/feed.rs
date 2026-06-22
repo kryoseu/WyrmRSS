@@ -1,4 +1,4 @@
-use crate::{DatabasePool, schema::feeds};
+use crate::{DatabasePool, newtypes::FeedId, schema::feeds};
 use chrono::{DateTime, Utc};
 use diesel::{
     Selectable,
@@ -15,7 +15,7 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[derive(ts_rs::TS)]
 #[ts(optional_fields, export)]
 pub struct Feed {
-    pub id: i32,
+    pub id: FeedId,
     /// Human-readable feed name shown in the UI.
     pub title: String,
     /// URL the feed is fetched from.
@@ -36,7 +36,7 @@ pub struct Feed {
 }
 
 impl Feed {
-    pub async fn get(pool: &DatabasePool, feed_id: i32) -> WyrmResult<Self> {
+    pub async fn get(pool: &DatabasePool, feed_id: FeedId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         feeds::table
             .find(feed_id)
@@ -73,7 +73,7 @@ impl Feed {
             .map_err(WyrmError::from)
     }
 
-    pub async fn delete(pool: &DatabasePool, feed_id: i32) -> WyrmResult<Self> {
+    pub async fn delete(pool: &DatabasePool, feed_id: FeedId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         diesel::delete(feeds::table.find(feed_id))
             .returning(Self::as_returning())
@@ -109,7 +109,7 @@ pub struct FeedInsertForm {
 #[diesel(table_name = crate::schema::feeds)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct FeedUpdateForm {
-    pub id: i32,
+    pub id: FeedId,
     pub title: Option<String>,
     pub url: Option<String>,
     pub ttl: Option<i32>,

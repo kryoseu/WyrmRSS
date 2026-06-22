@@ -3,12 +3,9 @@ use actix_web::{
     web::{Data, Json, Path},
 };
 use api_utils::context::WyrmContext;
-use database::models::webhook::{
-    FeedWebhook,
-    Webhook,
-    WebhookInsertForm,
-    WebhookKind,
-    WebhookUpdateForm,
+use database::{
+    models::webhook::{FeedWebhook, Webhook, WebhookInsertForm, WebhookKind, WebhookUpdateForm},
+    newtypes::{FeedId, WebhookId},
 };
 use serde::Deserialize;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
@@ -53,7 +50,7 @@ pub async fn create(
 }
 
 pub async fn update(
-    path: Path<i32>,
+    path: Path<WebhookId>,
     Json(data): Json<UpdateWebhook>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<Webhook>> {
@@ -78,18 +75,24 @@ pub async fn update(
     Ok(Json(webhook))
 }
 
-pub async fn delete(path: Path<i32>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Webhook>> {
+pub async fn delete(path: Path<WebhookId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Webhook>> {
     let webhook = Webhook::delete(&ctx.db_pool, path.into_inner()).await?;
     Ok(Json(webhook))
 }
 
-pub async fn attach(path: Path<(i32, i32)>, ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
+pub async fn attach(
+    path: Path<(FeedId, WebhookId)>,
+    ctx: Data<WyrmContext>,
+) -> WyrmResult<HttpResponse> {
     let (feed_id, webhook_id) = path.into_inner();
     FeedWebhook::create(&ctx.db_pool, feed_id, webhook_id).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 
-pub async fn detach(path: Path<(i32, i32)>, ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
+pub async fn detach(
+    path: Path<(FeedId, WebhookId)>,
+    ctx: Data<WyrmContext>,
+) -> WyrmResult<HttpResponse> {
     let (feed_id, webhook_id) = path.into_inner();
     FeedWebhook::delete(&ctx.db_pool, feed_id, webhook_id).await?;
     Ok(HttpResponse::NoContent().finish())

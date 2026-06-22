@@ -4,9 +4,10 @@ import { useUnarchivePost } from "../hooks/usePostMutations";
 import { formatDate } from "../utils/utils";
 import { ReaderPane } from "./ReaderPane";
 import { SanitizedHtml } from "./SanitizedHtml";
+import type { PostId } from "../types/PostId";
 
 interface Props {
-  postId: number | null;
+  postId: PostId | null;
   onClose: () => void;
   width: number;
 }

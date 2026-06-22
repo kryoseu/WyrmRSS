@@ -3,13 +3,14 @@ import { Link } from "react-router-dom";
 import { TbCircleOff, TbPencil, TbX } from "react-icons/tb";
 import { useDeleteFeed } from "../hooks/useFeeds";
 import type { Feed } from "../types/Feed";
+import type { FeedId } from "../types/FeedId";
 import { EditFeedForm } from "./EditFeedForm";
 
 interface Props {
   feed: Feed;
   active: boolean;
   excluded: boolean;
-  onToggleExclude: (feedId: number) => void;
+  onToggleExclude: (id: FeedId) => void;
 }
 
 export function FeedItem({ feed, active, excluded, onToggleExclude }: Props) {

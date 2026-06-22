@@ -7,10 +7,12 @@ import {
 } from "@tanstack/react-query";
 import { getArchivedPost, getPost, listArchivedPosts, listFavoritePosts, listPosts, listPostsByFeed } from "../api/posts";
 import type { PagedResponse } from "../types/PagedResponse";
+import type { FeedId } from "../types/FeedId";
+import type { PostId } from "../types/PostId";
 import type { Tag } from "../components/PostsTagChips";
 import { postKeys } from "../cache/posts";
 
-type PostsQuery = { feedId?: number; tag?: string; search?: string };
+type PostsQuery = { feedId?: FeedId; tag?: string; search?: string };
 
 type ArchivedQuery = { search?: string; tag?: string };
 
@@ -28,7 +30,7 @@ function infinitePostsQuery<T>(
   });
 }
 
-export function usePost(id?: number) {
+export function usePost(id?: PostId) {
   return useQuery({
     queryKey: postKeys.detail(id!),
     queryFn: () => getPost(id!),
@@ -50,7 +52,7 @@ export function useFavoritePosts(search?: string) {
   );
 }
 
-export function useArchivedPost(id?: number) {
+export function useArchivedPost(id?: PostId) {
   return useQuery({
     queryKey: postKeys.archiveDetail(id!),
     queryFn: () => getArchivedPost(id!),

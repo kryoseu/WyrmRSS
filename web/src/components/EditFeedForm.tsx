@@ -5,6 +5,7 @@ import { useUpdateFeed } from "../hooks/useFeeds";
 import { useFeedWebhooks, webhookKeys } from "../hooks/useWebhooks";
 import { attachWebhook, detachWebhook } from "../api/webhooks";
 import type { Feed } from "../types/Feed";
+import type { WebhookId } from "../types/WebhookId";
 import { FeedWebhooks } from "./webhook/FeedWebhooks";
 
 interface Props {
@@ -29,7 +30,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
   // Cancel discards them). Seed the selection from the feed's current webhooks
   // once they load, using the setState-during-render pattern.
   const { data: attachedWebhooks } = useFeedWebhooks(feed.id);
-  const [selectedWebhooks, setSelectedWebhooks] = useState<Set<number>>(new Set());
+  const [selectedWebhooks, setSelectedWebhooks] = useState<Set<WebhookId>>(new Set());
   const [seeded, setSeeded] = useState(false);
   if (attachedWebhooks && !seeded) {
     setSeeded(true);
@@ -46,11 +47,11 @@ export function EditFeedForm({ feed, onClose }: Props) {
     setUrlFilters(urlFilters.filter((_, i) => i !== index));
   }
 
-  function toggleWebhook(webhookId: number, checked: boolean) {
+  function toggleWebhook(id: WebhookId, checked: boolean) {
     setSelectedWebhooks((prev) => {
       const next = new Set(prev);
-      if (checked) next.add(webhookId);
-      else next.delete(webhookId);
+      if (checked) next.add(id);
+      else next.delete(id);
       return next;
     });
   }
