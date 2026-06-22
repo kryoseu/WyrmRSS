@@ -1,6 +1,7 @@
 use crate::{
     DatabasePool,
     models::webhook::Webhook,
+    newtypes::FeedId,
     schema::{feed_webhooks, webhooks},
 };
 use diesel::prelude::*;
@@ -9,15 +10,15 @@ use std::collections::HashMap;
 use wyrm_utils::result::WyrmResult;
 
 /// Returns a hashmap containing all webhooks by feedId
-pub async fn all_by_feed(pool: &DatabasePool) -> WyrmResult<HashMap<i32, Vec<Webhook>>> {
+pub async fn all_by_feed(pool: &DatabasePool) -> WyrmResult<HashMap<FeedId, Vec<Webhook>>> {
     let mut conn = pool.get().await?;
-    let rows: Vec<(i32, Webhook)> = feed_webhooks::table
+    let rows: Vec<(FeedId, Webhook)> = feed_webhooks::table
         .inner_join(webhooks::table)
         .select((feed_webhooks::feed_id, Webhook::as_select()))
         .load(&mut conn)
         .await?;
 
-    let mut map: HashMap<i32, Vec<Webhook>> = HashMap::new();
+    let mut map: HashMap<FeedId, Vec<Webhook>> = HashMap::new();
     for (feed_id, webhook) in rows {
         map.entry(feed_id).or_default().push(webhook);
     }
@@ -25,7 +26,7 @@ pub async fn all_by_feed(pool: &DatabasePool) -> WyrmResult<HashMap<i32, Vec<Web
 }
 
 /// All webhooks attached to a single feed.
-pub async fn for_feed(pool: &DatabasePool, feed_id: i32) -> WyrmResult<Vec<Webhook>> {
+pub async fn for_feed(pool: &DatabasePool, feed_id: FeedId) -> WyrmResult<Vec<Webhook>> {
     let mut conn = pool.get().await?;
     let webhooks = feed_webhooks::table
         .inner_join(webhooks::table)

@@ -758,6 +758,7 @@ dependencies = [
  "diesel",
  "diesel-async",
  "diesel-derive-enum",
+ "diesel-derive-newtype",
  "diesel_migrations",
  "feed-rs",
  "serde",
@@ -854,6 +855,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81c5131a2895ef64741dad1d483f358c2a229a3a2d1b256778cdc5e146db64d4"
 dependencies = [
  "heck 0.4.1",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "diesel-derive-newtype"
+version = "2.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5adf688c584fe33726ce0e2898f608a2a92578ac94a4a92fcecf73214fe0716"
+dependencies = [
  "proc-macro2",
  "quote",
  "syn",

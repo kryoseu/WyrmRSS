@@ -5,6 +5,7 @@ use crate::{
         feed::Feed,
         post::Post,
     },
+    newtypes::PostId,
     schema::post_archive,
     utils::pagination::{PagedResponse, PaginationCursor},
 };
@@ -74,7 +75,7 @@ impl PostArchiveQuery {
             items.truncate(page_size as usize);
             items
                 .last()
-                .map(|p| PaginationCursor::encode(p.published_at, p.id))
+                .map(|p| PaginationCursor::encode(p.published_at, p.id.0))
         } else {
             None
         };
@@ -85,7 +86,7 @@ impl PostArchiveQuery {
 
 pub async fn get_post_archive_insert_form(
     pool: &DatabasePool,
-    post_id: i32,
+    post_id: PostId,
 ) -> WyrmResult<PostArchiveInsertForm> {
     use crate::schema::{feeds, posts};
 

@@ -10,10 +10,12 @@ import {
 } from "../api/webhooks";
 import type { CreateWebhook } from "../types/CreateWebhook";
 import type { UpdateWebhook } from "../types/UpdateWebhook";
+import type { FeedId } from "../types/FeedId";
+import type { WebhookId } from "../types/WebhookId";
 
 export const webhookKeys = {
   all: ["webhooks"] as const,
-  forFeed: (feedId: number) => ["webhooks", "feed", feedId] as const,
+  forFeed: (id: FeedId) => ["webhooks", "feed", id] as const,
 };
 
 export function useWebhooks() {
@@ -37,7 +39,7 @@ export function useCreateWebhook() {
 export function useUpdateWebhook() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: number; body: UpdateWebhook }) => updateWebhook(id, body),
+    mutationFn: ({ id, body }: { id: WebhookId; body: UpdateWebhook }) => updateWebhook(id, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: webhookKeys.all }),
   });
 }
@@ -45,35 +47,35 @@ export function useUpdateWebhook() {
 export function useDeleteWebhook() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => deleteWebhook(id),
+    mutationFn: (id: WebhookId) => deleteWebhook(id),
     // Deleting cascades to feed_webhooks, so the "all" list and every per-feed
     // list may change. The "webhooks" prefix invalidates both.
     onSuccess: () => qc.invalidateQueries({ queryKey: webhookKeys.all }),
   });
 }
 
-export function useFeedWebhooks(feedId: number) {
+export function useFeedWebhooks(id: FeedId) {
   return useQuery({
-    queryKey: webhookKeys.forFeed(feedId),
-    queryFn: () => getFeedWebhooks(feedId),
+    queryKey: webhookKeys.forFeed(id),
+    queryFn: () => getFeedWebhooks(id),
     // Per-feed assignments are invalidated on save; no need to refetch when
     // re-opening the same feed's edit form.
     staleTime: Infinity,
   });
 }
 
-export function useAttachWebhook(feedId: number) {
+export function useAttachWebhook(feedId: FeedId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (webhookId: number) => attachWebhook(feedId, webhookId),
+    mutationFn: (webhookId: WebhookId) => attachWebhook(feedId, webhookId),
     onSuccess: () => qc.invalidateQueries({ queryKey: webhookKeys.forFeed(feedId) }),
   });
 }
 
-export function useDetachWebhook(feedId: number) {
+export function useDetachWebhook(feedId: FeedId) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (webhookId: number) => detachWebhook(feedId, webhookId),
+    mutationFn: (webhookId: WebhookId) => detachWebhook(feedId, webhookId),
     onSuccess: () => qc.invalidateQueries({ queryKey: webhookKeys.forFeed(feedId) }),
   });
 }

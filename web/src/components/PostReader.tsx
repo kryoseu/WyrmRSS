@@ -7,9 +7,10 @@ import { useSettings } from "../hooks/useSettings";
 import { extractYouTubeId, formatDate } from "../utils/utils";
 import { ReaderPane } from "./ReaderPane";
 import { SanitizedHtml } from "./SanitizedHtml";
+import type { PostId } from "../types/PostId";
 
 interface Props {
-  postId: number | null;
+  postId: PostId | null;
   onClose: () => void;
   width: number;
 }
@@ -24,7 +25,7 @@ export function PostReader({ postId, onClose, width }: Props) {
 
   // Track the last seen post ID with a ref so the effect only fires
   // when the user switches to a new post, not on every re-render.
-  const lastSeenPostId = useRef<number | null>(null);
+  const lastSeenPostId = useRef<PostId | null>(null);
   useEffect(() => {
     if (!post) return;
     if (lastSeenPostId.current !== post.id) {

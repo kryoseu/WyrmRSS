@@ -1,5 +1,6 @@
 use crate::{
     DatabasePool,
+    newtypes::{FeedId, WebhookId},
     schema::{feed_webhooks, webhooks},
 };
 use chrono::{DateTime, Utc};
@@ -30,8 +31,8 @@ pub enum WebhookKind {
 /// [`FeedWebhook::create`]/[`FeedWebhook::delete`] and cascade-deleted when
 /// either the feed or the webhook is removed.
 pub struct FeedWebhook {
-    pub feed_id: i32,
-    pub webhook_id: i32,
+    pub feed_id: FeedId,
+    pub webhook_id: WebhookId,
 }
 
 #[serde_with::skip_serializing_none]
@@ -46,7 +47,7 @@ pub struct FeedWebhook {
 /// to its `url`.
 pub struct Webhook {
     /// Primary key
-    pub id: i32,
+    pub id: WebhookId,
     /// Label shown in the UI.
     pub name: String,
     /// Endpoint the payload is POSTed to.
@@ -59,7 +60,7 @@ pub struct Webhook {
 }
 
 impl Webhook {
-    pub async fn get(pool: &DatabasePool, webhook_id: i32) -> WyrmResult<Self> {
+    pub async fn get(pool: &DatabasePool, webhook_id: WebhookId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         webhooks::table
             .find(webhook_id)
@@ -96,7 +97,7 @@ impl Webhook {
             .map_err(WyrmError::from)
     }
 
-    pub async fn delete(pool: &DatabasePool, webhook_id: i32) -> WyrmResult<Self> {
+    pub async fn delete(pool: &DatabasePool, webhook_id: WebhookId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         diesel::delete(webhooks::table.find(webhook_id))
             .returning(Self::as_returning())
@@ -109,7 +110,11 @@ impl Webhook {
 impl FeedWebhook {
     /// Attaches a webhook to a feed. Idempotent: re-attaching an existing pair
     /// is a no-op rather than a unique-violation error.
-    pub async fn create(pool: &DatabasePool, feed_id: i32, webhook_id: i32) -> WyrmResult<()> {
+    pub async fn create(
+        pool: &DatabasePool,
+        feed_id: FeedId,
+        webhook_id: WebhookId,
+    ) -> WyrmResult<()> {
         let mut conn = pool.get().await?;
         diesel::insert_into(feed_webhooks::table)
             .values((
@@ -123,7 +128,11 @@ impl FeedWebhook {
     }
 
     /// Detaches a webhook from a feed. A no-op if the pair isn't attached.
-    pub async fn delete(pool: &DatabasePool, feed_id: i32, webhook_id: i32) -> WyrmResult<()> {
+    pub async fn delete(
+        pool: &DatabasePool,
+        feed_id: FeedId,
+        webhook_id: WebhookId,
+    ) -> WyrmResult<()> {
         let mut conn = pool.get().await?;
         diesel::delete(
             feed_webhooks::table
@@ -140,7 +149,7 @@ impl FeedWebhook {
 #[diesel(table_name = crate::schema::webhooks)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct WebhookUpdateForm {
-    pub id: i32,
+    pub id: WebhookId,
     pub name: Option<String>,
     pub url: Option<String>,
     pub kind: Option<WebhookKind>,

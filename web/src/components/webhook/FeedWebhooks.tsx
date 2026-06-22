@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useWebhooks } from "../../hooks/useWebhooks";
+import type { WebhookId } from "../../types/WebhookId";
 
 interface Props {
   /** Currently-selected webhook ids (staged; committed by the parent (EditFeedForm) on save). */
-  selected: Set<number>;
-  onToggle: (webhookId: number, checked: boolean) => void;
+  selected: Set<WebhookId>;
+  onToggle: (id: WebhookId, checked: boolean) => void;
 }
 
 // Only show the filter box once the webhook list is long enough.

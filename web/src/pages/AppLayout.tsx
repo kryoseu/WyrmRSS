@@ -1,20 +1,21 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { SideMenu } from "../components/SideMenu";
+import type { FeedId } from "../types/FeedId";
 
 export type AppLayoutContext = {
-  excludedFeeds: Set<number>;
-  onToggleExclude: (feedId: number) => void;
+  excludedFeeds: Set<FeedId>;
+  onToggleExclude: (id: FeedId) => void;
 };
 
 export function AppLayout() {
-  const [excludedFeeds, setExcludedFeeds] = useState<Set<number>>(new Set());
+  const [excludedFeeds, setExcludedFeeds] = useState<Set<FeedId>>(new Set());
 
-  function toggleExclude(feedId: number) {
+  function toggleExclude(id: FeedId) {
     setExcludedFeeds((prev) => {
       const next = new Set(prev);
-      if (next.has(feedId)) next.delete(feedId);
-      else next.add(feedId);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }

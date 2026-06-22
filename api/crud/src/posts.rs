@@ -1,6 +1,9 @@
 use actix_web::web::{Data, Json, Path};
 use api_utils::context::WyrmContext;
-use database::models::post::{Post, PostUpdateForm};
+use database::{
+    models::post::{Post, PostUpdateForm},
+    newtypes::PostId,
+};
 use serde::Deserialize;
 use wyrm_utils::result::WyrmResult;
 
@@ -12,7 +15,7 @@ pub struct UpdatePost {
 }
 
 pub async fn update(
-    path: Path<i32>,
+    path: Path<PostId>,
     Json(data): Json<UpdatePost>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<Post>> {

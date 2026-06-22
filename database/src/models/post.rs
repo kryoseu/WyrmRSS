@@ -1,5 +1,6 @@
 use crate::{
     DatabasePool,
+    newtypes::{FeedId, PostId},
     schema::posts::{self},
 };
 use chrono::{DateTime, Utc};
@@ -18,10 +19,10 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 /// A single entry fetched from a feed.
 pub struct Post {
     /// Primary key.
-    pub id: i32,
+    pub id: PostId,
     /// The feed this post belongs to; the row is removed when that feed is
     /// deleted (`ON DELETE CASCADE`).
-    pub feed_id: i32,
+    pub feed_id: FeedId,
     /// Post title, or `None` if the feed entry has none.
     pub title: Option<String>,
     /// Link to the original post. Forms the `(feed_id, url)` uniqueness
@@ -49,7 +50,7 @@ pub struct Post {
 }
 
 impl Post {
-    pub async fn get(pool: &DatabasePool, post_id: i32) -> WyrmResult<Self> {
+    pub async fn get(pool: &DatabasePool, post_id: PostId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         posts::table
             .find(post_id)
@@ -113,7 +114,7 @@ impl Post {
             .map_err(WyrmError::from)
     }
 
-    pub async fn toggle_is_read(pool: &DatabasePool, post_id: i32) -> WyrmResult<Self> {
+    pub async fn toggle_is_read(pool: &DatabasePool, post_id: PostId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         diesel::update(posts::table.find(post_id))
             .set(posts::is_read.eq(diesel::dsl::not(posts::is_read)))
@@ -127,7 +128,7 @@ impl Post {
 #[diesel(table_name = crate::schema::posts)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct PostUpdateForm {
-    pub id: i32,
+    pub id: PostId,
     pub is_favorite: Option<bool>,
     pub is_read: Option<bool>,
 }
@@ -136,7 +137,7 @@ pub struct PostUpdateForm {
 #[diesel(table_name = crate::schema::posts)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct PostInsertForm {
-    pub feed_id: i32,
+    pub feed_id: FeedId,
     pub title: Option<String>,
     pub url: Option<String>,
     pub authors: Option<String>,
@@ -147,7 +148,7 @@ pub struct PostInsertForm {
 }
 
 impl PostInsertForm {
-    pub fn from_entry(entry: Entry, feed_id: i32) -> Self {
+    pub fn from_entry(entry: Entry, feed_id: FeedId) -> Self {
         let media_description = entry
             .media
             .into_iter()
@@ -210,6 +211,7 @@ macro_rules! test_post {
         .expect("should create test post");
 
         let id = {
+            use crate::newtypes::PostId;
             use diesel::prelude::*;
             use diesel_async::RunQueryDsl;
             let mut conn = $pool.get().await.expect("should get conn");
@@ -217,7 +219,7 @@ macro_rules! test_post {
                 .filter($crate::schema::posts::feed_id.eq($feed_id))
                 .filter($crate::schema::posts::url.eq(&url))
                 .select($crate::schema::posts::id)
-                .first::<i32>(&mut conn)
+                .first::<PostId>(&mut conn)
                 .await
                 .expect("post should exist")
         };
@@ -287,9 +289,9 @@ mod tests {
             "<content>Full body.</content>",
         ));
 
-        let form = PostInsertForm::from_entry(entry, 42);
+        let form = PostInsertForm::from_entry(entry, FeedId(42));
 
-        assert_eq!(form.feed_id, 42);
+        assert_eq!(form.feed_id, FeedId(42));
         assert_eq!(form.title.as_deref(), Some("Hello World"));
         assert_eq!(form.url.as_deref(), Some("https://example.com/post/1"));
         assert_eq!(form.authors.as_deref(), Some("Jane Doe (jane@example.com)"));
@@ -323,7 +325,7 @@ mod tests {
         .await
         .expect("should create post");
 
-        let id: i32 = {
+        let id: PostId = {
             let mut conn = pool.get().await.expect("should get conn");
             posts::table
                 .filter(posts::feed_id.eq(feed.id))
@@ -472,7 +474,7 @@ mod tests {
             "</media:group>",
         ));
 
-        let form = PostInsertForm::from_entry(entry, 7);
+        let form = PostInsertForm::from_entry(entry, FeedId(7));
 
         assert_eq!(form.title.as_deref(), Some("Test Video"));
         assert_eq!(form.url.as_deref(), Some("https://example.com/video/1"));

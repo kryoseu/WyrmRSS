@@ -17,6 +17,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { archivePost, unarchivePost, updatePost } from "../api/posts";
 import { setPostArchived, setPostRead, setPostFavorite } from "../cache/posts";
+import type { PostId } from "../types/PostId";
 
 export function useArchivePost() {
   const queryClient = useQueryClient();
@@ -37,7 +38,7 @@ export function useUnarchivePost() {
 export function useSetPostRead() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, isRead }: { id: number; isRead: boolean }) =>
+    mutationFn: ({ id, isRead }: { id: PostId; isRead: boolean }) =>
       updatePost(id, { is_read: isRead, is_favorite: null }),
     onSuccess: (post) => setPostRead(queryClient, post.id, post.is_read),
   });
@@ -46,7 +47,7 @@ export function useSetPostRead() {
 export function useSetPostFavorite() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, isFavorite }: { id: number; isFavorite: boolean }) =>
+    mutationFn: ({ id, isFavorite }: { id: PostId; isFavorite: boolean }) =>
       updatePost(id, { is_favorite: isFavorite, is_read: null }),
     onSuccess: (post) => setPostFavorite(queryClient, post.id, post.is_favorite),
   });

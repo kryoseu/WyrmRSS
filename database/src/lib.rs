@@ -1,4 +1,5 @@
 pub mod models;
+pub mod newtypes;
 pub mod schema;
 pub mod utils;
 pub mod views;
