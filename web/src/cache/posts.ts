@@ -34,6 +34,7 @@
  */
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 import type { Post } from "../types/Post";
+import type { FeedId } from "../types/FeedId";
 import type { PagedResponse } from "../types/PagedResponse";
 
 // ─── Cache keys ───
@@ -45,7 +46,8 @@ export const postKeys = {
   all: ["posts"] as const,
 
   listPrefix: ["posts", "list"] as const,
-  listed: (tag?: string, search?: string) => [...postKeys.listPrefix, { tag, search }] as const,
+  listed: (tag?: string, search?: string, exclude?: FeedId[]) =>
+    [...postKeys.listPrefix, { tag, search, exclude }] as const,
 
   feedPrefix: ["posts", "feed"] as const,
   byFeed: (feedId: number) => [...postKeys.feedPrefix, feedId] as const,

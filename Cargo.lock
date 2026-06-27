@@ -237,7 +237,9 @@ dependencies = [
  "actix-web",
  "api_utils",
  "database",
+ "serde",
  "tokio",
+ "ts-rs",
  "wyrm-rss",
  "wyrm_utils",
 ]
@@ -271,6 +273,7 @@ version = "0.16.1"
 dependencies = [
  "actix-web",
  "database",
+ "serde",
  "tokio",
  "wyrm-rss",
 ]

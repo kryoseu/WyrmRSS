@@ -1,21 +1,13 @@
 use crate::{
     DatabasePool,
     models::post::Post,
+    newtypes::FeedId,
     schema::{feeds, posts},
     utils::pagination::{PagedResponse, PaginationCursor},
 };
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use serde::Deserialize;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
-
-#[derive(Deserialize, ts_rs::TS)]
-#[ts(optional_fields, export)]
-pub struct ListPosts {
-    pub page: Option<PaginationCursor>,
-    pub tag: Option<String>,
-    pub search: Option<String>,
-}
 
 #[derive(Default)]
 pub struct PostQuery {
@@ -23,6 +15,7 @@ pub struct PostQuery {
     pub tag: Option<String>,
     pub fav_only: bool,
     pub search: Option<String>,
+    pub exclude: Option<Vec<FeedId>>,
     pub cursor: Option<PaginationCursor>,
 }
 
@@ -58,6 +51,10 @@ impl PostQuery {
                     .ilike(format!("%{search}%"))
                     .or(posts::description.ilike(format!("%{search}%"))),
             );
+        }
+
+        if let Some(exclude) = self.exclude {
+            query = query.filter(posts::feed_id.ne_all(exclude))
         }
 
         if self.fav_only {

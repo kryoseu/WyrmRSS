@@ -5,14 +5,22 @@ use actix_web::{
 use api_utils::context::WyrmContext;
 use database::{
     models::{archive::PostArchive, post::Post},
-    newtypes::PostId,
-    utils::pagination::PagedResponse,
-    views::{
-        archive::get_post_archive_insert_form,
-        post::{ListPosts, PostQuery},
-    },
+    newtypes::{FeedId, PostId},
+    utils::pagination::{PagedResponse, PaginationCursor},
+    views::{archive::get_post_archive_insert_form, post::PostQuery},
 };
+use serde::Deserialize;
 use wyrm_utils::result::WyrmResult;
+
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(optional_fields, export)]
+pub struct ListPosts {
+    pub page: Option<PaginationCursor>,
+    pub tag: Option<String>,
+    pub search: Option<String>,
+    #[serde(default, deserialize_with = "api_utils::posts::de_comma_sep_feed_ids")]
+    pub exclude: Option<Vec<FeedId>>,
+}
 
 pub async fn get(path: Path<PostId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Post>> {
     let post_id = path.into_inner();
@@ -43,6 +51,7 @@ pub async fn list(
         cursor: query.page,
         tag: query.tag,
         search: query.search,
+        exclude: query.exclude,
         ..Default::default()
     }
     .list(&ctx.db_pool, page_size)
@@ -83,4 +92,60 @@ pub async fn list_favorites(
     .list(&ctx.db_pool, page_size)
     .await?;
     Ok(Json(page))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::web::Query;
+
+    /// Parse a query string through the same extractor production uses.
+    fn parse(qs: &str) -> ListPosts {
+        Query::<ListPosts>::from_query(qs)
+            .expect("query should parse")
+            .into_inner()
+    }
+
+    #[test]
+    fn exclude_parses_comma_separated_feed_ids() {
+        let q = parse("exclude=3,7,12");
+        assert_eq!(q.exclude, Some(vec![FeedId(3), FeedId(7), FeedId(12)]));
+    }
+
+    #[test]
+    fn exclude_single_id() {
+        assert_eq!(parse("exclude=5").exclude, Some(vec![FeedId(5)]));
+    }
+
+    #[test]
+    fn exclude_absent_is_none() {
+        assert_eq!(parse("tag=news").exclude, None);
+    }
+
+    #[test]
+    fn exclude_empty_string_is_none() {
+        assert_eq!(parse("exclude=").exclude, None);
+    }
+
+    #[test]
+    fn exclude_tolerates_surrounding_whitespace() {
+        // `%20` decodes to a space around the middle id.
+        assert_eq!(
+            parse("exclude=3,%207%20,12").exclude,
+            Some(vec![FeedId(3), FeedId(7), FeedId(12)])
+        );
+    }
+
+    #[test]
+    fn exclude_rejects_non_numeric() {
+        assert!(Query::<ListPosts>::from_query("exclude=3,abc").is_err());
+    }
+
+    #[test]
+    fn parses_scalar_fields() {
+        let q = parse("tag=news&search=rust");
+        assert_eq!(q.tag.as_deref(), Some("news"));
+        assert_eq!(q.search.as_deref(), Some("rust"));
+        assert_eq!(q.exclude, None);
+    }
 }
