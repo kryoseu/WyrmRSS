@@ -40,6 +40,16 @@ export function PostList() {
 
   const showTagChips = !feedIdNum;
 
+  // Exclusion applies only to the all-posts list, never the per-feed view.
+  // Sorted so the query key is order-stable; undefined when nothing is excluded.
+  const exclude = useMemo(
+    () =>
+      feedIdNum === undefined && excludedFeeds.size > 0
+        ? [...excludedFeeds].sort((a, b) => a - b)
+        : undefined,
+    [excludedFeeds, feedIdNum]
+  );
+
   const {
     data,
     isLoading,
@@ -50,7 +60,8 @@ export function PostList() {
     = usePosts({
       feedId: feedIdNum,
       tag: showTagChips ? activeTag : undefined,
-      search: debouncedSearch || undefined
+      search: debouncedSearch || undefined,
+      exclude
     });
 
   useOpenPostFromRoute(postId, onOpenPost);
@@ -58,14 +69,7 @@ export function PostList() {
   const feedMap = useFeedMap(feeds);
   const tags = useFeedTags(feeds);
 
-  const allPosts = useFlattenedPages(data);
-  const posts = useMemo(
-    () =>
-      allPosts?.filter(
-        (p) => feedIdNum !== undefined || !excludedFeeds.has(p.feed_id)
-      ),
-    [allPosts, excludedFeeds, feedIdNum]
-  );
+  const posts = useFlattenedPages(data);
 
   return (
     <div className="pane pane-posts">

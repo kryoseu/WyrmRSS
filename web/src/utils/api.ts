@@ -25,8 +25,13 @@ export const ENDPOINTS = {
     poll: () => `${BASE}/feeds/poll`,
   },
   posts: {
-    list: ({ page, tag, search }: ListPosts) =>
-      buildUrl(`${BASE}/posts`, { page, tag, search }),
+    list: ({ page, tag, search, exclude }: ListPosts) =>
+      buildUrl(`${BASE}/posts`, {
+        page,
+        tag,
+        search,
+        exclude: exclude?.length ? exclude.join(",") : undefined,
+      }),
 
     get: (id: PostId) => `${BASE}/posts/${id}`,
 

@@ -12,7 +12,7 @@ import type { PostId } from "../types/PostId";
 import type { Tag } from "../components/PostsTagChips";
 import { postKeys } from "../cache/posts";
 
-type PostsQuery = { feedId?: FeedId; tag?: string; search?: string };
+type PostsQuery = { feedId?: FeedId; tag?: string; search?: string; exclude?: FeedId[] };
 
 type ArchivedQuery = { search?: string; tag?: string };
 
@@ -38,11 +38,11 @@ export function usePost(id?: PostId) {
   });
 }
 
-export function usePosts({ feedId, tag, search }: PostsQuery = {}) {
+export function usePosts({ feedId, tag, search, exclude }: PostsQuery = {}) {
   return useInfiniteQuery(
     feedId
       ? infinitePostsQuery(postKeys.byFeed(feedId), (page) => listPostsByFeed(feedId, { page, search }))
-      : infinitePostsQuery(postKeys.listed(tag, search), (page) => listPosts({ page, tag, search })),
+      : infinitePostsQuery(postKeys.listed(tag, search, exclude), (page) => listPosts({ page, tag, search, exclude })),
   );
 }
 

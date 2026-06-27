@@ -45,14 +45,6 @@ export function FeedItem({ feed, active, excluded, onToggleExclude }: Props) {
       className={`feed-item${active ? " active" : ""}${excluded ? " excluded" : ""}`}
     >
       <span className="feed-item-title">{feed.title}</span>
-      {feed.tag && (
-        <span
-          className="feed-item-tag"
-          style={feed.tag_color ? ({ '--tag-color': feed.tag_color } as React.CSSProperties) : undefined}
-        >
-          {feed.tag}
-        </span>
-      )}
       <button
         className={`feed-item-filter${excluded ? " active" : ""}`}
         onClick={handleFilter}
@@ -77,6 +69,14 @@ export function FeedItem({ feed, active, excluded, onToggleExclude }: Props) {
       >
         <TbX />
       </button>
+      {feed.tag && (
+        <span
+          className="feed-item-tag"
+          style={feed.tag_color ? ({ '--tag-color': feed.tag_color } as React.CSSProperties) : undefined}
+        >
+          {feed.tag}
+        </span>
+      )}
     </Link>
   );
 }
