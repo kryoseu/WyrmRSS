@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="images/app.png" width="75%" />
+  <img src="images/app.png" width="80%" />
 </p>
 
 ## Features
