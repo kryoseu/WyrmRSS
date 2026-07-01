@@ -1,12 +1,12 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="images/l-o-dark.png" width="50%">
-    <img src="images/l-o-light.png" width="50%">
+    <source media="(prefers-color-scheme: dark)" srcset="images/l-o-dark.png" width="60%">
+    <img src="images/l-o-light.png" width="60%">
   </picture>
 </p> 
 
 <p align="center">
-  A self-hosted RSS reader and aggregator.
+  <i>A self-hosted RSS reader and aggregator</i>.
 </p>
 
 <p align="center">
