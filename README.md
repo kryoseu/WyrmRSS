@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="images/l-o-light.svg" width="60%">
-    <img src="images/l-o-dark.svg" width="60%">
+    <source media="(prefers-color-scheme: dark)" srcset="images/l-o-light.svg" width="65%">
+    <img src="images/l-o-dark.svg" width="65%">
   </picture>
 </p> 
 
@@ -114,3 +114,7 @@ Filters are per-feed and substring-matched against each entry's URL, so `/shorts
 ## License
 
 GPL v3 — see [LICENSE](LICENSE).
+
+## Credits
+
+Logo by [Pedro Niels](https://www.instagram.com/opedroniels/).
