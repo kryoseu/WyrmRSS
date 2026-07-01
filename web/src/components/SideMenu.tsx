@@ -15,8 +15,11 @@ export function SideMenu({ excludedFeeds, onToggleExclude }: Props) {
   return (
     <div className="sidebar">
       <div className="sidebar-brand">
-        <div className="sidebar-logo">W</div>
-        <span className="sidebar-name">Wyrm-RSS</span>
+        <img
+          className="sidebar-logo"
+          src={theme === "light" ? "/l-o-dark.svg" : "/l-o-light.svg"}
+          alt="Wyrm-RSS"
+        />
       </div>
 
       <nav className="sidebar-nav">
