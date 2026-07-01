@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="images/l-o-dark.png" width="60%">
-    <img src="images/l-o-light.png" width="60%">
+    <source media="(prefers-color-scheme: dark)" srcset="images/l-o-light.svg" width="60%">
+    <img src="images/l-o-dark.svg" width="60%">
   </picture>
 </p> 
 
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="images/2.png" width="65%" />
+  <img src="images/app.png" width="65%" />
 </p>
 
 ## Features
