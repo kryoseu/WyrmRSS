@@ -34,6 +34,8 @@
 - Unread-only as the default view
 - Folders/categories
 - Per-feed mark all as read
+- Reordering
+- Prioritization 
   
 ## Installation
 
