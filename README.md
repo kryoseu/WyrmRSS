@@ -27,6 +27,13 @@
 - Full-text search on post titles and description
 - Hot-reloaded settings (poll interval, HTTP timeouts, page size, reading mode) configurable via the UI
 - Easy to install
+
+## Roadmap
+
+- Per-feed unread count
+- Unread-only as the default view
+- Folders/categories
+- Per-feed mark all as read
   
 ## Installation
 
