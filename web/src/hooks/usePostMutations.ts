@@ -16,6 +16,7 @@
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { archivePost, unarchivePost, updatePost } from "../api/posts";
+import { setFeedUnreadCount } from "../cache/feeds";
 import { setPostArchived, setPostRead, setPostFavorite } from "../cache/posts";
 import type { PostId } from "../types/PostId";
 
@@ -40,7 +41,10 @@ export function useSetPostRead() {
   return useMutation({
     mutationFn: ({ id, isRead }: { id: PostId; isRead: boolean }) =>
       updatePost(id, { is_read: isRead, is_favorite: null }),
-    onSuccess: (post) => setPostRead(queryClient, post.id, post.is_read),
+    onSuccess: ({ post, feed_unread_count }) => {
+      setPostRead(queryClient, post.id, post.is_read);
+      setFeedUnreadCount(queryClient, post.feed_id, feed_unread_count);
+    },
   });
 }
 
@@ -49,6 +53,12 @@ export function useSetPostFavorite() {
   return useMutation({
     mutationFn: ({ id, isFavorite }: { id: PostId; isFavorite: boolean }) =>
       updatePost(id, { is_favorite: isFavorite, is_read: null }),
-    onSuccess: (post) => setPostFavorite(queryClient, post.id, post.is_favorite),
+    onSuccess: ({ post, feed_unread_count }) => {
+      setPostFavorite(queryClient, post.id, post.is_favorite);
+      // The count can't change on a favorite toggle, but the response carries
+      // the current value for free — applying it reconciles any drift from
+      // background polls.
+      setFeedUnreadCount(queryClient, post.feed_id, feed_unread_count);
+    },
   });
 }

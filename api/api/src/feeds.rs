@@ -3,7 +3,11 @@ use actix_web::{
     web::{Data, Json, Path},
 };
 use api_utils::context::WyrmContext;
-use database::{models::feed::Feed, newtypes::FeedId};
+use database::{
+    models::feed::Feed,
+    newtypes::FeedId,
+    views::{self, feed::FeedView},
+};
 use std::time::Duration;
 use tokio::sync::mpsc::error::TrySendError;
 use wyrm_rss::worker::WorkerCommand;
@@ -14,8 +18,8 @@ pub async fn get(path: Path<FeedId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<
     Ok(Json(feed))
 }
 
-pub async fn list(ctx: Data<WyrmContext>) -> WyrmResult<Json<Vec<Feed>>> {
-    let feeds = Feed::get_all(&ctx.db_pool).await?;
+pub async fn list(ctx: Data<WyrmContext>) -> WyrmResult<Json<Vec<FeedView>>> {
+    let feeds = views::feed::list(&ctx.db_pool).await?;
     Ok(Json(feeds))
 }
 

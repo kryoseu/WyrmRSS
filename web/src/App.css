@@ -53,7 +53,7 @@
 /* ── Sidebar ─────────────────────────────────────────────────── */
 
 .sidebar {
-  width: 220px;
+  width: 250px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
   display: flex;
@@ -242,7 +242,8 @@
       display: flex;
     }
 
-    .feed-item-tag {
+    .feed-item-tag,
+    .feed-item-unread {
       display: none;
     }
   }
@@ -276,6 +277,18 @@
   border: 1px solid color-mix(in srgb, var(--tag-color) 35%, transparent);
   background: color-mix(in srgb, var(--tag-color) 10%, transparent);
   color: var(--tag-color);
+  letter-spacing: 0.2px;
+  line-height: 1.5;
+}
+
+.feed-item-unread {
+  flex-shrink: 0;
+  font-size: 0.56rem;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
   letter-spacing: 0.2px;
   line-height: 1.5;
 }

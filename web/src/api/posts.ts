@@ -3,6 +3,7 @@ import type { FeedId } from "../types/FeedId";
 import type { PostId } from "../types/PostId";
 import type { PagedResponse } from "../types/PagedResponse";
 import type { UpdatePost } from "../types/UpdatePost";
+import type { UpdatePostResponse } from "../types/UpdatePostResponse";
 import type { ListPosts } from "../types/ListPosts";
 import { ENDPOINTS, json, noContent } from "../utils/api";
 import type { ListPostArchive } from "../types/ListPostArchive";
@@ -33,9 +34,9 @@ export const archivePost = (id: PostId): Promise<PostArchive> =>
 export const unarchivePost = (id: PostId): Promise<void> =>
   fetchWithAuth(ENDPOINTS.posts.unarchive(id), { method: "DELETE" }).then(noContent);
 
-export const updatePost = (id: PostId, data: UpdatePost): Promise<Post> =>
+export const updatePost = (id: PostId, data: UpdatePost): Promise<UpdatePostResponse> =>
   fetchWithAuth(ENDPOINTS.posts.update(id), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-  }).then<Post>(json);
+  }).then<UpdatePostResponse>(json);
