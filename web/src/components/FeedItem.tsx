@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { TbCircleOff, TbPencil, TbX } from "react-icons/tb";
 import { useDeleteFeed } from "../hooks/useFeeds";
-import type { Feed } from "../types/Feed";
+import type { FeedView } from "../types/FeedView";
 import type { FeedId } from "../types/FeedId";
 import { EditFeedForm } from "./EditFeedForm";
 
 interface Props {
-  feed: Feed;
+  feed: FeedView;
   active: boolean;
   excluded: boolean;
   onToggleExclude: (id: FeedId) => void;
@@ -75,6 +75,12 @@ export function FeedItem({ feed, active, excluded, onToggleExclude }: Props) {
           style={feed.tag_color ? ({ '--tag-color': feed.tag_color } as React.CSSProperties) : undefined}
         >
           {feed.tag}
+        </span>
+      )}
+
+      {feed.unread_count > 0 && (
+        <span className="feed-item-unread" title={`${feed.unread_count} unread`}>
+          {feed.unread_count > 999 ? "999+" : feed.unread_count}
         </span>
       )}
     </Link>

@@ -7,11 +7,11 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use feed_rs::model::Entry;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 #[serde_with::skip_serializing_none]
-#[derive(Serialize, Queryable, Selectable)]
+#[derive(Serialize, Deserialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::posts)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 #[derive(ts_rs::TS)]
@@ -119,6 +119,17 @@ impl Post {
         diesel::update(posts::table.find(post_id))
             .set(posts::is_read.eq(diesel::dsl::not(posts::is_read)))
             .get_result::<Self>(&mut conn)
+            .await
+            .map_err(WyrmError::from)
+    }
+
+    pub async fn unread_count(pool: &DatabasePool, feed_id: FeedId) -> WyrmResult<i64> {
+        let mut conn = pool.get().await?;
+        posts::table
+            .filter(posts::feed_id.eq(feed_id))
+            .filter(posts::is_read.eq(false))
+            .count()
+            .get_result(&mut conn)
             .await
             .map_err(WyrmError::from)
     }
@@ -437,6 +448,42 @@ mod tests {
 
         assert!(updated.is_favorite);
         assert!(updated.is_read);
+
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
+    }
+
+    #[tokio::test]
+    async fn unread_count_ignores_read_posts_and_other_feeds() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+        let other_feed = test_feed!(&pool);
+
+        let _ = test_post!(&pool, feed.id);
+        let _ = test_post!(&pool, feed.id);
+        let read_id = test_post!(&pool, feed.id).id;
+        test_post!(&pool, other_feed.id);
+
+        Post::update(
+            &pool,
+            PostUpdateForm {
+                id: read_id,
+                is_favorite: None,
+                is_read: Some(true),
+            },
+        )
+        .await
+        .expect("should mark post read");
+
+        assert_eq!(Post::unread_count(&pool, feed.id).await.unwrap(), 2);
+        assert_eq!(Post::unread_count(&pool, other_feed.id).await.unwrap(), 1);
+
+        // Deleting cascades the posts away; a postless feed counts 0.
+        Feed::delete(&pool, other_feed.id)
+            .await
+            .expect("should delete feed");
+        assert_eq!(Post::unread_count(&pool, other_feed.id).await.unwrap(), 0);
 
         Feed::delete(&pool, feed.id)
             .await

@@ -1,16 +1,13 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFeed, deleteFeed, getFeeds, pollFeeds, updateFeed } from "../api/feeds";
+import { feedKeys } from "../cache/feeds";
 import { postKeys } from "../cache/posts";
 import type { CreateFeed } from "../types/CreateFeed";
 import type { UpdateFeed } from "../types/UpdateFeed";
 import type { FeedId } from "../types/FeedId";
 import type { Feed } from "../types/Feed";
 import type { Tag } from "../components/PostsTagChips";
-
-export const feedKeys = {
-  all: ["feeds"] as const,
-};
 
 export function useFeeds() {
   return useQuery({

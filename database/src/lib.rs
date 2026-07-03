@@ -1,3 +1,6 @@
+// `macro_use` re-exports the test fixture macros (`test_feed!`/`test_post!`)
+// declared inside `models` so the `views` tests can use them too.
+#[macro_use]
 pub mod models;
 pub mod newtypes;
 pub mod schema;
