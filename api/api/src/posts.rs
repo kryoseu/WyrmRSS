@@ -55,7 +55,7 @@ pub async fn list(
         feed_id: query.feed_id,
         tag: query.tag,
         fav_only: query.fav_only,
-        unread_only: query.unread_only,
+        unread_only: query.unread_only.or(Some(true)),
         search: query.search,
         exclude: query.exclude,
     }

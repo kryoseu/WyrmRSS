@@ -52,7 +52,9 @@ export function usePosts(params: ListPosts = {}) {
 
 export function useFavoritePosts(search?: string) {
   return useInfiniteQuery(
-    infinitePostsQuery(postKeys.favorites(search), (page) => listPosts({ fav_only: true, page, search })),
+    infinitePostsQuery(postKeys.favorites(search), (page) =>
+      // explicit false: favorites are usually read, the unread-only API default would hide them
+      listPosts({ fav_only: true, unread_only: false, page, search })),
   );
 }
 
