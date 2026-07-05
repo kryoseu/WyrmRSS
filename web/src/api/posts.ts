@@ -1,5 +1,4 @@
 import type { Post } from "../types/Post";
-import type { FeedId } from "../types/FeedId";
 import type { PostId } from "../types/PostId";
 import type { PagedResponse } from "../types/PagedResponse";
 import type { UpdatePost } from "../types/UpdatePost";
@@ -15,12 +14,6 @@ export const listPosts = (params: ListPosts): Promise<PagedResponse<Array<Post>>
 
 export const getPost = (id: PostId): Promise<Post> =>
   fetchWithAuth(ENDPOINTS.posts.get(id)).then<Post>(json);
-
-export const listPostsByFeed = (id: FeedId, params: ListPosts): Promise<PagedResponse<Array<Post>>> =>
-  fetchWithAuth(ENDPOINTS.posts.listByFeed(id, params)).then<PagedResponse<Array<Post>>>(json);
-
-export const listFavoritePosts = (params: ListPosts): Promise<PagedResponse<Array<Post>>> =>
-  fetchWithAuth(ENDPOINTS.posts.listFavorites(params)).then<PagedResponse<Array<Post>>>(json);
 
 export const listArchivedPosts = (params: ListPostArchive): Promise<PagedResponse<Array<PostArchive>>> =>
   fetchWithAuth(ENDPOINTS.posts.listArchived(params)).then<PagedResponse<Array<PostArchive>>>(json);

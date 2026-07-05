@@ -25,26 +25,18 @@ export const ENDPOINTS = {
     poll: () => `${BASE}/feeds/poll`,
   },
   posts: {
-    list: ({ page, tag, unread_only, search, exclude }: ListPosts) =>
+    list: ({ page, feed_id, tag, fav_only, unread_only, search, exclude }: ListPosts) =>
       buildUrl(`${BASE}/posts`, {
         page,
+        feed_id: feed_id !== undefined ? String(feed_id) : undefined,
         tag,
+        fav_only: fav_only ? "true" : undefined,
         unread_only: unread_only ? "true" : undefined,
         search,
         exclude: exclude?.length ? exclude.join(",") : undefined,
       }),
 
     get: (id: PostId) => `${BASE}/posts/${id}`,
-
-    listByFeed: (id: FeedId, { page, unread_only, search }: ListPosts) =>
-      buildUrl(`${BASE}/feeds/${id}/posts`, {
-        page,
-        unread_only: unread_only ? "true" : undefined,
-        search,
-      }),
-
-    listFavorites: ({ page, search }: ListPosts) =>
-      buildUrl(`${BASE}/posts/favorites`, { page, search }),
 
     listArchived: ({ page, tag, search }: ListPostArchive) =>
       buildUrl(`${BASE}/posts/archive`, { page, tag, search }),
