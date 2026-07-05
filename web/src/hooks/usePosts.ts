@@ -9,10 +9,9 @@ import { getArchivedPost, getPost, listArchivedPosts, listFavoritePosts, listPos
 import type { PagedResponse } from "../types/PagedResponse";
 import type { FeedId } from "../types/FeedId";
 import type { PostId } from "../types/PostId";
+import type { ListPosts } from "../types/ListPosts";
 import type { Tag } from "../components/PostsTagChips";
 import { postKeys } from "../cache/posts";
-
-type PostsQuery = { feedId?: FeedId; tag?: string; search?: string; exclude?: FeedId[] };
 
 type ArchivedQuery = { search?: string; tag?: string };
 
@@ -38,11 +37,16 @@ export function usePost(id?: PostId) {
   });
 }
 
-export function usePosts({ feedId, tag, search, exclude }: PostsQuery = {}) {
+// `params.page` is ignored: the infinite query owns the cursor and sets it per page.
+// `feedId` routes to the per-feed endpoint; it moves into ListPosts later.
+export function usePosts(params: ListPosts = {}, feedId?: FeedId) {
+  const { tag, search, exclude, unread_only } = params;
   return useInfiniteQuery(
     feedId
-      ? infinitePostsQuery(postKeys.byFeed(feedId), (page) => listPostsByFeed(feedId, { page, search }))
-      : infinitePostsQuery(postKeys.listed(tag, search, exclude), (page) => listPosts({ page, tag, search, exclude })),
+      ? infinitePostsQuery(postKeys.byFeed(feedId, search, unread_only), (page) =>
+          listPostsByFeed(feedId, { ...params, page }))
+      : infinitePostsQuery(postKeys.listed(tag, search, exclude, unread_only), (page) =>
+          listPosts({ ...params, page })),
   );
 }
 

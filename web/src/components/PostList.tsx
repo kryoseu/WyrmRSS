@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
-import { TbRefresh } from "react-icons/tb";
+import { TbEye, TbEyeOff, TbRefresh } from "react-icons/tb";
 import { usePosts } from "../hooks/usePosts";
+import { useUnreadOnly } from "../hooks/useUnreadOnly";
 import { useFeeds, usePollFeeds, useFeedTags } from "../hooks/useFeeds";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { useOpenPostFromRoute } from "../hooks/useOpenPostFromRoute";
@@ -27,6 +28,8 @@ export function PostList() {
   const pollFeeds = usePollFeeds();
 
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
+
+  const { unreadOnly, setUnreadOnly } = useUnreadOnly();
 
   const [activeTag, setActiveTag] = useState<string | undefined>(undefined);
 
@@ -57,12 +60,15 @@ export function PostList() {
     fetchNextPage,
     isFetchingNextPage,
     isRefetching }
-    = usePosts({
-      feedId: feedIdNum,
-      tag: showTagChips ? activeTag : undefined,
-      search: debouncedSearch || undefined,
-      exclude
-    });
+    = usePosts(
+      {
+        tag: showTagChips ? activeTag : undefined,
+        search: debouncedSearch || undefined,
+        exclude,
+        unread_only: unreadOnly || undefined,
+      },
+      feedIdNum,
+    );
 
   useOpenPostFromRoute(postId, onOpenPost);
 
@@ -74,6 +80,14 @@ export function PostList() {
   return (
     <div className="pane pane-posts">
       <PostsToolbar value={search} onChange={setSearch}>
+        <button
+          className="posts-refresh-btn"
+          aria-pressed={!unreadOnly}
+          onClick={() => setUnreadOnly(!unreadOnly)}
+          title={unreadOnly ? "Unread only — click to show all posts" : "All posts — click to show unread only"}
+        >
+          {unreadOnly ? <TbEyeOff /> : <TbEye />}
+        </button>
         <button
           className="posts-refresh-btn"
           onClick={() => pollFeeds.mutate()}
@@ -96,7 +110,7 @@ export function PostList() {
         hasNextPage={hasNextPage}
         fetchNextPage={fetchNextPage}
         isFetchingNextPage={isFetchingNextPage}
-        emptyMessage="No posts"
+        emptyMessage={unreadOnly && !debouncedSearch && !activeTag ? "All caught up" : "No posts"}
         renderItem={(post) => (
           <PostItem
             post={post}

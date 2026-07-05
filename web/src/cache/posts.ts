@@ -46,11 +46,12 @@ export const postKeys = {
   all: ["posts"] as const,
 
   listPrefix: ["posts", "list"] as const,
-  listed: (tag?: string, search?: string, exclude?: FeedId[]) =>
-    [...postKeys.listPrefix, { tag, search, exclude }] as const,
+  listed: (tag?: string, search?: string, exclude?: FeedId[], unreadOnly?: boolean) =>
+    [...postKeys.listPrefix, { tag, search, exclude, unreadOnly }] as const,
 
   feedPrefix: ["posts", "feed"] as const,
-  byFeed: (feedId: number) => [...postKeys.feedPrefix, feedId] as const,
+  byFeed: (feedId: number, search?: string, unreadOnly?: boolean) =>
+    [...postKeys.feedPrefix, feedId, { search, unreadOnly }] as const,
 
   favoritesPrefix: ["posts", "favorites"] as const,
   favorites: (search?: string) => [...postKeys.favoritesPrefix, { search }] as const,

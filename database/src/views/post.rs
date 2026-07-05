@@ -14,6 +14,7 @@ pub struct PostQuery {
     pub feed_id: Option<i32>,
     pub tag: Option<String>,
     pub fav_only: bool,
+    pub unread_only: Option<bool>,
     pub search: Option<String>,
     pub exclude: Option<Vec<FeedId>>,
     pub cursor: Option<PaginationCursor>,
@@ -59,6 +60,10 @@ impl PostQuery {
 
         if self.fav_only {
             query = query.filter(posts::is_favorite.eq(true));
+        }
+
+        if self.unread_only == Some(true) {
+            query = query.filter(posts::is_read.eq(false));
         }
 
         if let Some((timestamp, post_id)) = cursor {
