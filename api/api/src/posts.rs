@@ -17,6 +17,7 @@ use wyrm_utils::result::WyrmResult;
 pub struct ListPosts {
     pub page: Option<PaginationCursor>,
     pub tag: Option<String>,
+    pub unread_only: Option<bool>,
     pub search: Option<String>,
     #[serde(default, deserialize_with = "api_utils::posts::de_comma_sep_feed_ids")]
     pub exclude: Option<Vec<FeedId>>,
@@ -50,6 +51,7 @@ pub async fn list(
     let page = PostQuery {
         cursor: query.page,
         tag: query.tag,
+        unread_only: query.unread_only,
         search: query.search,
         exclude: query.exclude,
         ..Default::default()
@@ -70,6 +72,7 @@ pub async fn list_by_feed(
         feed_id: Some(path.into_inner()),
         cursor: query.page,
         search: query.search,
+        unread_only: query.unread_only,
         ..Default::default()
     }
     .list(&ctx.db_pool, page_size)
