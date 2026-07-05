@@ -11,9 +11,9 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 #[derive(Default)]
 pub struct PostQuery {
-    pub feed_id: Option<i32>,
+    pub feed_id: Option<FeedId>,
     pub tag: Option<String>,
-    pub fav_only: bool,
+    pub fav_only: Option<bool>,
     pub unread_only: Option<bool>,
     pub search: Option<String>,
     pub exclude: Option<Vec<FeedId>>,
@@ -58,7 +58,7 @@ impl PostQuery {
             query = query.filter(posts::feed_id.ne_all(exclude))
         }
 
-        if self.fav_only {
+        if self.fav_only == Some(true) {
             query = query.filter(posts::is_favorite.eq(true));
         }
 

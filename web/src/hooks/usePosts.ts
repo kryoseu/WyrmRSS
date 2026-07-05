@@ -5,9 +5,8 @@ import {
   useQuery,
   type QueryKey,
 } from "@tanstack/react-query";
-import { getArchivedPost, getPost, listArchivedPosts, listFavoritePosts, listPosts, listPostsByFeed } from "../api/posts";
+import { getArchivedPost, getPost, listArchivedPosts, listPosts } from "../api/posts";
 import type { PagedResponse } from "../types/PagedResponse";
-import type { FeedId } from "../types/FeedId";
 import type { PostId } from "../types/PostId";
 import type { ListPosts } from "../types/ListPosts";
 import type { Tag } from "../components/PostsTagChips";
@@ -38,21 +37,22 @@ export function usePost(id?: PostId) {
 }
 
 // `params.page` is ignored: the infinite query owns the cursor and sets it per page.
-// `feedId` routes to the per-feed endpoint; it moves into ListPosts later.
-export function usePosts(params: ListPosts = {}, feedId?: FeedId) {
-  const { tag, search, exclude, unread_only } = params;
+// `feed_id` scopes the list to one feed and keeps its own cache namespace.
+export function usePosts(params: ListPosts = {}) {
+  const { feed_id, tag, search, exclude, unread_only } = params;
   return useInfiniteQuery(
-    feedId
-      ? infinitePostsQuery(postKeys.byFeed(feedId, search, unread_only), (page) =>
-          listPostsByFeed(feedId, { ...params, page }))
-      : infinitePostsQuery(postKeys.listed(tag, search, exclude, unread_only), (page) =>
-          listPosts({ ...params, page })),
+    infinitePostsQuery(
+      feed_id
+        ? postKeys.byFeed(feed_id, search, unread_only)
+        : postKeys.listed(tag, search, exclude, unread_only),
+      (page) => listPosts({ ...params, page }),
+    ),
   );
 }
 
 export function useFavoritePosts(search?: string) {
   return useInfiniteQuery(
-    infinitePostsQuery(postKeys.favorites(search), (page) => listFavoritePosts({ page, search })),
+    infinitePostsQuery(postKeys.favorites(search), (page) => listPosts({ fav_only: true, page, search })),
   );
 }
 

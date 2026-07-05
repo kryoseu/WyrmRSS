@@ -60,15 +60,13 @@ export function PostList() {
     fetchNextPage,
     isFetchingNextPage,
     isRefetching }
-    = usePosts(
-      {
-        tag: showTagChips ? activeTag : undefined,
-        search: debouncedSearch || undefined,
-        exclude,
-        unread_only: unreadOnly || undefined,
-      },
-      feedIdNum,
-    );
+    = usePosts({
+      feed_id: feedIdNum,
+      tag: showTagChips ? activeTag : undefined,
+      search: debouncedSearch || undefined,
+      exclude,
+      unread_only: unreadOnly || undefined,
+    });
 
   useOpenPostFromRoute(postId, onOpenPost);
 

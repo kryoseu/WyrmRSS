@@ -16,7 +16,9 @@ use wyrm_utils::result::WyrmResult;
 #[ts(optional_fields, export)]
 pub struct ListPosts {
     pub page: Option<PaginationCursor>,
+    pub feed_id: Option<FeedId>,
     pub tag: Option<String>,
+    pub fav_only: Option<bool>,
     pub unread_only: Option<bool>,
     pub search: Option<String>,
     #[serde(default, deserialize_with = "api_utils::posts::de_comma_sep_feed_ids")]
@@ -50,47 +52,12 @@ pub async fn list(
     let page_size = ctx.runtime_settings.read()?.page_size;
     let page = PostQuery {
         cursor: query.page,
+        feed_id: query.feed_id,
         tag: query.tag,
+        fav_only: query.fav_only,
         unread_only: query.unread_only,
         search: query.search,
         exclude: query.exclude,
-        ..Default::default()
-    }
-    .list(&ctx.db_pool, page_size)
-    .await?;
-    Ok(Json(page))
-}
-
-pub async fn list_by_feed(
-    path: Path<i32>,
-    query: Query<ListPosts>,
-    ctx: Data<WyrmContext>,
-) -> WyrmResult<Json<PagedResponse<Vec<Post>>>> {
-    let query = query.into_inner();
-    let page_size = ctx.runtime_settings.read()?.page_size;
-    let page = PostQuery {
-        feed_id: Some(path.into_inner()),
-        cursor: query.page,
-        search: query.search,
-        unread_only: query.unread_only,
-        ..Default::default()
-    }
-    .list(&ctx.db_pool, page_size)
-    .await?;
-    Ok(Json(page))
-}
-
-pub async fn list_favorites(
-    query: Query<ListPosts>,
-    ctx: Data<WyrmContext>,
-) -> WyrmResult<Json<PagedResponse<Vec<Post>>>> {
-    let query = query.into_inner();
-    let page_size = ctx.runtime_settings.read()?.page_size;
-    let page = PostQuery {
-        fav_only: true,
-        cursor: query.page,
-        search: query.search,
-        ..Default::default()
     }
     .list(&ctx.db_pool, page_size)
     .await?;
