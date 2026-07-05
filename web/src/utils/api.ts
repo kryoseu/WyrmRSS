@@ -31,7 +31,7 @@ export const ENDPOINTS = {
         feed_id: feed_id !== undefined ? String(feed_id) : undefined,
         tag,
         fav_only: fav_only ? "true" : undefined,
-        unread_only: unread_only ? "true" : undefined,
+        unread_only: unread_only !== undefined ? String(unread_only) : undefined,
         search,
         exclude: exclude?.length ? exclude.join(",") : undefined,
       }),

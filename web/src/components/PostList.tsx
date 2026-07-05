@@ -65,7 +65,8 @@ export function PostList() {
       tag: showTagChips ? activeTag : undefined,
       search: debouncedSearch || undefined,
       exclude,
-      unread_only: unreadOnly || undefined,
+      // unread-only is the API default; only "all" mode needs the param
+      unread_only: unreadOnly ? undefined : false,
     });
 
   useOpenPostFromRoute(postId, onOpenPost);
