@@ -32,7 +32,7 @@ impl PostQuery {
 
         let mut query = posts::table
             .select(Post::as_select())
-            .order(posts::id.desc())
+            .order((posts::published_at.desc(), posts::id.desc()))
             .limit(page_size as i64 + 1)
             .into_boxed();
 
@@ -66,14 +66,20 @@ impl PostQuery {
             query = query.filter(posts::is_read.eq(false));
         }
 
-        if let Some(post_id) = cursor {
-            query = query.filter(posts::id.lt(post_id));
+        if let Some((timestamp, post_id)) = cursor {
+            query = query.filter(
+                posts::published_at
+                    .lt(timestamp)
+                    .or(posts::published_at.eq(timestamp).and(posts::id.lt(post_id))),
+            );
         }
 
         let mut items: Vec<Post> = query.load(&mut conn).await.map_err(WyrmError::from)?;
         let next_page = if items.len() > page_size as usize {
             items.truncate(page_size as usize);
-            items.last().map(|p| PaginationCursor::encode(p.id.0))
+            items
+                .last()
+                .map(|p| PaginationCursor::encode(p.published_at, p.id.0))
         } else {
             None
         };
