@@ -31,7 +31,7 @@
 ## Roadmap
 
 - Per-feed unread count ✅
-- Unread-only as the default view
+- Unread-only as the default view ✅
 - Folders/categories
 - Per-feed mark all as read
 - Reordering
