@@ -1,4 +1,7 @@
-use crate::http::{HttpClient, HttpConfig};
+use crate::{
+    filter::CompiledFilters,
+    http::{HttpClient, HttpConfig},
+};
 use chrono::Utc;
 use database::{
     DatabasePool,
@@ -130,17 +133,12 @@ async fn process_feed(
 
     let parsed = feed_rs::parser::parse(&bytes[..])?;
 
+    let filters = CompiledFilters::new(&feed.filters);
+
     let mut forms: Vec<PostInsertForm> = parsed
         .entries
         .into_iter()
-        .filter(|entry| {
-            let url = entry.links.first().map(|l| l.href.as_str()).unwrap_or("");
-            !feed
-                .url_filter
-                .iter()
-                .filter_map(|f| f.as_deref())
-                .any(|f| url.contains(f))
-        })
+        .filter(|entry| !filters.excludes(entry))
         .map(|entry| PostInsertForm::from_entry(entry, feed.id))
         .collect();
 
@@ -172,7 +170,7 @@ async fn process_feed(
             ttl: None,
             tag: None,
             tag_color: None,
-            url_filter: None,
+            filters: None,
             last_fetched_at: Some(Utc::now()),
         },
     )

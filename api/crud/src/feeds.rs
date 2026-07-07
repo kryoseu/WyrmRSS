@@ -15,7 +15,7 @@ pub struct CreateFeed {
     ttl: i32,
     tag: Option<String>,
     tag_color: Option<String>,
-    url_filter: Option<Vec<String>>,
+    filters: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, ts_rs::TS)]
@@ -26,7 +26,7 @@ pub struct UpdateFeed {
     ttl: Option<i32>,
     tag: Option<String>,
     tag_color: Option<String>,
-    url_filter: Option<Vec<String>>,
+    filters: Option<Vec<String>>,
 }
 
 pub async fn create(
@@ -41,7 +41,7 @@ pub async fn create(
             ttl: data.ttl,
             tag: data.tag,
             tag_color: data.tag_color,
-            url_filter: data.url_filter.map(|v| v.into_iter().map(Some).collect()),
+            filters: data.filters.map(|v| v.into_iter().map(Some).collect()),
         },
     )
     .await?;
@@ -62,7 +62,7 @@ pub async fn update(
             ttl: data.ttl,
             tag: data.tag,
             tag_color: data.tag_color,
-            url_filter: data.url_filter.map(|v| v.into_iter().map(Some).collect()),
+            filters: data.filters.map(|v| v.into_iter().map(Some).collect()),
             last_fetched_at: None,
         },
     )

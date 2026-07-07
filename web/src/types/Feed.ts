@@ -18,7 +18,7 @@ ttl: number,
 /**
  * Substrings that exclude a post when matched against its URL.
  */
-url_filter: Array<string | null>, 
+filters: Array<string | null>, 
 /**
  * Timestamp of the last successful poll; `None` until the feed is first fetched.
  */
