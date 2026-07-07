@@ -1166,7 +1166,7 @@
   &:hover {
     background: var(--accent-bg);
 
-    .post-item-fav,
+    .post-item-bookmark,
     .post-item-archive,
     .post-item-read {
       opacity: 1;
@@ -1241,7 +1241,7 @@
   }
 }
 
-.post-item-fav,
+.post-item-bookmark,
 .post-item-archive {
   opacity: 0;
   background: none;
@@ -1259,8 +1259,8 @@
   }
 }
 
-.post-item-fav {
-  &.favorited {
+.post-item-bookmark {
+  &.bookmarked {
     opacity: 1;
     color: var(--accent);
   }
@@ -1331,7 +1331,7 @@
   }
 }
 
-.pane-reader-fav,
+.pane-reader-bookmark,
 .pane-reader-archive {
   background: none;
   border: none;
@@ -1349,8 +1349,8 @@
   }
 }
 
-.pane-reader-fav {
-  &.favorited {
+.pane-reader-bookmark {
+  &.bookmarked {
     color: var(--accent);
   }
 }

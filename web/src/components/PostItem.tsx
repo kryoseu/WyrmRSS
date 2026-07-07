@@ -1,9 +1,9 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
 import { HiMail, HiMailOpen } from "react-icons/hi";
-import { TbArchive, TbArchiveOff, TbStar, TbStarFilled } from "react-icons/tb";
+import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
 import type { Post } from "../types/Post";
-import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostFavorite } from "../hooks/usePostMutations";
+import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../hooks/usePostMutations";
 import { useSettings } from "../hooks/useSettings";
 import { initials } from "../utils/posts";
 
@@ -22,7 +22,7 @@ interface Props {
 
 export const PostItem = memo(function PostItem({ post, to, active, feed }: Props) {
   const { mutate: setRead } = useSetPostRead();
-  const { mutate: setFavorite } = useSetPostFavorite();
+  const { mutate: setBookmarked } = useSetPostBookmarked();
   const { mutate: archivePost } = useArchivePost();
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
@@ -35,10 +35,10 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
     setRead({ id: post.id, isRead: !post.is_read });
   }
 
-  function handleFavToggle(e: React.MouseEvent) {
+  function handleBookmarkToggle(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    setFavorite({ id: post.id, isFavorite: !post.is_favorite });
+    setBookmarked({ id: post.id, bookmarked: !post.bookmarked });
   }
 
   function handleArchiveToggle(e: React.MouseEvent) {
@@ -57,8 +57,8 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   const archiveIcon = post.is_archived ? <TbArchiveOff /> : <TbArchive />;
   const archiveLabel = post.is_archived ? "Unarchive" : "Archive";
 
-  const favoriteIcon = post.is_favorite ? <TbStarFilled /> : <TbStar />;
-  const favoriteLabel = post.is_favorite ? "Unfavorite" : "Favorite";
+  const bookmarkIcon = post.bookmarked ? <TbBookmarkFilled /> : <TbBookmark />;
+  const bookmarkLabel = post.bookmarked ? "Remove from read later" : "Read later";
 
   const tagColor = feed?.tagColor ? ({ '--tag-color': feed.tagColor } as React.CSSProperties) : undefined;
 
@@ -91,11 +91,11 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
         {archiveIcon}
       </button>
       <button
-        className={`post-item-fav${post.is_favorite ? " favorited" : ""}`}
-        onClick={handleFavToggle}
-        aria-label={favoriteLabel}
+        className={`post-item-bookmark${post.bookmarked ? " bookmarked" : ""}`}
+        onClick={handleBookmarkToggle}
+        aria-label={bookmarkLabel}
       >
-        {favoriteIcon}
+        {bookmarkIcon}
       </button>
     </Link>
   );
