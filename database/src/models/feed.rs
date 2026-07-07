@@ -24,7 +24,7 @@ pub struct Feed {
     /// elapsed since `last_fetched_at`.
     pub ttl: i32,
     /// Substrings that exclude a post when matched against its URL.
-    pub url_filter: Vec<Option<String>>,
+    pub filters: Vec<Option<String>>,
     /// Timestamp of the last successful poll; `None` until the feed is first fetched.
     pub last_fetched_at: Option<DateTime<Utc>>,
     /// Timestamp the feed was added.
@@ -102,7 +102,7 @@ pub struct FeedInsertForm {
     pub ttl: i32,
     pub tag: Option<String>,
     pub tag_color: Option<String>,
-    pub url_filter: Option<Vec<Option<String>>>,
+    pub filters: Option<Vec<Option<String>>>,
 }
 
 #[derive(Identifiable, AsChangeset)]
@@ -115,7 +115,7 @@ pub struct FeedUpdateForm {
     pub ttl: Option<i32>,
     pub tag: Option<String>,
     pub tag_color: Option<String>,
-    pub url_filter: Option<Vec<Option<String>>>,
+    pub filters: Option<Vec<Option<String>>>,
     pub last_fetched_at: Option<DateTime<Utc>>,
 }
 
@@ -181,7 +181,7 @@ mod tests {
                 ttl: Some(120),
                 tag: Some("news".to_string()),
                 tag_color: None,
-                url_filter: None,
+                filters: None,
                 last_fetched_at: None,
             },
         )

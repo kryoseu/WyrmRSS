@@ -23,7 +23,7 @@ diesel::table! {
         title -> Text,
         url -> Text,
         ttl -> Int4,
-        url_filter -> Array<Nullable<Text>>,
+        filters -> Array<Nullable<Text>>,
         last_fetched_at -> Nullable<Timestamptz>,
         created_at -> Timestamptz,
         tag -> Nullable<Text>,

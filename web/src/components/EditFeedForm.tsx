@@ -21,7 +21,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
   const [tagColor, setTagColor] = useState(feed.tag_color ?? "#6b7280");
   const [copied, setCopied] = useState(false);
   const [urlFilters, setUrlFilters] = useState<string[]>(
-    feed.url_filter.filter((f): f is string => f !== null)
+    feed.filters.filter((f): f is string => f !== null)
   );
   const update = useUpdateFeed();
   const qc = useQueryClient();
@@ -68,7 +68,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
           ttl: Number(ttl) || null,
           tag: tag.trim() || null,
           tag_color: tag.trim() ? tagColor : null,
-          url_filter: urlFilters.map((f) => f.trim()).filter(Boolean),
+          filters: urlFilters.map((f) => f.trim()).filter(Boolean),
         },
       });
 
@@ -146,7 +146,8 @@ export function EditFeedForm({ feed, onClose }: Props) {
             <input
               value={filter}
               onChange={(e) => updateFilter(i, e.target.value)}
-              placeholder="e.g. /unwanted"
+              placeholder="e.g. title:sponsored"
+              title="url: title: content: to scope; no prefix matches everywhere"
             />
             <button type="button" className="btn-remove-filter" onClick={() => removeFilter(i)}>×</button>
           </div>
@@ -156,7 +157,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
           className="btn btn-ghost"
           onClick={() => setUrlFilters([...urlFilters, ""])}
         >
-          + URL filter
+          + Filter
         </button>
       </div>
       <div className="feed-webhooks-section">

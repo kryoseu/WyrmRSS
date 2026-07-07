@@ -135,7 +135,7 @@ mod tests {
             title: "MyFeed".to_string(),
             url: "https://feed.test".to_string(),
             ttl: 60,
-            url_filter: vec![],
+            filters: vec![],
             last_fetched_at: None,
             created_at: Utc::now(),
             tag: None,

@@ -11,15 +11,15 @@ export function AddFeedForm({ onClose }: Props) {
   const [ttl, setTtl] = useState("");
   const [tag, setTag] = useState("");
   const [tagColor, setTagColor] = useState("#6b7280");
-  const [urlFilters, setUrlFilters] = useState<string[]>([]);
+  const [filters, setFilters] = useState<string[]>([]);
   const create = useCreateFeed();
 
   function updateFilter(index: number, value: string) {
-    setUrlFilters(urlFilters.map((f, i) => (i === index ? value : f)));
+    setFilters(filters.map((f, i) => (i === index ? value : f)));
   }
 
   function removeFilter(index: number) {
-    setUrlFilters(urlFilters.filter((_, i) => i !== index));
+    setFilters(filters.filter((_, i) => i !== index));
   }
 
   function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
@@ -31,7 +31,7 @@ export function AddFeedForm({ onClose }: Props) {
         ttl: ttl === "" ? 60 : Number(ttl),
         tag: tag.trim() || null,
         tag_color: tag.trim() ? tagColor : null,
-        url_filter: urlFilters.map((f) => f.trim()).filter(Boolean),
+        filters: filters.map((f) => f.trim()).filter(Boolean),
       },
       { onSuccess: onClose }
     );
@@ -75,12 +75,13 @@ export function AddFeedForm({ onClose }: Props) {
         />
       </div>
       <div className="url-filters">
-        {urlFilters.map((filter, i) => (
+        {filters.map((filter, i) => (
           <div key={i} className="url-filter-row">
             <input
               value={filter}
               onChange={(e) => updateFilter(i, e.target.value)}
-              placeholder="e.g. /unwanted"
+              placeholder="e.g. title:sponsored"
+              title="url: title: content: to scope; no prefix matches everywhere"
             />
             <button type="button" className="btn-remove-filter" onClick={() => removeFilter(i)}>×</button>
           </div>
@@ -88,9 +89,9 @@ export function AddFeedForm({ onClose }: Props) {
         <button
           type="button"
           className="btn btn-ghost"
-          onClick={() => setUrlFilters([...urlFilters, ""])}
+          onClick={() => setFilters([...filters, ""])}
         >
-          + URL filter
+          + Filter
         </button>
       </div>
       <div className="add-feed-form-actions">
