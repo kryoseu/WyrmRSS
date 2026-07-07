@@ -115,6 +115,7 @@ mod tests {
             is_favorite: false,
             is_read: false,
             is_archived: false,
+            created_at: Utc::now(),
         }
     }
 

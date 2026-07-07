@@ -60,6 +60,7 @@ diesel::table! {
         is_favorite -> Bool,
         is_read -> Bool,
         is_archived -> Bool,
+        created_at -> Timestamptz,
     }
 }
 
