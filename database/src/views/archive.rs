@@ -44,7 +44,7 @@ impl PostArchiveQuery {
 
         let mut query = post_archive::table
             .select(PostArchive::as_select())
-            .order((post_archive::published_at.desc(), post_archive::id.desc()))
+            .order((post_archive::archived_at.desc(), post_archive::id.desc()))
             .limit(page_size as i64 + 1)
             .into_boxed();
 
@@ -62,9 +62,9 @@ impl PostArchiveQuery {
 
         if let Some((timestamp, post_id)) = cursor {
             query = query.filter(
-                post_archive::published_at
+                post_archive::archived_at
                     .lt(timestamp)
-                    .or(post_archive::published_at
+                    .or(post_archive::archived_at
                         .eq(timestamp)
                         .and(post_archive::id.lt(post_id))),
             );
@@ -75,7 +75,7 @@ impl PostArchiveQuery {
             items.truncate(page_size as usize);
             items
                 .last()
-                .map(|p| PaginationCursor::encode(p.published_at, p.id.0))
+                .map(|p| PaginationCursor::encode(p.archived_at, p.id.0))
         } else {
             None
         };

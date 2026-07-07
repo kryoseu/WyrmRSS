@@ -130,7 +130,7 @@ async fn process_feed(
 
     let parsed = feed_rs::parser::parse(&bytes[..])?;
 
-    let forms: Vec<PostInsertForm> = parsed
+    let mut forms: Vec<PostInsertForm> = parsed
         .entries
         .into_iter()
         .filter(|entry| {
@@ -143,6 +143,22 @@ async fn process_feed(
         })
         .map(|entry| PostInsertForm::from_entry(entry, feed.id))
         .collect();
+
+    // Insert oldest-first so serial ids ascend with publish date: post lists
+    // sort by (created_at, id) and a whole batch shares one created_at, so
+    // insertion order is the display order within the batch. Entries without
+    // a publish date get NOW() from the column default, hence sort as newest.
+    let now = Utc::now();
+    forms.sort_by_key(|f| f.published_at.unwrap_or(now));
+
+    // A feed's first fetch is backfill, not news: stamp created_at with the
+    // publish date so the history interleaves into the river chronologically
+    // instead of clumping on top as one just-arrived batch.
+    if feed.last_fetched_at.is_none() {
+        for form in &mut forms {
+            form.created_at = form.published_at;
+        }
+    }
 
     let new_posts = Post::create_many(pool, forms).await?;
     info!("Got {} new posts for feed {}", new_posts.len(), feed.title);

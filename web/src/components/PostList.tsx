@@ -14,7 +14,10 @@ import { PostsTagChips } from "./PostsTagChips";
 import { VirtualGroupedList } from "./VirtualGroupedList";
 import type { ReaderOutletContext } from "../pages/ReaderPage";
 import type { FeedId } from "../types/FeedId";
+import type { Post } from "../types/Post";
 import { postPath } from "../utils/posts";
+
+const groupDate = (post: Post) => post.created_at;
 
 export function PostList() {
   const { excludedFeeds, activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
@@ -109,6 +112,7 @@ export function PostList() {
         hasNextPage={hasNextPage}
         fetchNextPage={fetchNextPage}
         isFetchingNextPage={isFetchingNextPage}
+        groupDate={groupDate}
         emptyMessage={unreadOnly && !debouncedSearch && !activeTag ? "All caught up" : "No posts"}
         renderItem={(post) => (
           <PostItem

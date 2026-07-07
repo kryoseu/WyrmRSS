@@ -32,7 +32,7 @@ impl PostQuery {
 
         let mut query = posts::table
             .select(Post::as_select())
-            .order((posts::published_at.desc(), posts::id.desc()))
+            .order((posts::created_at.desc(), posts::id.desc()))
             .limit(page_size as i64 + 1)
             .into_boxed();
 
@@ -68,9 +68,9 @@ impl PostQuery {
 
         if let Some((timestamp, post_id)) = cursor {
             query = query.filter(
-                posts::published_at
+                posts::created_at
                     .lt(timestamp)
-                    .or(posts::published_at.eq(timestamp).and(posts::id.lt(post_id))),
+                    .or(posts::created_at.eq(timestamp).and(posts::id.lt(post_id))),
             );
         }
 
@@ -79,7 +79,7 @@ impl PostQuery {
             items.truncate(page_size as usize);
             items
                 .last()
-                .map(|p| PaginationCursor::encode(p.published_at, p.id.0))
+                .map(|p| PaginationCursor::encode(p.created_at, p.id.0))
         } else {
             None
         };

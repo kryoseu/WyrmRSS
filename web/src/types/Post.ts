@@ -59,4 +59,8 @@ is_read: boolean,
 /**
  * Whether the post has been archived.
  */
-is_archived: boolean, };
+is_archived: boolean, 
+/**
+ * When the entry was created - insertion time
+ */
+created_at: string, };

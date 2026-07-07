@@ -17,12 +17,20 @@ export function initials(name: string): string {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
-export function groupByDate<T extends { published_at: string }>(items: T[]): [string, T[]][] {
-  const map = new Map<string, T[]>();
+// Groups consecutive items sharing a date label, preserving list order.
+// `getDate` must return the field the list is sorted by — labeling by any
+// other field puts headers out of order. Grouping runs (not a global map)
+// guarantees grouping never moves an item relative to the backend sort.
+export function groupByDate<T>(items: T[], getDate: (item: T) => string): [string, T[]][] {
+  const groups: [string, T[]][] = [];
   for (const item of items) {
-    const label = getDateLabel(item.published_at);
-    if (!map.has(label)) map.set(label, []);
-    map.get(label)!.push(item);
+    const label = getDateLabel(getDate(item));
+    const last = groups[groups.length - 1];
+    if (last && last[0] === label) {
+      last[1].push(item);
+    } else {
+      groups.push([label, [item]]);
+    }
   }
-  return Array.from(map.entries());
+  return groups;
 }

@@ -9,6 +9,9 @@ import { PostsToolbar } from "./PostsToolbar";
 import { PostsTagChips } from "./PostsTagChips";
 import { VirtualGroupedList } from "./VirtualGroupedList";
 import type { ReaderOutletContext } from "../pages/ReaderPage";
+import type { PostArchive } from "../types/PostArchive";
+
+const groupDate = (archive: PostArchive) => archive.archived_at;
 
 export function ArchiveList() {
   const { activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
@@ -46,6 +49,7 @@ export function ArchiveList() {
         hasNextPage={hasNextPage}
         fetchNextPage={fetchNextPage}
         isFetchingNextPage={isFetchingNextPage}
+        groupDate={groupDate}
         emptyMessage="No archived posts"
         renderItem={(archive) => (
           <ArchiveItem

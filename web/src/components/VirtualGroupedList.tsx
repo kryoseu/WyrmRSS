@@ -7,28 +7,31 @@ type VRow<T> =
   | { kind: "item"; item: T; isGroupFirst: boolean; isGroupLast: boolean }
   | { kind: "load-more" };
 
-interface Props<T extends { published_at: string }> {
+interface Props<T> {
   items: T[] | undefined;
   isLoading: boolean;
   hasNextPage: boolean | undefined;
   fetchNextPage: () => void;
   isFetchingNextPage: boolean;
   renderItem: (item: T) => React.ReactNode;
+  // Date used for group headers; must be the field the list is sorted by.
+  groupDate: (item: T) => string;
   emptyMessage: string;
 }
 
-export function VirtualGroupedList<T extends { published_at: string }>({
+export function VirtualGroupedList<T>({
   items,
   isLoading,
   hasNextPage,
   fetchNextPage,
   isFetchingNextPage,
   renderItem,
+  groupDate,
   emptyMessage,
 }: Props<T>) {
   const rows = useMemo<VRow<T>[]>(() => {
     const result: VRow<T>[] = [];
-    for (const [label, groupItems] of items ? groupByDate(items) : []) {
+    for (const [label, groupItems] of items ? groupByDate(items, groupDate) : []) {
       result.push({ kind: "header", label, count: groupItems.length });
       for (const [i, item] of groupItems.entries()) {
         result.push({ kind: "item", item, isGroupFirst: i === 0, isGroupLast: i === groupItems.length - 1 });
@@ -36,7 +39,7 @@ export function VirtualGroupedList<T extends { published_at: string }>({
     }
     if (hasNextPage) result.push({ kind: "load-more" });
     return result;
-  }, [items, hasNextPage]);
+  }, [items, hasNextPage, groupDate]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line react-hooks/incompatible-library

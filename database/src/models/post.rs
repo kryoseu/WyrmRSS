@@ -48,6 +48,8 @@ pub struct Post {
     pub is_read: bool,
     /// Whether the post has been archived.
     pub is_archived: bool,
+    /// When the entry was created - insertion time
+    pub created_at: DateTime<Utc>,
 }
 
 impl Post {
@@ -157,6 +159,7 @@ pub struct PostInsertForm {
     pub updated_at: Option<DateTime<Utc>>,
     pub description: Option<String>,
     pub content: Option<String>,
+    pub created_at: Option<DateTime<Utc>>,
 }
 
 impl PostInsertForm {
@@ -190,6 +193,7 @@ impl PostInsertForm {
             updated_at: entry.updated,
             description: entry.summary.map(|s| s.content).or(media_description),
             content: entry.content.and_then(|c| c.body),
+            created_at: None,
         }
     }
 }
@@ -217,6 +221,7 @@ macro_rules! test_post {
                 updated_at: None,
                 description: None,
                 content: None,
+                created_at: None,
             },
         )
         .await
@@ -267,6 +272,7 @@ mod tests {
                 updated_at: None,
                 description: None,
                 content: None,
+                created_at: None,
             }
         };
     }
@@ -332,6 +338,7 @@ mod tests {
                 updated_at: None,
                 description: Some("A description.".to_string()),
                 content: Some("Body.".to_string()),
+                created_at: None,
             },
         )
         .await

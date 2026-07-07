@@ -9,7 +9,10 @@ import { PostItem } from "./PostItem";
 import { PostsToolbar } from "./PostsToolbar";
 import { VirtualGroupedList } from "./VirtualGroupedList";
 import type { ReaderOutletContext } from "../pages/ReaderPage";
+import type { Post } from "../types/Post";
 import { postPath } from "../utils/posts";
+
+const groupDate = (post: Post) => post.created_at;
 
 export function BookmarkedPostList() {
   const { activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
@@ -38,6 +41,7 @@ export function BookmarkedPostList() {
         hasNextPage={hasNextPage}
         fetchNextPage={fetchNextPage}
         isFetchingNextPage={isFetchingNextPage}
+        groupDate={groupDate}
         emptyMessage="Nothing saved for later"
         renderItem={(post) => (
           <PostItem
