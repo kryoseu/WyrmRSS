@@ -3,7 +3,7 @@
     <source media="(prefers-color-scheme: dark)" srcset="images/l-o-light.svg" width="65%">
     <img src="images/l-o-dark.svg" width="65%">
   </picture>
-</p> 
+</p>
 
 <p align="center">
   <i>A self-hosted RSS reader and aggregator</i>.
@@ -18,8 +18,8 @@
 - Subscribe to RSS and Atom feeds
 - YouTube channel support — subscribe to any channel's RSS feed and watch videos inline without leaving the reader
 - Browse posts per feed or across all feeds
-- URL filters per feed — exclude entries whose URL contains a given pattern
-- Mark posts as favorite
+- Filters per feed — exclude entries matching a pattern, scoped to URL, title or content
+- Save posts to Read Later
 - Archive posts
 - Webhooks - get notified on new posts (Discord, Slack and custom)
 - OPML import and export
@@ -28,15 +28,6 @@
 - Hot-reloaded settings (poll interval, HTTP timeouts, page size, reading mode) configurable via the UI
 - Easy to install
 
-## Roadmap
-
-- Per-feed unread count ✅
-- Unread-only as the default view ✅
-- Folders/categories
-- Per-feed mark all as read
-- Reordering
-- Prioritization 
-  
 ## Installation
 
 Docker compose and Kubernetes manifests are provided for an easy install.
@@ -103,14 +94,21 @@ The reader detects YouTube links and renders an embedded player in place of the 
 
 ### Filtering content
 
-Use URL filters to exclude certain types you don't want from a feed. Example, for YouTube you may want to exclude:
+Use filters to exclude entries you don't want from a feed. Each filter is a
+case-insensitive substring pattern, optionally scoped to a field with a
+`url:`, `title:` or `content:` prefix; an unprefixed pattern matches any of
+them. `content:` matches both the entry's summary and body.
+
+Example, for YouTube you may want to exclude:
 
 | Filter | Excludes |
 |--------|----------|
-| `/shorts` | YouTube Shorts |
-| `/live` | Live streams |
+| `url:/shorts` | YouTube Shorts |
+| `url:/live` | Live streams |
+| `title:trailer` | Entries with "trailer" in the title |
 
-Filters are per-feed and substring-matched against each entry's URL, so `/shorts` will drop any entry from that feed whose URL contains `/shorts`.
+Filters are per-feed, so `url:/shorts` drops any entry from that feed whose
+URL contains `/shorts`.
 
 ## Stack
 
