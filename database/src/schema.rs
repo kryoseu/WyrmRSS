@@ -57,7 +57,7 @@ diesel::table! {
         updated_at -> Nullable<Timestamptz>,
         description -> Nullable<Text>,
         content -> Nullable<Text>,
-        is_favorite -> Bool,
+        bookmarked -> Bool,
         is_read -> Bool,
         is_archived -> Bool,
         created_at -> Timestamptz,

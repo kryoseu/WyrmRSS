@@ -18,7 +18,7 @@ pub struct ListPosts {
     pub page: Option<PaginationCursor>,
     pub feed_id: Option<FeedId>,
     pub tag: Option<String>,
-    pub fav_only: Option<bool>,
+    pub bookmarked: Option<bool>,
     pub unread_only: Option<bool>,
     pub search: Option<String>,
     #[serde(default, deserialize_with = "api_utils::posts::de_comma_sep_feed_ids")]
@@ -54,7 +54,7 @@ pub async fn list(
         cursor: query.page,
         feed_id: query.feed_id,
         tag: query.tag,
-        fav_only: query.fav_only,
+        bookmarked: query.bookmarked,
         unread_only: query.unread_only.or(Some(true)),
         search: query.search,
         exclude: query.exclude,

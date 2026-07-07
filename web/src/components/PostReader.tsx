@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import YouTube from "react-youtube";
-import { TbArchive, TbArchiveOff, TbStar, TbStarFilled } from "react-icons/tb";
+import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
 import { usePost } from "../hooks/usePosts";
-import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostFavorite } from "../hooks/usePostMutations";
+import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../hooks/usePostMutations";
 import { useSettings } from "../hooks/useSettings";
 import { extractYouTubeId, formatDate } from "../utils/utils";
 import { ReaderPane } from "./ReaderPane";
@@ -18,7 +18,7 @@ interface Props {
 export function PostReader({ postId, onClose, width }: Props) {
   const { data: post, isLoading } = usePost(postId ?? undefined);
   const { mutate: setRead } = useSetPostRead();
-  const { mutate: setFavorite } = useSetPostFavorite();
+  const { mutate: setBookmarked } = useSetPostBookmarked();
   const { mutate: archivePost } = useArchivePost();
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
@@ -45,11 +45,11 @@ export function PostReader({ postId, onClose, width }: Props) {
   const actions = post && (
     <>
       <button
-        className={`pane-reader-fav${post.is_favorite ? " favorited" : ""}`}
-        onClick={() => setFavorite({ id: post.id, isFavorite: !post.is_favorite })}
-        aria-label={post.is_favorite ? "Unfavorite" : "Favorite"}
+        className={`pane-reader-bookmark${post.bookmarked ? " bookmarked" : ""}`}
+        onClick={() => setBookmarked({ id: post.id, bookmarked: !post.bookmarked })}
+        aria-label={post.bookmarked ? "Remove from read later" : "Read later"}
       >
-        {post.is_favorite ? <TbStarFilled /> : <TbStar />}
+        {post.bookmarked ? <TbBookmarkFilled /> : <TbBookmark />}
       </button>
       <button
         className={`pane-reader-archive${post.is_archived ? " archived" : ""}`}

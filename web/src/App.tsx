@@ -3,7 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { ApiKeyGate } from "./components/ApiKeyGate";
 import { ArchiveList } from "./components/ArchiveList";
-import { FavoritePostList } from "./components/FavoritePostList";
+import { BookmarkedPostList } from "./components/BookmarkedPostList";
 import { PostList } from "./components/PostList";
 import { ThemeProvider } from "./context/ThemeProvider";
 import { AppLayout } from "./pages/AppLayout";
@@ -26,8 +26,8 @@ export default function App() {
                 <Route path="/feeds/posts/:postId" element={<PostList />} />
                 <Route path="/feeds/:feedId" element={<PostList />} />
                 <Route path="/feeds/:feedId/posts/:postId" element={<PostList />} />
-                <Route path="/favorites" element={<FavoritePostList />} />
-                <Route path="/favorites/:postId" element={<FavoritePostList />} />
+                <Route path="/read-later" element={<BookmarkedPostList />} />
+                <Route path="/read-later/:postId" element={<BookmarkedPostList />} />
                 <Route path="/archive" element={<ArchiveList />} />
                 <Route path="/archive/:postId" element={<ArchiveList />} />
               </Route>

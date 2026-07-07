@@ -48,9 +48,10 @@ description?: string,
  */
 content?: string, 
 /**
- * Whether the user has favorited this post.
+ * Whether the user has bookmarked this post.
+ * UI shows these as "Read Later".
  */
-is_favorite: boolean, 
+bookmarked: boolean, 
 /**
  * Whether the post has been marked read.
  */
