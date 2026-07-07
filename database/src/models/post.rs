@@ -41,8 +41,9 @@ pub struct Post {
     pub description: Option<String>,
     /// Full post body, if the feed includes it.
     pub content: Option<String>,
-    /// Whether the user has favorited this post.
-    pub is_favorite: bool,
+    /// Whether the user has bookmarked this post.
+    /// UI shows these as "Read Later".
+    pub bookmarked: bool,
     /// Whether the post has been marked read.
     pub is_read: bool,
     /// Whether the post has been archived.
@@ -140,7 +141,7 @@ impl Post {
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct PostUpdateForm {
     pub id: PostId,
-    pub is_favorite: Option<bool>,
+    pub bookmarked: Option<bool>,
     pub is_read: Option<bool>,
 }
 
@@ -355,7 +356,7 @@ mod tests {
         assert_eq!(got.description.as_deref(), Some("A description."));
         assert_eq!(got.content.as_deref(), Some("Body."));
         assert!(!got.is_read);
-        assert!(!got.is_favorite);
+        assert!(!got.bookmarked);
         assert!(!got.is_archived);
 
         // Deleting the feed cascades to the post, so a follow-up get fails.
@@ -439,14 +440,14 @@ mod tests {
             &pool,
             PostUpdateForm {
                 id,
-                is_favorite: Some(true),
+                bookmarked: Some(true),
                 is_read: Some(true),
             },
         )
         .await
         .expect("update should succeed");
 
-        assert!(updated.is_favorite);
+        assert!(updated.bookmarked);
         assert!(updated.is_read);
 
         Feed::delete(&pool, feed.id)
@@ -469,7 +470,7 @@ mod tests {
             &pool,
             PostUpdateForm {
                 id: read_id,
-                is_favorite: None,
+                bookmarked: None,
                 is_read: Some(true),
             },
         )

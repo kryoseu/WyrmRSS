@@ -154,7 +154,7 @@ mod tests {
             updated_at: None,
             description: None,
             content: None,
-            is_favorite: false,
+            bookmarked: false,
             is_read: false,
             is_archived: false,
         }

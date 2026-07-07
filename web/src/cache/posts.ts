@@ -3,7 +3,7 @@
  *
  * We store every fetched result under a "query key" (an array like 
  * `["posts", "list", { tag, search }]`). Components read from those
- * cached entries, so when the user changes a post (reads it, favorites it,
+ * cached entries, so when the user changes a post (reads it, bookmarks it,
  * archives it) we can either edit the cached copy directly so the change shows
  * instantly, or mark the entry stale so React Query refetches it. The refetch
  * isn't manual: the component reading that query (via `useQuery` /
@@ -13,7 +13,7 @@
  * component has to know how the cache works.
  *
  * The same post can live in several cached entries at once — the all-posts list,
- * a single feed's list, the favorites list, the archived list, plus its own
+ * a single feed's list, the bookmarked list, the archived list, plus its own
  * detail entry. A change has to be reflected in all of them.
  *
  * Structure:
@@ -23,7 +23,7 @@
  *                  function that builds the exact key one query is stored under.
  *  - patch helpers (`patchPostInPages`, `patchPostInLists`, `patchPost`) — edit
  *                  the cached copies in place so the UI updates without a refetch.
- *  - actions (`setPostArchived`, `setPostRead`, `setPostFavorite`) — what the
+ *  - actions (`setPostArchived`, `setPostRead`, `setPostBookmarked`) — what the
  *                  mutation hooks call; each is one user action and does the right
  *                  mix of patching (changed fields) and invalidating (when a list
  *                  gains or loses the post).
@@ -39,9 +39,9 @@ import type { PagedResponse } from "../types/PagedResponse";
 
 // ─── Cache keys ───
 // Every query key in one place. A `*Prefix` is a partial key matching a whole
-// group at once — e.g. favoritesPrefix = ["posts","favorites"] hits every
-// favorites query. A builder fills in the filters for the one exact key a query
-// uses — e.g. favorites("rust") = ["posts","favorites",{ search:"rust" }].
+// group at once — e.g. bookmarkedPrefix = ["posts","bookmarked"] hits every
+// bookmarked query. A builder fills in the filters for the one exact key a query
+// uses — e.g. bookmarked("rust") = ["posts","bookmarked",{ search:"rust" }].
 export const postKeys = {
   all: ["posts"] as const,
 
@@ -53,8 +53,8 @@ export const postKeys = {
   byFeed: (feedId: number, search?: string, unreadOnly?: boolean) =>
     [...postKeys.feedPrefix, feedId, { search, unreadOnly }] as const,
 
-  favoritesPrefix: ["posts", "favorites"] as const,
-  favorites: (search?: string) => [...postKeys.favoritesPrefix, { search }] as const,
+  bookmarkedPrefix: ["posts", "bookmarked"] as const,
+  bookmarked: (search?: string) => [...postKeys.bookmarkedPrefix, { search }] as const,
 
   archivedPrefix: ["posts", "archived"] as const,
   archived: (search?: string, tag?: string) => [...postKeys.archivedPrefix, { search, tag }] as const,
@@ -78,10 +78,10 @@ function patchPostInPages(cached: PostPages, patch: (post: Post) => Post): PostP
 }
 
 // Update the post with `postId` wherever it appears in the cached lists
-// (all-posts, by-feed, favorites). Pass a full Post to replace it
+// (all-posts, by-feed, bookmarked). Pass a full Post to replace it
 function patchPostInLists(queryClient: QueryClient, postId: number, changes: Partial<Post>) {
   const apply = (post: Post) => (post.id === postId ? { ...post, ...changes } : post);
-  for (const queryKey of [postKeys.listPrefix, postKeys.feedPrefix, postKeys.favoritesPrefix]) {
+  for (const queryKey of [postKeys.listPrefix, postKeys.feedPrefix, postKeys.bookmarkedPrefix]) {
     queryClient.setQueriesData({ queryKey }, (cached: PostPages) => patchPostInPages(cached, apply));
   }
 }
@@ -112,8 +112,8 @@ export function setPostRead(queryClient: QueryClient, postId: number, isRead: bo
   patchPost(queryClient, postId, { is_read: isRead });
 }
 
-// Favoriting also changes the favorites list's membership, so refetch it.
-export function setPostFavorite(queryClient: QueryClient, postId: number, isFavorite: boolean) {
-  patchPost(queryClient, postId, { is_favorite: isFavorite });
-  queryClient.invalidateQueries({ queryKey: postKeys.favoritesPrefix });
+// Bookmarking also changes the bookmarked list's membership, so refetch it.
+export function setPostBookmarked(queryClient: QueryClient, postId: number, bookmarked: boolean) {
+  patchPost(queryClient, postId, { bookmarked });
+  queryClient.invalidateQueries({ queryKey: postKeys.bookmarkedPrefix });
 }

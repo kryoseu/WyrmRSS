@@ -67,7 +67,7 @@ mod tests {
             &pool,
             PostUpdateForm {
                 id: read_id,
-                is_favorite: None,
+                bookmarked: None,
                 is_read: Some(true),
             },
         )

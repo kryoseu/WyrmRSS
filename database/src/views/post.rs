@@ -13,7 +13,7 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 pub struct PostQuery {
     pub feed_id: Option<FeedId>,
     pub tag: Option<String>,
-    pub fav_only: Option<bool>,
+    pub bookmarked: Option<bool>,
     pub unread_only: Option<bool>,
     pub search: Option<String>,
     pub exclude: Option<Vec<FeedId>>,
@@ -58,8 +58,8 @@ impl PostQuery {
             query = query.filter(posts::feed_id.ne_all(exclude))
         }
 
-        if self.fav_only == Some(true) {
-            query = query.filter(posts::is_favorite.eq(true));
+        if self.bookmarked == Some(true) {
+            query = query.filter(posts::bookmarked.eq(true));
         }
 
         if self.unread_only == Some(true) {

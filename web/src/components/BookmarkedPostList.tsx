@@ -1,5 +1,5 @@
 import { useOutletContext, useParams } from "react-router-dom";
-import { useFavoritePosts } from "../hooks/usePosts";
+import { useBookmarkedPosts } from "../hooks/usePosts";
 import { useFeeds } from "../hooks/useFeeds";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { useOpenPostFromRoute } from "../hooks/useOpenPostFromRoute";
@@ -11,7 +11,7 @@ import { VirtualGroupedList } from "./VirtualGroupedList";
 import type { ReaderOutletContext } from "../pages/ReaderPage";
 import { postPath } from "../utils/posts";
 
-export function FavoritePostList() {
+export function BookmarkedPostList() {
   const { activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
 
   const { postId } = useParams();
@@ -21,7 +21,7 @@ export function FavoritePostList() {
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
 
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useFavoritePosts(debouncedSearch || undefined);
+    useBookmarkedPosts(debouncedSearch || undefined);
 
   useOpenPostFromRoute(postId, onOpenPost);
 
@@ -31,14 +31,14 @@ export function FavoritePostList() {
 
   return (
     <div className="pane pane-posts">
-      <PostsToolbar value={search} onChange={setSearch} placeholder="Search favorites…" />
+      <PostsToolbar value={search} onChange={setSearch} placeholder="Search read later…" />
       <VirtualGroupedList
         items={posts}
         isLoading={isLoading}
         hasNextPage={hasNextPage}
         fetchNextPage={fetchNextPage}
         isFetchingNextPage={isFetchingNextPage}
-        emptyMessage="No favorites yet"
+        emptyMessage="Nothing saved for later"
         renderItem={(post) => (
           <PostItem
             post={post}

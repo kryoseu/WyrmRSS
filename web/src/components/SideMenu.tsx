@@ -37,11 +37,11 @@ export function SideMenu({ excludedFeeds, onToggleExclude }: Props) {
           Settings
         </NavLink>
         <NavLink
-          to="/favorites"
+          to="/read-later"
           end
           className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
         >
-          Favorite Posts
+          Read Later
         </NavLink>
         <NavLink
           to="/archive"

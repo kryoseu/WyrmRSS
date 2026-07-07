@@ -10,7 +10,7 @@ use wyrm_utils::result::WyrmResult;
 #[derive(Deserialize, ts_rs::TS)]
 #[ts(export)]
 pub struct UpdatePost {
-    is_favorite: Option<bool>,
+    bookmarked: Option<bool>,
     is_read: Option<bool>,
 }
 
@@ -30,7 +30,7 @@ pub async fn update(
         &ctx.db_pool,
         PostUpdateForm {
             id: path.into_inner(),
-            is_favorite: data.is_favorite,
+            bookmarked: data.bookmarked,
             is_read: data.is_read,
         },
     )
