@@ -91,7 +91,8 @@ impl FeedWorker {
         // as settings may have been updated.
         self.http = HttpClient::new(&HttpConfig::from(&*self.runtime_settings.read()?))?;
 
-        let webhooks = views::webhook::all_by_feed(&self.db_pool).await?;
+        let feed_webhooks = views::webhook::all_by_feed(&self.db_pool).await?;
+        let feed_folders = views::folder::all_by_feed(&self.db_pool).await?;
 
         // Each in-flight feed holds ~1 pool connection. Reserve headroom so polling
         // can never starve the API handlers of the shared pool.
@@ -103,12 +104,18 @@ impl FeedWorker {
             .map(|feed| {
                 let http = self.http.clone();
                 let pool = self.db_pool.clone();
-                let feed_webhooks = webhooks.get(&feed.id).cloned().unwrap_or_default();
+                let webhooks = feed_webhooks.get(&feed.id).cloned().unwrap_or_default();
+                let folder = feed_folders.get(&feed.id).map(|f| f.name.clone());
                 let semaphore = semaphore.clone();
                 tokio::spawn(async move {
                     let _permit = semaphore.acquire().await.unwrap();
-                    if let Err(e) = process_feed(&pool, &http, &feed, &feed_webhooks).await {
-                        error!("Failed to process feed {}: {e}", feed.url);
+                    let task = FeedTask {
+                        feed,
+                        webhooks,
+                        folder,
+                    };
+                    if let Err(e) = process_feed(&pool, &http, &task).await {
+                        error!("Failed to process feed {}: {e}", task.feed.url);
                     }
                 })
             })
@@ -120,26 +127,31 @@ impl FeedWorker {
     }
 }
 
-/// Fetch -> Parse -> Store -> Update
-async fn process_feed(
-    pool: &DatabasePool,
-    http: &HttpClient,
-    feed: &Feed,
-    webhooks: &[Webhook],
-) -> WyrmResult<()> {
-    info!("Processing feed {}", feed.title);
+/// Per-feed data for one poll task
+pub struct FeedTask {
+    /// The feed
+    pub feed: Feed,
+    /// List of webhooks attached to the feed
+    webhooks: Vec<Webhook>,
+    /// Resolved folder name for webhook payloads; `None` = standalone feed.
+    folder: Option<String>,
+}
 
-    let bytes = http.fetch(&feed.url).await?;
+/// Fetch -> Parse -> Store -> Update -> Notify
+async fn process_feed(pool: &DatabasePool, http: &HttpClient, task: &FeedTask) -> WyrmResult<()> {
+    info!("Processing feed {}", task.feed.title);
+
+    let bytes = http.fetch(&task.feed.url).await?;
 
     let parsed = feed_rs::parser::parse(&bytes[..])?;
 
-    let filters = CompiledFilters::new(&feed.filters);
+    let filters = CompiledFilters::new(&task.feed.filters);
 
     let mut forms: Vec<PostInsertForm> = parsed
         .entries
         .into_iter()
         .filter(|entry| !filters.excludes(entry))
-        .map(|entry| PostInsertForm::from_entry(entry, feed.id))
+        .map(|entry| PostInsertForm::from_entry(entry, task.feed.id))
         .collect();
 
     // Insert oldest-first so serial ids ascend with publish date: post lists
@@ -152,24 +164,27 @@ async fn process_feed(
     // A feed's first fetch is backfill, not news: stamp created_at with the
     // publish date so the history interleaves into the river chronologically
     // instead of clumping on top as one just-arrived batch.
-    if feed.last_fetched_at.is_none() {
+    if task.feed.last_fetched_at.is_none() {
         for form in &mut forms {
             form.created_at = form.published_at;
         }
     }
 
     let new_posts = Post::create_many(pool, forms).await?;
-    info!("Got {} new posts for feed {}", new_posts.len(), feed.title);
+    info!(
+        "Got {} new posts for feed {}",
+        new_posts.len(),
+        task.feed.title
+    );
 
     Feed::update(
         pool,
         FeedUpdateForm {
-            id: feed.id,
+            id: task.feed.id,
             title: None,
             url: None,
             ttl: None,
-            tag: None,
-            tag_color: None,
+            folder: None,
             filters: None,
             last_fetched_at: Some(Utc::now()),
         },
@@ -180,10 +195,10 @@ async fn process_feed(
         return Ok(());
     }
 
-    for webhook in webhooks {
+    for webhook in &task.webhooks {
         // A broken custom template must not abort the poll or send garbage:
         // log and skip this delivery.
-        match wyrm_webhook::get_payload(webhook, feed, &new_posts) {
+        match wyrm_webhook::get_payload(webhook, &task.feed, task.folder.as_deref(), &new_posts) {
             Ok(payload) => {
                 let http = http.clone();
                 let webhook = webhook.clone();
@@ -193,7 +208,7 @@ async fn process_feed(
                     }
                 });
             }
-            Err(e) => error!("skipping webhook for feed {}: {e}", feed.title),
+            Err(e) => error!("skipping webhook for feed {}: {e}", task.feed.title),
         }
     }
 

@@ -252,6 +252,7 @@ dependencies = [
  "api_utils",
  "database",
  "serde",
+ "serde_with",
  "ts-rs",
  "wyrm-rss",
  "wyrm_utils",

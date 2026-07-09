@@ -2,4 +2,4 @@
 import type { FeedId } from "./FeedId";
 import type { PaginationCursor } from "./PaginationCursor";
 
-export type ListPosts = { page?: PaginationCursor, feed_id?: FeedId, tag?: string, bookmarked?: boolean, unread_only?: boolean, search?: string, exclude?: Array<FeedId>, };
+export type ListPosts = { page?: PaginationCursor, feed_id?: FeedId, bookmarked?: boolean, unread_only?: boolean, search?: string, exclude?: Array<FeedId>, };

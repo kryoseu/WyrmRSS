@@ -33,7 +33,7 @@ export function AddWebhookForm({ onClose }: Props) {
   }
 
   return (
-    <form className="add-feed-form add-webhook-form" onSubmit={handleSubmit}>
+    <form className="entity-form add-webhook-form" onSubmit={handleSubmit}>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -65,7 +65,7 @@ export function AddWebhookForm({ onClose }: Props) {
           />
           <p className="webhook-vars">
             Variables: <code>{"${feed.title}"}</code> <code>{"${feed.url}"}</code>{" "}
-            <code>{"${feed.tag}"}</code> <code>{"${posts}"}</code>{" "}
+            <code>{"${feed.folder}"}</code> <code>{"${posts}"}</code>{" "}
             <code>{"${posts_count}"}</code>
           </p>
         </>
@@ -73,7 +73,7 @@ export function AddWebhookForm({ onClose }: Props) {
       {create.isError && (
         <p className="form-error">{(create.error as Error).message}</p>
       )}
-      <div className="add-feed-form-actions">
+      <div className="entity-form-actions">
         <button className="btn btn-primary" type="submit" disabled={create.isPending}>
           {create.isPending ? "Adding…" : "Add"}
         </button>

@@ -242,7 +242,6 @@
       display: flex;
     }
 
-    .feed-item-tag,
     .feed-item-unread {
       display: none;
     }
@@ -267,18 +266,125 @@
   white-space: nowrap;
 }
 
-.feed-item-tag {
-  --tag-color: var(--text);
+/* Folder name label in the settings feeds table. */
+.feed-item-folder {
   flex-shrink: 0;
   font-size: 0.56rem;
   font-weight: 500;
   padding: 1px 5px;
   border-radius: 3px;
-  border: 1px solid color-mix(in srgb, var(--tag-color) 35%, transparent);
-  background: color-mix(in srgb, var(--tag-color) 10%, transparent);
-  color: var(--tag-color);
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text);
   letter-spacing: 0.2px;
   line-height: 1.5;
+}
+
+/* ── Sidebar folder groups ───────────────────────────────────── */
+
+.folder-group-header {
+  display: flex;
+  align-items: stretch;
+  /* Tinted section bar: folders read as structure between flat feed rows. */
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  border-bottom: 1px solid var(--border);
+
+  &:hover {
+    background: var(--accent-bg);
+
+    .folder-group-toggle {
+      color: var(--text-h);
+    }
+
+    /* Swap the unread badge for the rename button, like feed rows do. */
+    .folder-group-edit {
+      display: flex;
+    }
+
+    .folder-group-unread {
+      display: none;
+    }
+  }
+}
+
+.folder-group-toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 0.72rem;
+  font-family: var(--sans);
+  /* Buttons don't inherit the root's 145% like the feed-item links do,
+     which left folder rows a few px shorter. */
+  line-height: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.folder-group-edit {
+  display: none;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.67rem;
+  padding: 0 12px 0 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+
+  &:hover {
+    color: var(--accent);
+  }
+}
+
+.folder-group-rename {
+  border-bottom: 1px solid var(--border);
+  background: var(--code-bg);
+
+  /* The header above already draws this line. */
+  & .entity-form {
+    border-top: none;
+  }
+}
+
+.folder-group-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Aggregate count for the whole folder: accented like top-level feed badges. */
+.folder-group-unread {
+  flex-shrink: 0;
+  font-size: 0.56rem;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  letter-spacing: 0.2px;
+  line-height: 1.5;
+}
+
+.folder-group-items .feed-item {
+  padding-left: 24px;
+
+  &.active {
+    padding-left: 22px;
+  }
+
+  /* Inside a group the folder header carries the accent; members stay muted. */
+  .feed-item-unread {
+    background: color-mix(in srgb, var(--text) 10%, transparent);
+    color: var(--text);
+  }
 }
 
 .feed-item-unread {
@@ -332,7 +438,7 @@
   }
 }
 
-/* ── Add feed form ───────────────────────────────────────────── */
+/* ── Add-feed button & entity forms (feeds / folders / webhooks) ─ */
 
 .add-feed-btn {
   display: block;
@@ -352,7 +458,7 @@
   }
 }
 
-.add-feed-form {
+.entity-form {
   padding: 12px 16px;
   border-top: 1px solid var(--border);
   display: flex;
@@ -361,9 +467,9 @@
   flex-shrink: 0;
 }
 
-.add-feed-form input,
-.add-feed-form select,
-.add-feed-form textarea {
+.entity-form input,
+.entity-form select,
+.entity-form textarea {
   width: 100%;
   padding: 6px 8px;
   font-size: 0.72rem;
@@ -380,58 +486,55 @@
   }
 }
 
-.feed-tag-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
+.folder-combobox {
+  position: relative;
 
-.feed-tag-row input[type="text"],
-.feed-tag-row input:not([type]) {
-  flex: 1;
-}
-
-.feed-tag-row input[type="color"] {
-  width: 32px;
-  height: 32px;
-  padding: 2px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  background: var(--code-bg);
-  cursor: pointer;
-  flex-shrink: 0;
-
-  &:disabled {
-    opacity: 0.35;
-    cursor: default;
+  & input {
+    width: 100%;
   }
 }
 
-.btn-copy-color {
+.folder-combobox-list {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+
+  /* Flipped upward when the input is near the viewport bottom (sidebar form). */
+  &.drop-up {
+    top: auto;
+    bottom: calc(100% + 2px);
+  }
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  max-height: 160px;
+  overflow-y: auto;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.folder-combobox-option {
   background: none;
   border: none;
-  cursor: pointer;
+  text-align: left;
+  padding: 6px 8px;
+  font-size: 0.72rem;
+  font-family: var(--sans);
   color: var(--text);
-  padding: 4px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  border-radius: 4px;
-  transition: color 0.15s, background 0.15s;
+  cursor: pointer;
 
   &:hover {
     background: var(--accent-bg);
     color: var(--text-h);
   }
+}
 
-  &:disabled {
-    opacity: 0.35;
-    cursor: default;
-    &:hover {
-      background: none;
-      color: var(--text);
-    }
-  }
+.folder-combobox-create {
+  color: var(--accent);
+  border-top: 1px solid var(--border);
 }
 
 .url-filters {
@@ -471,7 +574,7 @@
   align-self: flex-start;
 }
 
-.add-feed-form-actions {
+.entity-form-actions {
   display: flex;
   gap: 6px;
 }
@@ -752,29 +855,29 @@
   text-transform: capitalize;
 }
 
-/* ── Feeds table (settings) ──────────────────────────────────── */
+/* ── Settings tables (feeds / folders / webhooks) ────────────── */
 
-.feeds-table-wrap {
+.settings-table-wrap {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.feeds-table-toolbar {
+.settings-table-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.feeds-table-add-btn {
+.settings-table-add-btn {
   flex: unset;
   display: flex;
   align-items: center;
   gap: 5px;
 }
 
-.feeds-table-search {
+.settings-table-search {
   padding: 7px 12px;
   font-size: 13px;
   background: var(--code-bg);
@@ -790,7 +893,7 @@
   }
 }
 
-.feeds-table {
+.settings-table {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
@@ -798,16 +901,21 @@
   overflow: hidden;
 }
 
-.feeds-table-header,
-.feeds-table-row {
+.settings-table-header,
+.settings-table-row {
   display: grid;
-  grid-template-columns: 180px 1fr 52px 90px 110px 60px;
   align-items: center;
   gap: 12px;
   padding: 8px 14px;
 }
 
-.feeds-table-header {
+/* Feed columns: title · url · ttl · folder · fetched · actions */
+.feeds-table .settings-table-header,
+.feeds-table .settings-table-row {
+  grid-template-columns: 180px 1fr 52px 90px 110px 60px;
+}
+
+.settings-table-header {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -818,7 +926,7 @@
   background: var(--code-bg);
 }
 
-.feeds-table-row {
+.settings-table-row {
   font-size: 13px;
   border-bottom: 1px solid var(--border);
   color: var(--text-h);
@@ -836,13 +944,13 @@
   }
 }
 
-.feeds-table-title {
+.settings-table-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.feeds-table-url {
+.settings-table-url {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -850,25 +958,25 @@
   color: var(--text);
 }
 
-.feeds-table-ttl,
-.feeds-table-fetched {
+/* Secondary text columns: TTL / last-fetched / feed counts. */
+.settings-table-meta {
   font-size: 12px;
   color: var(--text);
 }
 
-.feeds-table-tag {
+.settings-table-badge {
   display: flex;
   align-items: center;
 }
 
-.feeds-table-actions {
+.settings-table-actions {
   display: flex;
   align-items: center;
   gap: 4px;
   justify-content: flex-end;
 }
 
-.feeds-table-btn {
+.settings-table-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -891,14 +999,14 @@
   }
 }
 
-.feeds-table-btn-delete {
+.settings-table-btn-delete {
   &:hover {
     color: #ef4444;
     background: rgba(239, 68, 68, 0.1);
   }
 }
 
-.feeds-table-edit {
+.settings-table-edit {
   border-top: 1px solid var(--border);
   padding: 16px;
   background: var(--code-bg);
@@ -906,10 +1014,18 @@
 
 /* ── Webhooks ────────────────────────────────────────────────── */
 
-/* Reuse the feeds-table look, but with webhook columns: name · kind · url · actions */
-.webhooks-table .feeds-table-header,
-.webhooks-table .feeds-table-row {
+/* Webhook columns: name · kind · url · actions */
+.webhooks-table .settings-table-header,
+.webhooks-table .settings-table-row {
   grid-template-columns: 180px 90px 1fr 60px;
+}
+
+/* ── Folders ─────────────────────────────────────────────────── */
+
+/* Folder columns: name · feeds · actions */
+.folders-table .settings-table-header,
+.folders-table .settings-table-row {
+  grid-template-columns: 180px 1fr 60px;
 }
 
 .webhook-kind {
@@ -944,7 +1060,7 @@
   }
 }
 
-.add-webhook-form .form-error {
+.entity-form .form-error {
   margin: 0;
   font-size: 12px;
   color: #ef4444;
@@ -989,8 +1105,8 @@
   white-space: nowrap;
 }
 
-/* The shared `.add-feed-form input` rule stretches inputs full-width; reset for checkboxes. */
-.add-feed-form .feed-webhook-option input[type="checkbox"] {
+/* The shared `.entity-form input` rule stretches inputs full-width; reset for checkboxes. */
+.entity-form .feed-webhook-option input[type="checkbox"] {
   width: auto;
   padding: 0;
   flex-shrink: 0;
@@ -1004,39 +1120,6 @@
 }
 
 /* ── Post list ───────────────────────────────────────────────── */
-
-.posts-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  padding: 6px 16px 8px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.posts-tag-chip {
-  --tag-color: var(--text);
-  font-size: 0.61rem;
-  font-weight: 400;
-  padding: 2px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: none;
-  color: var(--text);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-
-  &:hover {
-    color: var(--text-h);
-    border-color: color-mix(in srgb, var(--tag-color) 60%, transparent);
-  }
-
-  &.active {
-    background: color-mix(in srgb, var(--tag-color) 10%, transparent);
-    border-color: color-mix(in srgb, var(--tag-color) 35%, transparent);
-    color: var(--tag-color);
-  }
-}
 
 .posts-toolbar {
   display: flex;
@@ -1196,20 +1279,6 @@
   flex-shrink: 0;
 }
 
-
-.post-item-tag {
-  --tag-color: var(--text);
-  flex-shrink: 0;
-  font-size: 0.56rem;
-  font-weight: 500;
-  padding: 1px 5px;
-  border-radius: 3px;
-  border: 1px solid color-mix(in srgb, var(--tag-color) 35%, transparent);
-  background: color-mix(in srgb, var(--tag-color) 10%, transparent);
-  color: var(--tag-color);
-  letter-spacing: 0.2px;
-  line-height: 1.5;
-}
 
 .post-item-title {
   flex: 1;

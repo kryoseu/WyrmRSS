@@ -11,10 +11,7 @@ export function useFeedMap(feeds: Feed[] | undefined): Map<FeedId, FeedMeta> {
   return useMemo(
     () =>
       new Map(
-        (feeds ?? []).map((f): [FeedId, FeedMeta] => [
-          f.id,
-          { name: f.title, tag: f.tag, tagColor: f.tag_color },
-        ])
+        (feeds ?? []).map((f): [FeedId, FeedMeta] => [f.id, { name: f.title }])
       ),
     [feeds]
   );

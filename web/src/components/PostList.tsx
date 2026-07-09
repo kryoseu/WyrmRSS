@@ -1,16 +1,15 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
 import { TbEye, TbEyeOff, TbRefresh } from "react-icons/tb";
 import { usePosts } from "../hooks/usePosts";
 import { useUnreadOnly } from "../hooks/useUnreadOnly";
-import { useFeeds, usePollFeeds, useFeedTags } from "../hooks/useFeeds";
+import { useFeeds, usePollFeeds } from "../hooks/useFeeds";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { useOpenPostFromRoute } from "../hooks/useOpenPostFromRoute";
 import { useFeedMap } from "../hooks/useFeedMap";
 import { useFlattenedPages } from "../hooks/useFlattenedPages";
 import { PostItem } from "./PostItem";
 import { PostsToolbar } from "./PostsToolbar";
-import { PostsTagChips } from "./PostsTagChips";
 import { VirtualGroupedList } from "./VirtualGroupedList";
 import type { ReaderOutletContext } from "../pages/ReaderPage";
 import type { FeedId } from "../types/FeedId";
@@ -34,18 +33,6 @@ export function PostList() {
 
   const { unreadOnly, setUnreadOnly } = useUnreadOnly();
 
-  const [activeTag, setActiveTag] = useState<string | undefined>(undefined);
-
-  // Reset activeTag on navigation. setState during render (vs. useEffect) avoids rendering once
-  // with a stale tag before the reset kicks in.
-  const [prevFeedId, setPrevFeedId] = useState(feedId);
-  if (prevFeedId !== feedId) {
-    setPrevFeedId(feedId);
-    setActiveTag(undefined);
-  }
-
-  const showTagChips = !feedIdNum;
-
   // Exclusion applies only to the all-posts list, never the per-feed view.
   // Sorted so the query key is order-stable; undefined when nothing is excluded.
   const exclude = useMemo(
@@ -65,7 +52,6 @@ export function PostList() {
     isRefetching }
     = usePosts({
       feed_id: feedIdNum,
-      tag: showTagChips ? activeTag : undefined,
       search: debouncedSearch || undefined,
       exclude,
       // unread-only is the API default; only "all" mode needs the param
@@ -75,7 +61,6 @@ export function PostList() {
   useOpenPostFromRoute(postId, onOpenPost);
 
   const feedMap = useFeedMap(feeds);
-  const tags = useFeedTags(feeds);
 
   const posts = useFlattenedPages(data);
 
@@ -99,13 +84,6 @@ export function PostList() {
           <TbRefresh className={pollFeeds.isPending || isRefetching ? "spinning" : ""} />
         </button>
       </PostsToolbar>
-      {showTagChips && (
-        <PostsTagChips
-          tags={tags}
-          activeTag={activeTag}
-          onToggle={(tag) => setActiveTag((prev) => (prev === tag ? undefined : tag))}
-        />
-      )}
       <VirtualGroupedList
         items={posts}
         isLoading={isLoading}
@@ -113,7 +91,7 @@ export function PostList() {
         fetchNextPage={fetchNextPage}
         isFetchingNextPage={isFetchingNextPage}
         groupDate={groupDate}
-        emptyMessage={unreadOnly && !debouncedSearch && !activeTag ? "All caught up" : "No posts"}
+        emptyMessage={unreadOnly && !debouncedSearch ? "All caught up" : "No posts"}
         renderItem={(post) => (
           <PostItem
             post={post}

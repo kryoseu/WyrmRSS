@@ -26,8 +26,14 @@ diesel::table! {
         filters -> Array<Nullable<Text>>,
         last_fetched_at -> Nullable<Timestamptz>,
         created_at -> Timestamptz,
-        tag -> Nullable<Text>,
-        tag_color -> Nullable<Text>,
+        folder_id -> Nullable<Int4>,
+    }
+}
+
+diesel::table! {
+    folders (id) {
+        id -> Int4,
+        name -> Text,
     }
 }
 
@@ -40,8 +46,6 @@ diesel::table! {
         published_at -> Timestamptz,
         description -> Nullable<Text>,
         content -> Nullable<Text>,
-        tag -> Nullable<Text>,
-        tag_color -> Nullable<Text>,
         archived_at -> Timestamptz,
     }
 }
@@ -96,11 +100,13 @@ diesel::table! {
 
 diesel::joinable!(feed_webhooks -> feeds (feed_id));
 diesel::joinable!(feed_webhooks -> webhooks (webhook_id));
+diesel::joinable!(feeds -> folders (folder_id));
 diesel::joinable!(posts -> feeds (feed_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     feed_webhooks,
     feeds,
+    folders,
     post_archive,
     posts,
     settings,

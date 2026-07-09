@@ -23,14 +23,6 @@ export const ArchiveItem = memo(function ArchiveItem({ archive, active }: Props)
       to={`/archive/${archive.id}`}
       className={`post-item${active ? " active" : ""}`}
     >
-      {archive.tag && (
-        <span
-          className="post-item-tag"
-          style={archive.tag_color ? ({ "--tag-color": archive.tag_color } as React.CSSProperties) : undefined}
-        >
-          {archive.tag}
-        </span>
-      )}
       <span className="post-item-title">{archive.title ?? "Untitled"}</span>
       <button
         className="post-item-archive"

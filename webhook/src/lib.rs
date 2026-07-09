@@ -18,9 +18,11 @@ pub use error::TemplateError;
 use serde_json::Value;
 
 /// Builds the JSON payload for a webhook delivery, dispatching on its kind.
+/// `folder` is the feed's resolved folder name (`None` = standalone feed).
 pub fn get_payload(
     webhook: &Webhook,
     feed: &Feed,
+    folder: Option<&str>,
     new_posts: &[Post],
 ) -> Result<Value, TemplateError> {
     match webhook.kind {
@@ -29,6 +31,7 @@ pub fn get_payload(
         WebhookKind::Custom => Ok(template::custom_payload(
             webhook.payload_template.as_deref(),
             feed,
+            folder,
             new_posts,
         )?),
     }

@@ -16,6 +16,7 @@ pub struct FeedView {
     pub unread_count: i64,
 }
 
+/// List of feeds with post unread count
 pub async fn list(pool: &DatabasePool) -> WyrmResult<Vec<FeedView>> {
     let mut conn = pool.get().await?;
     // The is_read filter lives in the join's ON clause, not a WHERE: filtering

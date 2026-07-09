@@ -69,15 +69,6 @@ export function FeedItem({ feed, active, excluded, onToggleExclude }: Props) {
       >
         <TbX />
       </button>
-      {feed.tag && (
-        <span
-          className="feed-item-tag"
-          style={feed.tag_color ? ({ '--tag-color': feed.tag_color } as React.CSSProperties) : undefined}
-        >
-          {feed.tag}
-        </span>
-      )}
-
       {feed.unread_count > 0 && (
         <span className="feed-item-unread" title={`${feed.unread_count} unread`}>
           {feed.unread_count > 999 ? "999+" : feed.unread_count}

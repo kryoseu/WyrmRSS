@@ -3,9 +3,13 @@ use actix_web::{
     web::{self, Data, Json},
 };
 use api_utils::{context::WyrmContext, response::XmlResponse};
-use database::models::{
-    feed::{Feed, FeedInsertForm},
-    settings::Settings,
+use database::{
+    models::{
+        feed::{Feed, FeedInsertForm},
+        folder::Folder,
+        settings::Settings,
+    },
+    newtypes::FolderId,
 };
 use std::collections::HashMap;
 use wyrm_rss::{
@@ -28,16 +32,16 @@ pub async fn import(body: web::Bytes, ctx: Data<WyrmContext>) -> WyrmResult<Http
     let opml = Opml::from_xml(body.as_ref())?;
 
     for outline in opml.body.outlines {
-        // leaf feed, no tag
+        // standalone leaf feed
         if outline.xml_url.is_some() {
             if let Some(url) = outline.xml_url {
                 create_feed(&ctx, outline.title, url, None).await?;
             }
-        // folder - children are feeds, folder name becomes the tag
+        // folder - children are feeds, each resolves/creates the folder by name
         } else {
             for child in outline.children {
                 if let Some(url) = child.xml_url {
-                    create_feed(&ctx, child.title, url, Some(outline.text.clone())).await?;
+                    create_feed(&ctx, child.title, url, Some(outline.text.as_str())).await?;
                 }
             }
         }
@@ -49,18 +53,21 @@ pub async fn import(body: web::Bytes, ctx: Data<WyrmContext>) -> WyrmResult<Http
     Ok(HttpResponse::NoContent().finish())
 }
 
-/// Exports all feeds as an OPML file. Tagged feeds are grouped under folder outlines.
+/// Exports all feeds as an OPML file. Feeds in a folder are grouped under a
+/// folder outline; standalone feeds are top-level outlines.
 pub async fn export(ctx: Data<WyrmContext>) -> WyrmResult<XmlResponse> {
     let feeds = Feed::get_all(&ctx.db_pool).await?;
+    let folders = Folder::get_all(&ctx.db_pool).await?;
+    let folder_names: HashMap<FolderId, String> =
+        folders.into_iter().map(|f| (f.id, f.name)).collect();
 
-    let mut feeds_by_tag: HashMap<String, Vec<Feed>> = HashMap::new();
-    let mut feeds_wo_tag: Vec<Feed> = vec![];
+    let mut feeds_by_folder: HashMap<String, Vec<Feed>> = HashMap::new();
+    let mut standalone: Vec<Feed> = vec![];
 
     for feed in feeds {
-        if let Some(tag) = &feed.tag {
-            feeds_by_tag.entry(tag.clone()).or_default().push(feed);
-        } else {
-            feeds_wo_tag.push(feed);
+        match feed.folder_id.and_then(|id| folder_names.get(&id)) {
+            Some(name) => feeds_by_folder.entry(name.clone()).or_default().push(feed),
+            None => standalone.push(feed),
         }
     }
 
@@ -73,15 +80,15 @@ pub async fn export(ctx: Data<WyrmContext>) -> WyrmResult<XmlResponse> {
         ..Default::default()
     };
 
-    let outlines: Vec<Outline> = feeds_by_tag
+    let outlines: Vec<Outline> = feeds_by_folder
         .into_iter()
-        .map(|(tag, feeds)| Outline {
-            text: tag.clone(),
-            title: tag,
+        .map(|(folder, feeds)| Outline {
+            text: folder.clone(),
+            title: folder,
             children: feeds.into_iter().map(feed_into_outline).collect(),
             ..Default::default()
         })
-        .chain(feeds_wo_tag.into_iter().map(feed_into_outline))
+        .chain(standalone.into_iter().map(feed_into_outline))
         .collect();
 
     Ok(XmlResponse {
@@ -94,7 +101,7 @@ async fn create_feed(
     ctx: &WyrmContext,
     title: String,
     url: String,
-    tag: Option<String>,
+    folder: Option<&str>,
 ) -> WyrmResult<()> {
     match Feed::create(
         &ctx.db_pool,
@@ -102,7 +109,7 @@ async fn create_feed(
             title,
             url,
             ttl: 60,
-            tag,
+            folder: folder.map(String::from),
             ..Default::default()
         },
     )

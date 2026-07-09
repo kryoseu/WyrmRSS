@@ -9,8 +9,6 @@ import { initials } from "../utils/posts";
 
 export interface FeedMeta {
   name: string;
-  tag: string | undefined;
-  tagColor: string | undefined;
 }
 
 interface Props {
@@ -60,8 +58,6 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   const bookmarkIcon = post.bookmarked ? <TbBookmarkFilled /> : <TbBookmark />;
   const bookmarkLabel = post.bookmarked ? "Remove from read later" : "Read later";
 
-  const tagColor = feed?.tagColor ? ({ '--tag-color': feed.tagColor } as React.CSSProperties) : undefined;
-
   return (
     <Link to={to} className={`post-item${active ? " active" : ""}${isRead ? " read" : ""}`}>
       {readMode !== "disabled" && (
@@ -74,14 +70,6 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
         </button>
       )}
       {feed && <span className="post-item-feed">{initials(feed.name)}</span>}
-      {feed?.tag && (
-        <span
-          className="post-item-tag"
-          style={tagColor}
-        >
-          {feed.tag}
-        </span>
-      )}
       <span className="post-item-title">{post.title ?? "Untitled"}</span>
       <button
         className={`post-item-archive${post.is_archived ? " archived" : ""}`}

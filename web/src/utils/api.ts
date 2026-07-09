@@ -4,11 +4,12 @@ import type { FeedId } from "../types/FeedId";
 import type { PostId } from "../types/PostId";
 import type { WebhookId } from "../types/WebhookId";
 import { handleUnauthorized } from "./auth";
+import type { FolderId } from "../types/FolderId";
 
 const BASE = "/api/v1";
 
 // Drops undefined params before building the query string,
-// e.g. { page: "1", tag: undefined, search: "foo" } → "page=1&search=foo".
+// e.g. { page: "1", feed_id: undefined, search: "foo" } → "page=1&search=foo".
 function buildUrl(base: string, params: Record<string, string | undefined>): string {
   const qs = new URLSearchParams(
     Object.entries(params).filter(([, v]) => v !== undefined) as [string, string][]);
@@ -18,18 +19,17 @@ function buildUrl(base: string, params: Record<string, string | undefined>): str
 export const ENDPOINTS = {
   feeds: {
     list: () => `${BASE}/feeds`,
-    get: (id: FeedId) => `${BASE}/feeds/${id}`,
     create: () => `${BASE}/feeds`,
+    get: (id: FeedId) => `${BASE}/feeds/${id}`,
     update: (id: FeedId) => `${BASE}/feeds/${id}`,
     delete: (id: FeedId) => `${BASE}/feeds/${id}`,
     poll: () => `${BASE}/feeds/poll`,
   },
   posts: {
-    list: ({ page, feed_id, tag, bookmarked, unread_only, search, exclude }: ListPosts) =>
+    list: ({ page, feed_id, bookmarked, unread_only, search, exclude }: ListPosts) =>
       buildUrl(`${BASE}/posts`, {
         page,
         feed_id: feed_id !== undefined ? String(feed_id) : undefined,
-        tag,
         bookmarked: bookmarked ? "true" : undefined,
         unread_only: unread_only !== undefined ? String(unread_only) : undefined,
         search,
@@ -38,13 +38,19 @@ export const ENDPOINTS = {
 
     get: (id: PostId) => `${BASE}/posts/${id}`,
 
-    listArchived: ({ page, tag, search }: ListPostArchive) =>
-      buildUrl(`${BASE}/posts/archive`, { page, tag, search }),
+    listArchived: ({ page, search }: ListPostArchive) =>
+      buildUrl(`${BASE}/posts/archive`, { page, search }),
 
     getArchivedPost: (id: PostId) => `${BASE}/posts/archive/${id}`,
     update: (id: PostId) => `${BASE}/posts/${id}`,
     archive: (id: PostId) => `${BASE}/posts/archive/${id}`,
     unarchive: (id: PostId) => `${BASE}/posts/archive/${id}`,
+  },
+  folders: {
+    list: () => `${BASE}/folders`,
+    create: () => `${BASE}/folders`,
+    update: (id: FolderId) => `${BASE}/folders/${id}`,
+    delete: (id: FolderId) => `${BASE}/folders/${id}`,
   },
   settings: {
     get: () => `${BASE}/settings`,
@@ -54,8 +60,8 @@ export const ENDPOINTS = {
   },
   webhooks: {
     list: () => `${BASE}/webhooks`,
-    get: (id: WebhookId) => `${BASE}/webhooks/${id}`,
     create: () => `${BASE}/webhooks`,
+    get: (id: WebhookId) => `${BASE}/webhooks/${id}`,
     update: (id: WebhookId) => `${BASE}/webhooks/${id}`,
     delete: (id: WebhookId) => `${BASE}/webhooks/${id}`,
     listForFeed: (id: FeedId) => `${BASE}/feeds/${id}/webhooks`,

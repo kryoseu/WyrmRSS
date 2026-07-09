@@ -13,8 +13,7 @@ pub struct CreateFeed {
     title: String,
     url: String,
     ttl: i32,
-    tag: Option<String>,
-    tag_color: Option<String>,
+    folder: Option<String>,
     filters: Option<Vec<String>>,
 }
 
@@ -24,8 +23,12 @@ pub struct UpdateFeed {
     title: Option<String>,
     url: Option<String>,
     ttl: Option<i32>,
-    tag: Option<String>,
-    tag_color: Option<String>,
+    /// Absent (None) = keep the current folder;
+    /// `null` or blank (Some(None)) = remove the feed from its folder;
+    /// a name (Some(Some("name"))) = assign (creating the folder if needed).
+    #[serde(default, with = "serde_with::rust::double_option")]
+    #[ts(optional, as = "Option<Option<String>>")]
+    folder: Option<Option<String>>,
     filters: Option<Vec<String>>,
 }
 
@@ -39,8 +42,7 @@ pub async fn create(
             title: data.title,
             url: data.url,
             ttl: data.ttl,
-            tag: data.tag,
-            tag_color: data.tag_color,
+            folder: data.folder,
             filters: data.filters.map(|v| v.into_iter().map(Some).collect()),
         },
     )
@@ -60,8 +62,7 @@ pub async fn update(
             title: data.title,
             url: data.url,
             ttl: data.ttl,
-            tag: data.tag,
-            tag_color: data.tag_color,
+            folder: data.folder,
             filters: data.filters.map(|v| v.into_iter().map(Some).collect()),
             last_fetched_at: None,
         },

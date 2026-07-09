@@ -22,7 +22,6 @@ pub async fn list(
     let page_size = ctx.runtime_settings.read()?.page_size;
     let page = PostArchiveQuery {
         cursor: query.page,
-        tag: query.tag,
         search: query.search,
     }
     .list(&ctx.db_pool, page_size)
