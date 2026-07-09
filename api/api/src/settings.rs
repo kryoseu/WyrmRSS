@@ -37,17 +37,11 @@ pub async fn import(body: web::Bytes, ctx: Data<WyrmContext>) -> WyrmResult<Http
             if let Some(url) = outline.xml_url {
                 create_feed(&ctx, outline.title, url, None).await?;
             }
-        // folder - children are feeds, folder resolved or created by name
+        // folder - children are feeds, each resolves/creates the folder by name
         } else {
-            let name = outline.text.trim();
-            let folder_id = if name.is_empty() {
-                None
-            } else {
-                Some(Folder::resolve_or_create(&ctx.db_pool, name).await?.id)
-            };
             for child in outline.children {
                 if let Some(url) = child.xml_url {
-                    create_feed(&ctx, child.title, url, folder_id).await?;
+                    create_feed(&ctx, child.title, url, Some(outline.text.as_str())).await?;
                 }
             }
         }
@@ -107,7 +101,7 @@ async fn create_feed(
     ctx: &WyrmContext,
     title: String,
     url: String,
-    folder_id: Option<FolderId>,
+    folder: Option<&str>,
 ) -> WyrmResult<()> {
     match Feed::create(
         &ctx.db_pool,
@@ -115,10 +109,9 @@ async fn create_feed(
             title,
             url,
             ttl: 60,
-            folder_id,
+            folder: folder.map(String::from),
             ..Default::default()
         },
-        None,
     )
     .await
     {

@@ -72,6 +72,21 @@ impl Folder {
         }
     }
 
+    /// Resolves a user-supplied folder name to an id on `conn`, creating the
+    /// folder when the name is new. This is what lets feed writes take a
+    /// folder *name* instead of an id, so callers just pass along whatever
+    /// the user (or an OPML outline) typed. A blank or absent name resolves
+    /// to `None` (no folder) rather than erroring.
+    pub(crate) async fn resolve_name_on(
+        conn: &DatabaseConn,
+        name: Option<&str>,
+    ) -> WyrmResult<Option<FolderId>> {
+        match name.map(str::trim).filter(|n| !n.is_empty()) {
+            Some(name) => Ok(Some(Self::resolve_or_create_on(conn, name).await?.id)),
+            None => Ok(None),
+        }
+    }
+
     pub async fn update(pool: &DatabasePool, mut form: FolderUpdateForm) -> WyrmResult<Self> {
         form.name = normalize_name(&form.name)?.to_string();
         let mut conn = pool.get().await?;

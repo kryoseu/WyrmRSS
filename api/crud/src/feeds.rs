@@ -42,10 +42,9 @@ pub async fn create(
             title: data.title,
             url: data.url,
             ttl: data.ttl,
-            folder_id: None,
+            folder: data.folder,
             filters: data.filters.map(|v| v.into_iter().map(Some).collect()),
         },
-        data.folder.as_deref(),
     )
     .await?;
     Ok(Json(feed))
@@ -63,11 +62,10 @@ pub async fn update(
             title: data.title,
             url: data.url,
             ttl: data.ttl,
-            folder_id: None,
+            folder: data.folder,
             filters: data.filters.map(|v| v.into_iter().map(Some).collect()),
             last_fetched_at: None,
         },
-        data.folder.as_ref().map(Option::as_deref),
     )
     .await?;
     Ok(Json(feed))

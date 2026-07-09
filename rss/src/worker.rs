@@ -184,11 +184,10 @@ async fn process_feed(pool: &DatabasePool, http: &HttpClient, task: &FeedTask) -
             title: None,
             url: None,
             ttl: None,
-            folder_id: None,
+            folder: None,
             filters: None,
             last_fetched_at: Some(Utc::now()),
         },
-        None,
     )
     .await?;
 

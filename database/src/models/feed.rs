@@ -58,23 +58,18 @@ impl Feed {
             .map_err(WyrmError::from)
     }
 
-    pub async fn create(
-        pool: &DatabasePool,
-        mut form: FeedInsertForm,
-        folder: Option<&str>,
-    ) -> WyrmResult<Self> {
+    pub async fn create(pool: &DatabasePool, mut form: FeedInsertForm) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         let conn = &mut *conn;
 
         conn.transaction(async |conn| {
-            // Frontend sends a folder name. We try to resolve that name to a folder id (folder
-            // already exists) or create a new folder to put the feed in.
-            if let Some(name) = folder.map(str::trim).filter(|n| !n.is_empty()) {
-                form.folder_id = Some(Folder::resolve_or_create_on(conn, name).await?.id);
-            }
+            // Folder name resolved to a FolderId.
+            // Resolved inside the transaction so a failed feed insert can't
+            // leave behind a newly created folder.
+            let folder_id = Folder::resolve_name_on(conn, form.folder.take().as_deref()).await?;
 
             let feed = diesel::insert_into(feeds::table)
-                .values(form)
+                .values((form, feeds::folder_id.eq(folder_id)))
                 .get_result::<Self>(conn)
                 .await?;
 
@@ -83,24 +78,19 @@ impl Feed {
         .await
     }
 
-    pub async fn update(
-        pool: &DatabasePool,
-        mut form: FeedUpdateForm,
-        folder: Option<Option<&str>>,
-    ) -> WyrmResult<Self> {
+    pub async fn update(pool: &DatabasePool, mut form: FeedUpdateForm) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         let conn = &mut *conn;
 
         conn.transaction(async |conn| {
-            if let Some(folder) = folder {
-                form.folder_id = match folder.map(str::trim).filter(|n| !n.is_empty()) {
-                    Some(name) => Some(Some(Folder::resolve_or_create_on(conn, name).await?.id)),
-                    None => Some(None),
-                };
-            }
+            // Folder name resolved to a FolderId.
+            let folder_id = match form.folder.take() {
+                None => None,
+                Some(folder) => Some(Folder::resolve_name_on(conn, folder.as_deref()).await?),
+            };
 
             let feed = diesel::update(feeds::table.find(form.id))
-                .set(form)
+                .set((form, folder_id.map(|f| feeds::folder_id.eq(f))))
                 .get_result::<Self>(conn)
                 .await?;
 
@@ -136,7 +126,13 @@ pub struct FeedInsertForm {
     pub title: String,
     pub url: String,
     pub ttl: i32,
-    pub folder_id: Option<FolderId>,
+    /// Name of the folder to place the feed in;
+    /// Skips insertion here since callers (frontend) always sends
+    /// a folder name, however feed insertion requires a FolderId.
+    /// This resolution folder name <> FolderId happens inside the
+    /// create transaction.
+    #[diesel(skip_insertion)]
+    pub folder: Option<String>,
     pub filters: Option<Vec<Option<String>>>,
 }
 
@@ -150,9 +146,13 @@ pub struct FeedUpdateForm {
     pub ttl: Option<i32>,
     /// Double `Option` for the nullable column:
     /// `None` leaves the folder untouched (e.g. the worker bumping `last_fetched_at`);
-    /// `Some(None)` clears it;
-    /// `Some(Some(id))` assigns/updates it.
-    pub folder_id: Option<Option<FolderId>>,
+    /// `Some(None)` or a blank name clears it;
+    /// `Some(Some(name))` assigns it, resolved inside the update transaction
+    /// (creating the folder if the name is new).
+    /// Skips the update for the same reason [`FeedInsertForm::folder`] skips
+    /// insertion: this is a name, not the `folder_id` the column needs.
+    #[diesel(skip_update)]
+    pub folder: Option<Option<String>>,
     pub filters: Option<Vec<Option<String>>>,
     pub last_fetched_at: Option<DateTime<Utc>>,
 }
@@ -177,7 +177,6 @@ macro_rules! test_feed {
                 ttl: 60,
                 ..Default::default()
             },
-            None,
         )
         .await
         .expect("should create test feed")
@@ -210,7 +209,8 @@ mod tests {
     async fn update_changes_given_fields() {
         let pool = setup_test_db().await;
         let feed = test_feed!(&pool);
-        // The folder_id FK needs a real row — the shared test db has none.
+        // Pre-created so the name below resolves to a known id we can assert
+        // against and clean up.
         let folder = Folder::resolve_or_create(&pool, "feed update test")
             .await
             .expect("should create folder");
@@ -222,11 +222,10 @@ mod tests {
                 title: Some("Renamed".to_string()),
                 url: None,
                 ttl: Some(120),
-                folder_id: Some(Some(folder.id)),
+                folder: Some(Some(folder.name.clone())),
                 filters: None,
                 last_fetched_at: None,
             },
-            None,
         )
         .await
         .expect("update should succeed");
