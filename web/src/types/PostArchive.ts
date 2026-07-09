@@ -36,15 +36,6 @@ description?: string,
  */
 content?: string, 
 /**
- * Tag copied from the owning feed when archived, so it persists even after
- * the feed is gone.
- */
-tag?: string, 
-/**
- * Hex color for `tag`, likewise copied from the feed.
- */
-tag_color?: string, 
-/**
  * When the post was archived.
  */
 archived_at: string, };

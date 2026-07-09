@@ -1,6 +1,6 @@
 use crate::{
     DatabasePool,
-    models::{feed::Feed, post::Post},
+    models::post::Post,
     newtypes::PostId,
     schema::{
         post_archive,
@@ -37,11 +37,6 @@ pub struct PostArchive {
     pub description: Option<String>,
     /// Full post body captured from the post.
     pub content: Option<String>,
-    /// Tag copied from the owning feed when archived, so it persists even after
-    /// the feed is gone.
-    pub tag: Option<String>,
-    /// Hex color for `tag`, likewise copied from the feed.
-    pub tag_color: Option<String>,
     /// When the post was archived.
     pub archived_at: DateTime<Utc>,
 }
@@ -77,10 +72,9 @@ impl PostArchive {
                 .execute(conn)
                 .await?;
 
-            Ok::<PostArchive, diesel::result::Error>(archived)
+            Ok::<PostArchive, WyrmError>(archived)
         })
         .await
-        .map_err(Into::into)
     }
 
     /// Unarchives a post: deletes the `post_archive` row and sets `posts.is_archived = false`
@@ -119,12 +113,10 @@ pub struct PostArchiveInsertForm {
     pub published_at: DateTime<Utc>,
     pub description: Option<String>,
     pub content: Option<String>,
-    pub tag: Option<String>,
-    pub tag_color: Option<String>,
 }
 
-impl From<(Post, Feed)> for PostArchiveInsertForm {
-    fn from((p, f): (Post, Feed)) -> Self {
+impl From<Post> for PostArchiveInsertForm {
+    fn from(p: Post) -> Self {
         PostArchiveInsertForm {
             id: p.id,
             title: p.title,
@@ -133,8 +125,6 @@ impl From<(Post, Feed)> for PostArchiveInsertForm {
             published_at: p.published_at,
             description: p.description,
             content: p.content,
-            tag: f.tag,
-            tag_color: f.tag_color,
         }
     }
 }
@@ -142,7 +132,7 @@ impl From<(Post, Feed)> for PostArchiveInsertForm {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::setup_test_db;
+    use crate::{models::feed::Feed, setup_test_db};
 
     #[tokio::test]
     async fn archive_and_unarchive_roundtrip() {
@@ -152,7 +142,7 @@ mod tests {
         let post = test_post!(&pool, feed_id);
         let post_id = post.id;
 
-        let archived = PostArchive::create(&pool, (post, feed).into())
+        let archived = PostArchive::create(&pool, post.into())
             .await
             .expect("archive should succeed");
         assert_eq!(archived.id, post_id);

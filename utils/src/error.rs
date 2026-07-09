@@ -61,6 +61,8 @@ pub enum WyrmError {
     LockPoisoned(String),
     #[error("invalid webhook template: {0}")]
     WebhookTemplate(String),
+    #[error("folder name cannot be empty")]
+    EmptyFolderName,
     #[error("invalid config: {0}")]
     StartupConfigError(#[from] config::ConfigError),
 }
@@ -117,6 +119,7 @@ impl WyrmError {
             WyrmError::Database(DatabaseError::UniqueViolation(_)) => "conflict",
             WyrmError::XmlDeserializeError(_) => "invalid request body",
             WyrmError::WebhookTemplate(msg) => msg,
+            WyrmError::EmptyFolderName => "folder name cannot be empty",
             _ => "internal server error",
         }
     }
@@ -145,6 +148,7 @@ impl error::ResponseError for WyrmError {
             WyrmError::Database(DatabaseError::Conflict(_)) => StatusCode::CONFLICT,
             WyrmError::XmlDeserializeError(_) => StatusCode::BAD_REQUEST,
             WyrmError::WebhookTemplate(_) => StatusCode::BAD_REQUEST,
+            WyrmError::EmptyFolderName => StatusCode::BAD_REQUEST,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

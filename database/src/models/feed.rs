@@ -1,10 +1,15 @@
-use crate::{DatabasePool, newtypes::FeedId, schema::feeds};
+use crate::{
+    DatabasePool,
+    models::folder::Folder,
+    newtypes::{FeedId, FolderId},
+    schema::feeds,
+};
 use chrono::{DateTime, Utc};
 use diesel::{
     Selectable,
     prelude::{Queryable, *},
 };
-use diesel_async::RunQueryDsl;
+use diesel_async::{AsyncConnection, RunQueryDsl};
 use serde::Serialize;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
@@ -29,10 +34,8 @@ pub struct Feed {
     pub last_fetched_at: Option<DateTime<Utc>>,
     /// Timestamp the feed was added.
     pub created_at: DateTime<Utc>,
-    /// Optional label used to group and filter feeds.
-    pub tag: Option<String>,
-    /// Hex color associated with `tag` for display.
-    pub tag_color: Option<String>,
+    /// Optional folder used to group and filter feeds.
+    pub folder_id: Option<FolderId>,
 }
 
 impl Feed {
@@ -55,22 +58,55 @@ impl Feed {
             .map_err(WyrmError::from)
     }
 
-    pub async fn create(pool: &DatabasePool, form: FeedInsertForm) -> WyrmResult<Self> {
+    pub async fn create(
+        pool: &DatabasePool,
+        mut form: FeedInsertForm,
+        folder: Option<&str>,
+    ) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        diesel::insert_into(feeds::table)
-            .values(form)
-            .get_result::<Self>(&mut conn)
-            .await
-            .map_err(WyrmError::from)
+        let conn = &mut *conn;
+
+        conn.transaction(async |conn| {
+            // Frontend sends a folder name. We try to resolve that name to a folder id (folder
+            // already exists) or create a new folder to put the feed in.
+            if let Some(name) = folder.map(str::trim).filter(|n| !n.is_empty()) {
+                form.folder_id = Some(Folder::resolve_or_create_on(conn, name).await?.id);
+            }
+
+            let feed = diesel::insert_into(feeds::table)
+                .values(form)
+                .get_result::<Self>(conn)
+                .await?;
+
+            Ok::<Feed, WyrmError>(feed)
+        })
+        .await
     }
 
-    pub async fn update(pool: &DatabasePool, form: FeedUpdateForm) -> WyrmResult<Self> {
+    pub async fn update(
+        pool: &DatabasePool,
+        mut form: FeedUpdateForm,
+        folder: Option<Option<&str>>,
+    ) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        diesel::update(feeds::table.find(form.id))
-            .set(form)
-            .get_result::<Self>(&mut conn)
-            .await
-            .map_err(WyrmError::from)
+        let conn = &mut *conn;
+
+        conn.transaction(async |conn| {
+            if let Some(folder) = folder {
+                form.folder_id = match folder.map(str::trim).filter(|n| !n.is_empty()) {
+                    Some(name) => Some(Some(Folder::resolve_or_create_on(conn, name).await?.id)),
+                    None => Some(None),
+                };
+            }
+
+            let feed = diesel::update(feeds::table.find(form.id))
+                .set(form)
+                .get_result::<Self>(conn)
+                .await?;
+
+            Ok::<Feed, WyrmError>(feed)
+        })
+        .await
     }
 
     pub async fn delete(pool: &DatabasePool, feed_id: FeedId) -> WyrmResult<Self> {
@@ -100,8 +136,7 @@ pub struct FeedInsertForm {
     pub title: String,
     pub url: String,
     pub ttl: i32,
-    pub tag: Option<String>,
-    pub tag_color: Option<String>,
+    pub folder_id: Option<FolderId>,
     pub filters: Option<Vec<Option<String>>>,
 }
 
@@ -113,8 +148,11 @@ pub struct FeedUpdateForm {
     pub title: Option<String>,
     pub url: Option<String>,
     pub ttl: Option<i32>,
-    pub tag: Option<String>,
-    pub tag_color: Option<String>,
+    /// Double `Option` for the nullable column:
+    /// `None` leaves the folder untouched (e.g. the worker bumping `last_fetched_at`);
+    /// `Some(None)` clears it;
+    /// `Some(Some(id))` assigns/updates it.
+    pub folder_id: Option<Option<FolderId>>,
     pub filters: Option<Vec<Option<String>>>,
     pub last_fetched_at: Option<DateTime<Utc>>,
 }
@@ -139,6 +177,7 @@ macro_rules! test_feed {
                 ttl: 60,
                 ..Default::default()
             },
+            None,
         )
         .await
         .expect("should create test feed")
@@ -148,7 +187,7 @@ macro_rules! test_feed {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::setup_test_db;
+    use crate::{models::folder::Folder, setup_test_db};
 
     #[tokio::test]
     async fn create_then_get_roundtrips() {
@@ -171,6 +210,10 @@ mod tests {
     async fn update_changes_given_fields() {
         let pool = setup_test_db().await;
         let feed = test_feed!(&pool);
+        // The folder_id FK needs a real row — the shared test db has none.
+        let folder = Folder::resolve_or_create(&pool, "feed update test")
+            .await
+            .expect("should create folder");
 
         let updated = Feed::update(
             &pool,
@@ -179,24 +222,27 @@ mod tests {
                 title: Some("Renamed".to_string()),
                 url: None,
                 ttl: Some(120),
-                tag: Some("news".to_string()),
-                tag_color: None,
+                folder_id: Some(Some(folder.id)),
                 filters: None,
                 last_fetched_at: None,
             },
+            None,
         )
         .await
         .expect("update should succeed");
 
         assert_eq!(updated.title, "Renamed");
         assert_eq!(updated.ttl, 120);
-        assert_eq!(updated.tag.as_deref(), Some("news"));
+        assert_eq!(updated.folder_id, Some(folder.id));
         // A `None` field is left unchanged.
         assert_eq!(updated.url, feed.url);
 
         Feed::delete(&pool, feed.id)
             .await
             .expect("should delete feed");
+        Folder::delete(&pool, folder.id)
+            .await
+            .expect("should delete folder");
     }
 
     #[tokio::test]

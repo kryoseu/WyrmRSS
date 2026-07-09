@@ -2,7 +2,6 @@ use crate::{
     DatabasePool,
     models::{
         archive::{PostArchive, PostArchiveInsertForm},
-        feed::Feed,
         post::Post,
     },
     newtypes::PostId,
@@ -20,14 +19,12 @@ use wyrm_utils::{
 #[derive(Deserialize, ts_rs::TS)]
 #[ts(optional_fields, export)]
 pub struct ListPostArchive {
-    pub tag: Option<String>,
     pub page: Option<PaginationCursor>,
     pub search: Option<String>,
 }
 
 #[derive(Default)]
 pub struct PostArchiveQuery {
-    pub tag: Option<String>,
     pub search: Option<String>,
     pub cursor: Option<PaginationCursor>,
 }
@@ -47,10 +44,6 @@ impl PostArchiveQuery {
             .order((post_archive::archived_at.desc(), post_archive::id.desc()))
             .limit(page_size as i64 + 1)
             .into_boxed();
-
-        if let Some(tag) = self.tag {
-            query = query.filter(post_archive::tag.eq(tag));
-        }
 
         if let Some(search) = self.search {
             query = query.filter(
@@ -88,14 +81,13 @@ pub async fn get_post_archive_insert_form(
     pool: &DatabasePool,
     post_id: PostId,
 ) -> WyrmResult<PostArchiveInsertForm> {
-    use crate::schema::{feeds, posts};
+    use crate::schema::posts;
 
     let mut conn = pool.get().await?;
 
-    let (post, feed): (Post, Feed) = posts::table
-        .inner_join(feeds::table)
-        .filter(posts::id.eq(post_id))
-        .select((Post::as_select(), Feed::as_select()))
+    let post: Post = posts::table
+        .find(post_id)
+        .select(Post::as_select())
         .first(&mut conn)
         .await
         .map_err(WyrmError::from)?;
@@ -106,5 +98,5 @@ pub async fn get_post_archive_insert_form(
         )));
     }
 
-    Ok((post, feed).into())
+    Ok(post.into())
 }

@@ -1,7 +1,7 @@
 use crate::{
     DatabasePool,
     models::post::Post,
-    newtypes::FeedId,
+    newtypes::{FeedId, FolderId},
     schema::{feeds, posts},
     utils::pagination::{PagedResponse, PaginationCursor},
 };
@@ -12,7 +12,7 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[derive(Default)]
 pub struct PostQuery {
     pub feed_id: Option<FeedId>,
-    pub tag: Option<String>,
+    pub folder_id: Option<FolderId>,
     pub bookmarked: Option<bool>,
     pub unread_only: Option<bool>,
     pub search: Option<String>,
@@ -40,9 +40,13 @@ impl PostQuery {
             query = query.filter(posts::feed_id.eq(feed_id));
         }
 
-        if let Some(tag) = self.tag {
+        if let Some(folder_id) = self.folder_id {
             query = query.filter(
-                posts::feed_id.eq_any(feeds::table.select(feeds::id).filter(feeds::tag.eq(tag))),
+                posts::feed_id.eq_any(
+                    feeds::table
+                        .select(feeds::id)
+                        .filter(feeds::folder_id.eq(folder_id)),
+                ),
             );
         }
 

@@ -22,6 +22,7 @@ use wyrm_utils::{
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../migrations/");
 
 pub type DatabasePool = Pool<AsyncPgConnection>;
+pub type DatabaseConn = AsyncPgConnection;
 
 pub fn run_migrations(
     connection: &mut PgConnection,
