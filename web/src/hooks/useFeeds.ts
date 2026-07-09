@@ -1,13 +1,11 @@
-import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFeed, deleteFeed, getFeeds, pollFeeds, updateFeed } from "../api/feeds";
 import { feedKeys } from "../cache/feeds";
 import { postKeys } from "../cache/posts";
+import { folderKeys } from "./useFolders";
 import type { CreateFeed } from "../types/CreateFeed";
 import type { UpdateFeed } from "../types/UpdateFeed";
 import type { FeedId } from "../types/FeedId";
-import type { Feed } from "../types/Feed";
-import type { Tag } from "../components/PostsTagChips";
 
 export function useFeeds() {
   return useQuery({
@@ -21,26 +19,19 @@ export function useFeeds() {
   });
 }
 
-/** Extracts tags from feeds into a Tag array */
-export function useFeedTags(feeds: Feed[] | undefined): Tag[] {
-  return useMemo(() => {
-    const byName = new Map<string, Tag>();
-    for (const f of feeds ?? []) {
-      if (f.tag !== undefined && !byName.has(f.tag)) {
-        byName.set(f.tag, { name: f.tag, color: f.tag_color });
-      }
-    }
-    return [...byName.values()];
-  }, [feeds]);
-}
-
 export function useCreateFeed() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateFeed) => createFeed(body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: feedKeys.all });
-      const refresh = () => qc.invalidateQueries({ queryKey: postKeys.all });
+      // Submitting a folder name can resolve-or-create a folder server-side.
+      qc.invalidateQueries({ queryKey: folderKeys.all });
+      const refresh = () => {
+        qc.invalidateQueries({ queryKey: postKeys.all });
+        // Unread counts live on the feeds query; refetch once the poll lands.
+        qc.invalidateQueries({ queryKey: feedKeys.all });
+      };
       pollFeeds().then(refresh).catch(refresh);
     },
   });
@@ -51,7 +42,10 @@ export function useUpdateFeed() {
   return useMutation({
     mutationFn: ({ id, body }: { id: FeedId; body: UpdateFeed }) =>
       updateFeed(id, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: feedKeys.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: feedKeys.all });
+      qc.invalidateQueries({ queryKey: folderKeys.all });
+    },
   });
 }
 

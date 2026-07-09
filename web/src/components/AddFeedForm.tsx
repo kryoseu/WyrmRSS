@@ -1,5 +1,6 @@
 import { type SubmitEvent, useState } from "react";
 import { useCreateFeed } from "../hooks/useFeeds";
+import { FolderCombobox } from "./FolderCombobox";
 
 interface Props {
   onClose: () => void;
@@ -9,8 +10,7 @@ export function AddFeedForm({ onClose }: Props) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [ttl, setTtl] = useState("");
-  const [tag, setTag] = useState("");
-  const [tagColor, setTagColor] = useState("#6b7280");
+  const [folder, setFolder] = useState("");
   const [filters, setFilters] = useState<string[]>([]);
   const create = useCreateFeed();
 
@@ -29,8 +29,7 @@ export function AddFeedForm({ onClose }: Props) {
         title,
         url,
         ttl: ttl === "" ? 60 : Number(ttl),
-        tag: tag.trim() || null,
-        tag_color: tag.trim() ? tagColor : null,
+        folder: folder.trim() || null,
         filters: filters.map((f) => f.trim()).filter(Boolean),
       },
       { onSuccess: onClose }
@@ -38,7 +37,7 @@ export function AddFeedForm({ onClose }: Props) {
   }
 
   return (
-    <form className="add-feed-form" onSubmit={handleSubmit}>
+    <form className="entity-form" onSubmit={handleSubmit}>
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -60,20 +59,7 @@ export function AddFeedForm({ onClose }: Props) {
         type="number"
         min={1}
       />
-      <div className="feed-tag-row">
-        <input
-          value={tag}
-          onChange={(e) => setTag(e.target.value)}
-          placeholder="Tag (optional)"
-        />
-        <input
-          type="color"
-          value={tagColor}
-          onChange={(e) => setTagColor(e.target.value)}
-          disabled={!tag.trim()}
-          title="Tag color"
-        />
-      </div>
+      <FolderCombobox value={folder} onChange={setFolder} />
       <div className="url-filters">
         {filters.map((filter, i) => (
           <div key={i} className="url-filter-row">
@@ -94,7 +80,7 @@ export function AddFeedForm({ onClose }: Props) {
           + Filter
         </button>
       </div>
-      <div className="add-feed-form-actions">
+      <div className="entity-form-actions">
         <button
           className="btn btn-primary"
           type="submit"

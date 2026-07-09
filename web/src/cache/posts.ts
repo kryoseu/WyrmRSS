@@ -1,8 +1,8 @@
 /**
  * Post cache: we use TanStack's QueryClient posts fetched under a query key.
  *
- * We store every fetched result under a "query key" (an array like 
- * `["posts", "list", { tag, search }]`). Components read from those
+ * We store every fetched result under a "query key" (an array like
+ * `["posts", "list", { search }]`). Components read from those
  * cached entries, so when the user changes a post (reads it, bookmarks it,
  * archives it) we can either edit the cached copy directly so the change shows
  * instantly, or mark the entry stale so React Query refetches it. The refetch
@@ -19,7 +19,7 @@
  * Structure:
  *  - `postKeys`  — the single source of truth for every query key. Each entry
  *                  is either a `*Prefix` (matches *every* variant of a list,
- *                  e.g. all tag/search combos — used for bulk updates) or a
+ *                  e.g. all search/exclude combos — used for bulk updates) or a
  *                  function that builds the exact key one query is stored under.
  *  - patch helpers (`patchPostInPages`, `patchPostInLists`, `patchPost`) — edit
  *                  the cached copies in place so the UI updates without a refetch.
@@ -46,8 +46,8 @@ export const postKeys = {
   all: ["posts"] as const,
 
   listPrefix: ["posts", "list"] as const,
-  listed: (tag?: string, search?: string, exclude?: FeedId[], unreadOnly?: boolean) =>
-    [...postKeys.listPrefix, { tag, search, exclude, unreadOnly }] as const,
+  listed: (search?: string, exclude?: FeedId[], unreadOnly?: boolean) =>
+    [...postKeys.listPrefix, { search, exclude, unreadOnly }] as const,
 
   feedPrefix: ["posts", "feed"] as const,
   byFeed: (feedId: number, search?: string, unreadOnly?: boolean) =>
@@ -57,7 +57,7 @@ export const postKeys = {
   bookmarked: (search?: string) => [...postKeys.bookmarkedPrefix, { search }] as const,
 
   archivedPrefix: ["posts", "archived"] as const,
-  archived: (search?: string, tag?: string) => [...postKeys.archivedPrefix, { search, tag }] as const,
+  archived: (search?: string) => [...postKeys.archivedPrefix, { search }] as const,
 
   detail: (id: number) => [...postKeys.all, id] as const,
   archiveDetail: (id: number) => [...postKeys.all, "archive", id] as const,

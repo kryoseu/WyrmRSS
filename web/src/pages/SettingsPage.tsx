@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Appearance } from "../components/settings/Appearance";
 import { Feeds } from "../components/settings/Feeds";
+import { Folders } from "../components/settings/Folders";
 import { General } from "../components/settings/General";
 import { Opml } from "../components/settings/Opml";
 import { Webhooks } from "../components/settings/Webhooks";
 
-type Tab = "general" | "appearance" | "feeds" | "webhooks" | "opml";
+type Tab = "general" | "appearance" | "feeds" | "folders" | "webhooks" | "opml";
 
 export function SettingsPage() {
   const [tab, setTab] = useState<Tab>("general");
@@ -32,6 +33,12 @@ export function SettingsPage() {
           Feeds
         </button>
         <button
+          className={`settings-tab${tab === "folders" ? " active" : ""}`}
+          onClick={() => setTab("folders")}
+        >
+          Folders
+        </button>
+        <button
           className={`settings-tab${tab === "webhooks" ? " active" : ""}`}
           onClick={() => setTab("webhooks")}
         >
@@ -49,6 +56,7 @@ export function SettingsPage() {
         {tab === "general" && <General />}
         {tab === "appearance" && <Appearance />}
         {tab === "feeds" && <Feeds />}
+        {tab === "folders" && <Folders />}
         {tab === "webhooks" && <Webhooks />}
         {tab === "opml" && <Opml />}
       </div>

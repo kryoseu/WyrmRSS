@@ -11,24 +11,24 @@ function WebhookRow({ webhook }: { webhook: Webhook }) {
 
   return (
     <>
-      <div className={`feeds-table-row${editing ? " editing" : ""}`}>
-        <span className="feeds-table-title">{webhook.name}</span>
-        <span className="feeds-table-tag">
+      <div className={`settings-table-row${editing ? " editing" : ""}`}>
+        <span className="settings-table-title">{webhook.name}</span>
+        <span className="settings-table-badge">
           <span className={`webhook-kind webhook-kind-${webhook.kind}`}>{webhook.kind}</span>
         </span>
-        <span className="feeds-table-url" title={webhook.url}>
+        <span className="settings-table-url" title={webhook.url}>
           {webhook.url}
         </span>
-        <div className="feeds-table-actions">
+        <div className="settings-table-actions">
           <button
-            className={`feeds-table-btn${editing ? " active" : ""}`}
+            className={`settings-table-btn${editing ? " active" : ""}`}
             onClick={() => setEditing((e) => !e)}
             title="Edit"
           >
             <TbEdit />
           </button>
           <button
-            className="feeds-table-btn feeds-table-btn-delete"
+            className="settings-table-btn settings-table-btn-delete"
             onClick={() => deleteWebhook(webhook.id)}
             title="Delete"
           >
@@ -37,7 +37,7 @@ function WebhookRow({ webhook }: { webhook: Webhook }) {
         </div>
       </div>
       {editing && (
-        <div className="feeds-table-edit">
+        <div className="settings-table-edit">
           <EditWebhookForm webhook={webhook} onClose={() => setEditing(false)} />
         </div>
       )}
@@ -58,35 +58,35 @@ export function Webhooks() {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div className="feeds-table-wrap">
-      <div className="feeds-table-toolbar">
+    <div className="settings-table-wrap">
+      <div className="settings-table-toolbar">
         <input
-          className="feeds-table-search"
+          className="settings-table-search"
           placeholder="Search webhooks…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
         <button
-          className={`btn ${adding ? "btn-ghost" : "btn-primary"} feeds-table-add-btn`}
+          className={`btn ${adding ? "btn-ghost" : "btn-primary"} settings-table-add-btn`}
           onClick={() => setAdding((a) => !a)}
         >
           <TbPlus /> {adding ? "Cancel" : "Add webhook"}
         </button>
       </div>
       {adding && (
-        <div className="feeds-table-edit">
+        <div className="settings-table-edit">
           <AddWebhookForm onClose={() => setAdding(false)} />
         </div>
       )}
       {!webhooks?.length ? (
         <div className="settings-empty">No webhooks yet.</div>
       ) : (
-        <div className="feeds-table webhooks-table">
-          <div className="feeds-table-header">
-            <span className="feeds-table-title">Name</span>
-            <span className="feeds-table-tag">Kind</span>
-            <span className="feeds-table-url">URL</span>
-            <span className="feeds-table-actions" />
+        <div className="settings-table webhooks-table">
+          <div className="settings-table-header">
+            <span className="settings-table-title">Name</span>
+            <span className="settings-table-badge">Kind</span>
+            <span className="settings-table-url">URL</span>
+            <span className="settings-table-actions" />
           </div>
           {filtered.map((webhook) => (
             <WebhookRow key={webhook.id} webhook={webhook} />

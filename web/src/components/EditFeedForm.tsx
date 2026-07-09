@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { FiCheck, FiCopy } from "react-icons/fi";
 import { useUpdateFeed } from "../hooks/useFeeds";
+import { useFolders } from "../hooks/useFolders";
 import { useFeedWebhooks, webhookKeys } from "../hooks/useWebhooks";
 import { attachWebhook, detachWebhook } from "../api/webhooks";
 import type { Feed } from "../types/Feed";
 import type { WebhookId } from "../types/WebhookId";
 import { FeedWebhooks } from "./webhook/FeedWebhooks";
+import { FolderCombobox } from "./FolderCombobox";
 
 interface Props {
   feed: Feed;
@@ -17,14 +18,22 @@ export function EditFeedForm({ feed, onClose }: Props) {
   const [title, setTitle] = useState(feed.title);
   const [url, setUrl] = useState(feed.url);
   const [ttl, setTtl] = useState(String(feed.ttl));
-  const [tag, setTag] = useState(feed.tag ?? "");
-  const [tagColor, setTagColor] = useState(feed.tag_color ?? "#6b7280");
-  const [copied, setCopied] = useState(false);
   const [urlFilters, setUrlFilters] = useState<string[]>(
     feed.filters.filter((f): f is string => f !== null)
   );
   const update = useUpdateFeed();
   const qc = useQueryClient();
+
+  // The feed only carries folder_id; the name comes from the folders query.
+  // Seed the input once folders load (setState-during-render pattern).
+  const { data: folders } = useFolders();
+  const [folder, setFolder] = useState("");
+  const [folderSeeded, setFolderSeeded] = useState(false);
+  if (folders && !folderSeeded) {
+    setFolderSeeded(true);
+    const current = folders.find((f) => f.id === feed.folder_id);
+    if (current) setFolder(current.name);
+  }
 
   // Webhook assignments are staged locally and only committed on Save (so
   // Cancel discards them). Seed the selection from the feed's current webhooks
@@ -66,8 +75,9 @@ export function EditFeedForm({ feed, onClose }: Props) {
           title: title.trim() || null,
           url: url.trim() || null,
           ttl: Number(ttl) || null,
-          tag: tag.trim() || null,
-          tag_color: tag.trim() ? tagColor : null,
+          // null = unassign, name = assign. Until folders load we can't tell
+          // "cleared" from "not yet seeded", so omit the key (= keep current).
+          folder: folderSeeded ? folder.trim() || null : undefined,
           filters: urlFilters.map((f) => f.trim()).filter(Boolean),
         },
       });
@@ -90,7 +100,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
   }
 
   return (
-    <form className="add-feed-form" onSubmit={handleSubmit}>
+    <form className="entity-form" onSubmit={handleSubmit}>
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -113,33 +123,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
         min={1}
         required
       />
-      <div className="feed-tag-row">
-        <input
-          value={tag}
-          onChange={(e) => setTag(e.target.value)}
-          placeholder="Tag (optional)"
-        />
-        <input
-          type="color"
-          value={tagColor}
-          onChange={(e) => setTagColor(e.target.value)}
-          disabled={!tag.trim()}
-          title="Tag color"
-        />
-        <button
-          type="button"
-          className="btn-copy-color"
-          disabled={!tag.trim()}
-          title={tagColor}
-          onClick={() => {
-            navigator.clipboard.writeText(tagColor);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-          }}
-        >
-          {copied ? <FiCheck size={13} /> : <FiCopy size={13} />}
-        </button>
-      </div>
+      <FolderCombobox value={folder} onChange={setFolder} />
       <div className="url-filters">
         {urlFilters.map((filter, i) => (
           <div key={i} className="url-filter-row">
@@ -164,7 +148,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
         <span className="feed-webhooks-label">Webhooks</span>
         <FeedWebhooks selected={selectedWebhooks} onToggle={toggleWebhook} />
       </div>
-      <div className="add-feed-form-actions">
+      <div className="entity-form-actions">
         <button
           className="btn btn-primary"
           type="submit"

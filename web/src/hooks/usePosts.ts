@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import {
   infiniteQueryOptions,
   useInfiniteQuery,
@@ -9,10 +8,9 @@ import { getArchivedPost, getPost, listArchivedPosts, listPosts } from "../api/p
 import type { PagedResponse } from "../types/PagedResponse";
 import type { PostId } from "../types/PostId";
 import type { ListPosts } from "../types/ListPosts";
-import type { Tag } from "../components/PostsTagChips";
 import { postKeys } from "../cache/posts";
 
-type ArchivedQuery = { search?: string; tag?: string };
+type ArchivedQuery = { search?: string };
 
 // Shared config for the cursor-paginated post lists: same paging behaviour,
 // differing only by cache key and which endpoint fetches a page.
@@ -39,12 +37,12 @@ export function usePost(id?: PostId) {
 // `params.page` is ignored: the infinite query owns the cursor and sets it per page.
 // `feed_id` scopes the list to one feed and keeps its own cache namespace.
 export function usePosts(params: ListPosts = {}) {
-  const { feed_id, tag, search, exclude, unread_only } = params;
+  const { feed_id, search, exclude, unread_only } = params;
   return useInfiniteQuery(
     infinitePostsQuery(
       feed_id
         ? postKeys.byFeed(feed_id, search, unread_only)
-        : postKeys.listed(tag, search, exclude, unread_only),
+        : postKeys.listed(search, exclude, unread_only),
       (page) => listPosts({ ...params, page }),
     ),
   );
@@ -66,24 +64,9 @@ export function useArchivedPost(id?: PostId) {
   });
 }
 
-export function useArchivedPosts({ search, tag }: ArchivedQuery = {}) {
+export function useArchivedPosts({ search }: ArchivedQuery = {}) {
   return useInfiniteQuery(
-    infinitePostsQuery(postKeys.archived(search, tag), (page) => listArchivedPosts({ page, search, tag })),
+    infinitePostsQuery(postKeys.archived(search), (page) => listArchivedPosts({ page, search })),
   );
 }
-
-/** Extracts tags from archive posts into a Tag array */
-export function useArchiveTags(): Tag[] {
-  const { data } = useArchivedPosts();
-  return useMemo(() => {
-    const map = new Map<string, string | undefined>();
-    for (const page of data?.pages ?? []) {
-      for (const item of page.items) {
-        if (item.tag) map.set(item.tag, item.tag_color ?? undefined);
-      }
-    }
-    return [...map].map(([name, color]) => ({ name, color }));
-  }, [data]);
-}
-
 
