@@ -9,10 +9,11 @@ use serde_json::{Value, json};
 pub(crate) fn custom_payload(
     template: Option<&str>,
     feed: &Feed,
+    folder: Option<&str>,
     posts: &[Post],
 ) -> Result<Value, TemplateError> {
     let template = template.ok_or(TemplateError::Missing)?;
-    render_template(template, &context(feed, posts))
+    render_template(template, &context(feed, folder, posts))
 }
 
 /// Validates a custom template without delivering it: checks it is valid JSON
@@ -35,19 +36,21 @@ fn render_template(template: &str, ctx: &Value) -> Result<Value, TemplateError> 
 /// used only to validate templates when no real feed/posts are available.
 fn sample_context() -> Value {
     json!({
-        "feed": { "title": "", "url": "", "tag": "" },
+        "feed": { "title": "", "url": "", "folder": "" },
         "posts": [ { "title": "", "url": "" } ],
         "posts_count": 0,
     })
 }
 
 /// The variables a custom template may reference via `${...}`.
-fn context(feed: &Feed, posts: &[Post]) -> Value {
+fn context(feed: &Feed, folder: Option<&str>, posts: &[Post]) -> Value {
     json!({
         "feed": {
             "title": feed.title,
             "url": feed.url,
-            "tag": feed.tag,
+            // Standalone feeds render as "" rather than null so embedded
+            // interpolation gives an empty string instead of dropping out.
+            "folder": folder.unwrap_or(""),
         },
         // Custom templates target the user's own endpoint, so we send every
         // post (no platform size limit to respect, unlike Discord/Slack).
@@ -138,8 +141,7 @@ mod tests {
             filters: vec![],
             last_fetched_at: None,
             created_at: Utc::now(),
-            tag: None,
-            tag_color: None,
+            folder_id: None,
         }
     }
 
@@ -166,7 +168,7 @@ mod tests {
         let template = r#"{"items": "${posts}", "n": "${posts_count}"}"#;
         let posts = [post("A", "https://a"), post("B", "https://b")];
 
-        let value = custom_payload(Some(template), &feed(), &posts).unwrap();
+        let value = custom_payload(Some(template), &feed(), None, &posts).unwrap();
 
         // Whole-value tokens keep their native JSON type, not a stringified form.
         assert_eq!(value["items"].as_array().unwrap().len(), 2);
@@ -179,22 +181,37 @@ mod tests {
         let template = r#"{"msg": "${feed.title}: ${posts_count} new"}"#;
         let posts = [post("A", "https://a")];
 
-        let value = custom_payload(Some(template), &feed(), &posts).unwrap();
+        let value = custom_payload(Some(template), &feed(), None, &posts).unwrap();
 
         assert_eq!(value["msg"], "MyFeed: 1 new");
     }
 
     #[test]
     fn rejects_unknown_and_non_scalar_tokens() {
-        let unknown = custom_payload(Some(r#"{"x": "${feed.nope}"}"#), &feed(), &[]);
+        let unknown = custom_payload(Some(r#"{"x": "${feed.nope}"}"#), &feed(), None, &[]);
         assert!(matches!(unknown, Err(TemplateError::UnknownVar(_))));
 
         // An array can't be spliced into the middle of a string.
-        let non_scalar = custom_payload(Some(r#"{"x": "see ${posts}"}"#), &feed(), &[]);
+        let non_scalar = custom_payload(Some(r#"{"x": "see ${posts}"}"#), &feed(), None, &[]);
         assert!(matches!(
             non_scalar,
             Err(TemplateError::NonScalarInString(_))
         ));
+    }
+
+    #[test]
+    fn folder_var_renders_name_or_empty() {
+        let template = r#"{"f": "${feed.folder}"}"#;
+
+        let with = custom_payload(Some(template), &feed(), Some("Tech"), &[]).unwrap();
+        assert_eq!(with["f"], "Tech");
+
+        // Standalone feed: empty string, not null or an error.
+        let without = custom_payload(Some(template), &feed(), None, &[]).unwrap();
+        assert_eq!(without["f"], "");
+
+        // Save-time validation must accept the same variable (context lockstep).
+        assert!(validate_template(template).is_ok());
     }
 
     #[test]
