@@ -1,8 +1,8 @@
 use crate::{
     DatabasePool,
     models::post::Post,
-    newtypes::{FeedId, FolderId},
-    schema::{feeds, posts},
+    newtypes::FeedId,
+    schema::posts,
     utils::pagination::{PagedResponse, PaginationCursor},
 };
 use diesel::prelude::*;
@@ -12,7 +12,6 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[derive(Default)]
 pub struct PostQuery {
     pub feed_id: Option<FeedId>,
-    pub folder_id: Option<FolderId>,
     pub bookmarked: Option<bool>,
     pub unread_only: Option<bool>,
     pub search: Option<String>,
@@ -38,16 +37,6 @@ impl PostQuery {
 
         if let Some(feed_id) = self.feed_id {
             query = query.filter(posts::feed_id.eq(feed_id));
-        }
-
-        if let Some(folder_id) = self.folder_id {
-            query = query.filter(
-                posts::feed_id.eq_any(
-                    feeds::table
-                        .select(feeds::id)
-                        .filter(feeds::folder_id.eq(folder_id)),
-                ),
-            );
         }
 
         if let Some(search) = self.search {

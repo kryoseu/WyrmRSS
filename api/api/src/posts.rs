@@ -5,7 +5,7 @@ use actix_web::{
 use api_utils::context::WyrmContext;
 use database::{
     models::{archive::PostArchive, post::Post},
-    newtypes::{FeedId, FolderId, PostId},
+    newtypes::{FeedId, PostId},
     utils::pagination::{PagedResponse, PaginationCursor},
     views::{archive::get_post_archive_insert_form, post::PostQuery},
 };
@@ -17,7 +17,6 @@ use wyrm_utils::result::WyrmResult;
 pub struct ListPosts {
     pub page: Option<PaginationCursor>,
     pub feed_id: Option<FeedId>,
-    pub folder_id: Option<FolderId>,
     pub bookmarked: Option<bool>,
     pub unread_only: Option<bool>,
     pub search: Option<String>,
@@ -53,7 +52,6 @@ pub async fn list(
     let page = PostQuery {
         cursor: query.page,
         feed_id: query.feed_id,
-        folder_id: query.folder_id,
         bookmarked: query.bookmarked,
         unread_only: query.unread_only.or(Some(true)),
         search: query.search,
@@ -89,7 +87,7 @@ mod tests {
 
     #[test]
     fn exclude_absent_is_none() {
-        assert_eq!(parse("folder_id=1").exclude, None);
+        assert_eq!(parse("unread_only=true").exclude, None);
     }
 
     #[test]
@@ -113,8 +111,7 @@ mod tests {
 
     #[test]
     fn parses_scalar_fields() {
-        let q = parse("folder_id=1&search=rust");
-        assert_eq!(q.folder_id, Some(FolderId(1)));
+        let q = parse("search=rust");
         assert_eq!(q.search.as_deref(), Some("rust"));
         assert_eq!(q.exclude, None);
     }
