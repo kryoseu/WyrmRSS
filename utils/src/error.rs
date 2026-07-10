@@ -11,6 +11,8 @@ pub enum HttpClientError {
     ClientError(#[from] reqwest::Error),
     #[error("middleware error: {0}")]
     MiddlewareError(#[from] reqwest_middleware::Error),
+    #[error("response body exceeds {0} bytes")]
+    ResponseTooLarge(usize),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -63,6 +65,8 @@ pub enum WyrmError {
     WebhookTemplate(String),
     #[error("folder name cannot be empty")]
     EmptyFolderName,
+    #[error("feed discovery failed: {0}")]
+    FeedDiscovery(String),
     #[error("invalid config: {0}")]
     StartupConfigError(#[from] config::ConfigError),
 }
@@ -120,6 +124,7 @@ impl WyrmError {
             WyrmError::XmlDeserializeError(_) => "invalid request body",
             WyrmError::WebhookTemplate(msg) => msg,
             WyrmError::EmptyFolderName => "folder name cannot be empty",
+            WyrmError::FeedDiscovery(msg) => msg,
             _ => "internal server error",
         }
     }
@@ -149,6 +154,7 @@ impl error::ResponseError for WyrmError {
             WyrmError::XmlDeserializeError(_) => StatusCode::BAD_REQUEST,
             WyrmError::WebhookTemplate(_) => StatusCode::BAD_REQUEST,
             WyrmError::EmptyFolderName => StatusCode::BAD_REQUEST,
+            WyrmError::FeedDiscovery(_) => StatusCode::BAD_REQUEST,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
