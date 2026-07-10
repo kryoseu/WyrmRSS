@@ -148,6 +148,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
         <span className="feed-webhooks-label">Webhooks</span>
         <FeedWebhooks selected={selectedWebhooks} onToggle={toggleWebhook} />
       </div>
+      {update.isError && <div className="form-error">{update.error.message}</div>}
       <div className="entity-form-actions">
         <button
           className="btn btn-primary"

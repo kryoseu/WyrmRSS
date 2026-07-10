@@ -1,4 +1,4 @@
-use bytes::Bytes;
+use bytes::{Bytes, BytesMut};
 use database::utils::settings::RuntimeSettings;
 use http::Extensions;
 use reqwest::{Request, Response};
@@ -6,7 +6,13 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next, 
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 use std::time::Duration;
 use tracing::info;
-use wyrm_utils::result::WyrmResult;
+use wyrm_utils::{error::HttpClientError, result::WyrmResult};
+
+/// Hard cap on fetched bodies: full-content feeds run a few MB; anything
+/// larger is not a feed (or a page advertising one). Applied to bytes after
+/// transparent gzip decompression, so oversized *and* highly-compressed
+/// responses both bail instead of exhausting memory.
+const MAX_RESPONSE_BYTES: usize = 10 * 1024 * 1024;
 
 struct LoggingMiddleware;
 
@@ -80,10 +86,24 @@ impl HttpClient {
     }
 
     pub async fn fetch(&self, url: &str) -> WyrmResult<Bytes> {
-        let response = self.inner.get(url).send().await?;
-        let bytes = response.bytes().await?;
+        let mut response = self.inner.get(url).send().await?;
 
-        Ok(bytes)
+        if response
+            .content_length()
+            .is_some_and(|len| len as usize > MAX_RESPONSE_BYTES)
+        {
+            return Err(HttpClientError::ResponseTooLarge(MAX_RESPONSE_BYTES).into());
+        }
+
+        let mut body = BytesMut::new();
+        while let Some(chunk) = response.chunk().await? {
+            if body.len() + chunk.len() > MAX_RESPONSE_BYTES {
+                return Err(HttpClientError::ResponseTooLarge(MAX_RESPONSE_BYTES).into());
+            }
+            body.extend_from_slice(&chunk);
+        }
+
+        Ok(body.freeze())
     }
 
     pub async fn post_json(&self, url: &str, body: &serde_json::Value) -> WyrmResult<()> {

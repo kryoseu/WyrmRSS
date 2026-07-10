@@ -16,7 +16,8 @@
 ## Features
 
 - Subscribe to RSS and Atom feeds
-- YouTube channel support — subscribe to any channel's RSS feed and watch videos inline without leaving the reader
+- Feed discovery — paste a blog homepage or YouTube channel URL and Wyrm finds the feed for you
+- YouTube channel support — subscribe to any channel and watch videos inline without leaving the reader
 - Browse posts per feed or across all feeds
 - Group feeds into folders — collapsible sidebar sections with unread counts, preserved across OPML import/export
 - Filters per feed — exclude entries matching a pattern, scoped to URL, title or content

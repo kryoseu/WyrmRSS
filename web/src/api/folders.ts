@@ -1,4 +1,4 @@
-import { ENDPOINTS, json } from "../utils/api";
+import { ApiError, ENDPOINTS, json } from "../utils/api";
 import { fetchWithAuth } from "../utils/auth";
 import type { Folder } from "../types/Folder";
 import type { FolderId } from "../types/FolderId";
@@ -26,12 +26,11 @@ export const deleteFolder = (id: FolderId): Promise<Folder> =>
   fetchWithAuth(ENDPOINTS.folders.delete(id), { method: "DELETE" }).then<Folder>(json);
 
 /**
- * User-facing message for a failed folder rename. `json` above throws
- * `Error("409 Conflict")` for duplicate names; anything else (network, 500)
- * gets the generic message.
+ * User-facing message for a failed folder rename. Duplicate names surface as
+ * a 409; anything else (network, 500) gets the generic message.
  */
 export function renameErrorMessage(error: Error): string {
-  return error.message.startsWith("409")
+  return error instanceof ApiError && error.status === 409
     ? "A folder with that name already exists."
     : "Rename failed.";
 }

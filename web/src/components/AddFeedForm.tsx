@@ -80,6 +80,7 @@ export function AddFeedForm({ onClose }: Props) {
           + Filter
         </button>
       </div>
+      {create.isError && <div className="form-error">{create.error.message}</div>}
       <div className="entity-form-actions">
         <button
           className="btn btn-primary"

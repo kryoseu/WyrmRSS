@@ -73,12 +73,27 @@ export const ENDPOINTS = {
 } as const;
 
 
+/** API failure carrying the status and the server's curated `error` message. */
+export class ApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+async function throwApiError(res: Response): Promise<never> {
+  const body = (await res.json().catch(() => undefined)) as { error?: string } | undefined;
+  throw new ApiError(res.status, body?.error ?? `${res.status} ${res.statusText}`);
+}
+
 export async function json<T>(res: Response): Promise<T> {
   if (res.status === 401) {
     handleUnauthorized();
     throw new Error("Unauthorized");
   }
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) await throwApiError(res);
   return res.json();
 }
 
@@ -87,5 +102,5 @@ export async function noContent(res: Response): Promise<void> {
     handleUnauthorized();
     throw new Error("Unauthorized");
   }
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) await throwApiError(res);
 }
