@@ -14,33 +14,72 @@ use scraper::{Html, Selector};
 use tracing::warn;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
-/// Resolves `url` to the feed URL to store. Fails with a client-facing
-/// error only on positive evidence: the page fetched fine and advertises no
-/// feed. An unreachable host passes the URL through unchanged — down is not
-/// invalid (YouTube/Reddit feeds have dead windows), and the poller retries
-/// forever anyway.
-pub async fn resolve_feed_url(http: &HttpClient, url: &str) -> WyrmResult<String> {
+/// What a submitted URL turned out to serve — fetched once by [`fetch_url`],
+/// then shared by feed-URL resolution and icon resolution.
+pub enum FetchedUrl {
+    /// The URL served a feed. Boxed: the parsed feed is ~1 KB, and the enum
+    /// is sized to its largest variant; the other variants shouldn't carry
+    /// that weight.
+    Feed(Box<feed_rs::model::Feed>),
+    /// The URL served something else (typically an HTML page); the body is
+    /// kept for autodiscovery scanning.
+    Html(String),
+    /// Nothing fetched: host unreachable (down is not invalid; YouTube and
+    /// Reddit feeds have dead windows, and the poller retries forever), or
+    /// the URL resolves without a network round-trip (YouTube `/channel/`
+    /// shortcut).
+    None,
+}
+
+impl FetchedUrl {
+    /// The parsed feed, when the URL served one — feeds icon resolution.
+    pub fn parsed_feed(&self) -> Option<&feed_rs::model::Feed> {
+        match self {
+            FetchedUrl::Feed(feed) => Some(feed.as_ref()),
+            _ => None,
+        }
+    }
+}
+
+/// Fetches a submitted URL once and classifies what it serves.
+pub async fn fetch_url(http: &HttpClient, url: &str) -> FetchedUrl {
+    // `/channel/<id>` URLs resolve directly; skip the network round-trip.
+    if youtube_channel_shortcut(url).is_some() {
+        return FetchedUrl::None;
+    }
+
+    let bytes = match http.fetch(url).await {
+        Ok((bytes, _)) => bytes,
+        Err(e) => {
+            warn!("feed discovery: could not fetch {url}: {e}");
+            return FetchedUrl::None;
+        }
+    };
+
+    match feed_rs::parser::parse(&bytes[..]) {
+        Ok(parsed) => FetchedUrl::Feed(Box::new(parsed)),
+        Err(_) => FetchedUrl::Html(String::from_utf8_lossy(&bytes).into_owned()),
+    }
+}
+
+/// Resolves `url` to the feed URL to store, judging by what [`fetch_url`]
+/// found there. Fails with a client-facing error only on positive evidence:
+/// the page fetched fine and advertises no feed. An unfetched URL passes
+/// through unchanged.
+pub fn resolve_feed_url(url: &str, fetched: &FetchedUrl) -> WyrmResult<String> {
     if let Some(feed) = youtube_channel_shortcut(url) {
         return Ok(feed);
     }
 
-    let bytes = match http.fetch(url).await {
-        Ok(bytes) => bytes,
-        Err(e) => {
-            warn!("feed discovery: could not fetch {url}, storing as-is: {e}");
-            return Ok(url.to_string());
-        }
+    let body = match fetched {
+        FetchedUrl::Feed(_) | FetchedUrl::None => return Ok(url.to_string()),
+        FetchedUrl::Html(body) => body,
     };
 
-    if feed_rs::parser::parse(&bytes[..]).is_ok() {
-        return Ok(url.to_string());
-    }
-
-    let body = String::from_utf8_lossy(&bytes);
-    if let Some(href) = find_alternate_link(&body) {
+    if let Some(href) = find_alternate_link(body) {
         return absolutize(url, &href);
     }
-    if let Some(id) = find_channel_id(&body) {
+    if let Some(id) = find_channel_id(body) {
         return Ok(youtube_feed_url(id));
     }
 
@@ -112,6 +151,45 @@ fn absolutize(base: &str, href: &str) -> WyrmResult<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn resolve_judges_by_fetched_classification() {
+        // A URL that already serves a feed (or couldn't be fetched) passes
+        // through unchanged.
+        let rss = feed_rs::parser::parse(
+            &br#"<rss version="2.0"><channel><title>t</title></channel></rss>"#[..],
+        )
+        .expect("minimal rss should parse");
+        assert_eq!(
+            resolve_feed_url("https://example.com/feed", &FetchedUrl::Feed(Box::new(rss))).unwrap(),
+            "https://example.com/feed"
+        );
+        assert_eq!(
+            resolve_feed_url("https://example.com/feed", &FetchedUrl::None).unwrap(),
+            "https://example.com/feed"
+        );
+
+        // An HTML page resolves through its autodiscovery link; one that
+        // advertises no feed is the only hard failure.
+        let html = r#"<link rel="alternate" type="application/rss+xml" href="/feed.xml">"#;
+        assert_eq!(
+            resolve_feed_url("https://example.com/blog", &FetchedUrl::Html(html.into())).unwrap(),
+            "https://example.com/feed.xml"
+        );
+        assert!(
+            resolve_feed_url("https://example.com", &FetchedUrl::Html("<p>hi</p>".into())).is_err()
+        );
+
+        // The /channel/ shortcut wins regardless of what was (not) fetched.
+        assert_eq!(
+            resolve_feed_url(
+                "https://www.youtube.com/channel/UCVBlOjOg74sx8Gk8Zjmjyrg",
+                &FetchedUrl::None
+            )
+            .unwrap(),
+            "https://www.youtube.com/feeds/videos.xml?channel_id=UCVBlOjOg74sx8Gk8Zjmjyrg"
+        );
+    }
 
     #[test]
     fn channel_url_rewrites_without_fetching() {

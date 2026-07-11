@@ -85,7 +85,9 @@ impl HttpClient {
         Ok(HttpClient { inner: client })
     }
 
-    pub async fn fetch(&self, url: &str) -> WyrmResult<Bytes> {
+    /// Fetches `url`, returning the body and the response's `Content-Type`
+    /// header (stripped of parameters like `; charset=`).
+    pub async fn fetch(&self, url: &str) -> WyrmResult<(Bytes, Option<String>)> {
         let mut response = self.inner.get(url).send().await?;
 
         if response
@@ -95,6 +97,12 @@ impl HttpClient {
             return Err(HttpClientError::ResponseTooLarge(MAX_RESPONSE_BYTES).into());
         }
 
+        let content_type = response
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .map(|v| v.split(';').next().unwrap_or(v).trim().to_ascii_lowercase());
+
         let mut body = BytesMut::new();
         while let Some(chunk) = response.chunk().await? {
             if body.len() + chunk.len() > MAX_RESPONSE_BYTES {
@@ -103,7 +111,7 @@ impl HttpClient {
             body.extend_from_slice(&chunk);
         }
 
-        Ok(body.freeze())
+        Ok((body.freeze(), content_type))
     }
 
     pub async fn post_json(&self, url: &str, body: &serde_json::Value) -> WyrmResult<()> {

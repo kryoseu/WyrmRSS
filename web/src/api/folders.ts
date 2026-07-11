@@ -1,9 +1,11 @@
-import { ApiError, ENDPOINTS, json } from "../utils/api";
+import { ENDPOINTS } from "../utils/api";
 import { fetchWithAuth } from "../utils/auth";
 import type { Folder } from "../types/Folder";
 import type { FolderId } from "../types/FolderId";
 import type { CreateFolder } from "../types/CreateFolder";
 import type { UpdateFolder } from "../types/UpdateFolder";
+import { json } from "../utils/response";
+import { ApiError } from "../utils/error";
 
 export const getFolders = (): Promise<Folder[]> =>
   fetchWithAuth(ENDPOINTS.folders.list()).then<Folder[]>(json);

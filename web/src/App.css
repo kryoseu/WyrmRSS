@@ -1279,6 +1279,25 @@
   flex-shrink: 0;
 }
 
+/* Muted at rest so icons read as metadata next to the title, not content;
+   full color returns when the row is hovered or active. */
+.post-item-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: cover;
+  flex-shrink: 0;
+  opacity: 0.75;
+  filter: grayscale(0.4);
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+.post-item:hover .post-item-icon,
+.post-item.active .post-item-icon {
+  opacity: 1;
+  filter: none;
+}
+
 
 .post-item-title {
   flex: 1;

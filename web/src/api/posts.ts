@@ -4,10 +4,11 @@ import type { PagedResponse } from "../types/PagedResponse";
 import type { UpdatePost } from "../types/UpdatePost";
 import type { UpdatePostResponse } from "../types/UpdatePostResponse";
 import type { ListPosts } from "../types/ListPosts";
-import { ENDPOINTS, json, noContent } from "../utils/api";
+import { ENDPOINTS } from "../utils/api";
 import type { ListPostArchive } from "../types/ListPostArchive";
 import type { PostArchive } from "../types/PostArchive";
 import { fetchWithAuth } from "../utils/auth";
+import { json, noContent } from "../utils/response";
 
 export const listPosts = (params: ListPosts): Promise<PagedResponse<Array<Post>>> =>
   fetchWithAuth(ENDPOINTS.posts.list(params)).then<PagedResponse<Array<Post>>>(json);

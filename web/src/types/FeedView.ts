@@ -2,7 +2,11 @@
 import type { FeedId } from "./FeedId";
 import type { FolderId } from "./FolderId";
 
-export type FeedView = { unread_count: number, id: FeedId, 
+export type FeedView = { unread_count: number, 
+/**
+ * Whether `GET /feeds/{id}/icon` will serve an image.
+ */
+has_icon: boolean, id: FeedId, 
 /**
  * Human-readable feed name shown in the UI.
  */

@@ -141,9 +141,13 @@ pub struct FeedTask {
 async fn process_feed(pool: &DatabasePool, http: &HttpClient, task: &FeedTask) -> WyrmResult<()> {
     info!("Processing feed {}", task.feed.title);
 
-    let bytes = http.fetch(&task.feed.url).await?;
+    let (bytes, _) = http.fetch(&task.feed.url).await?;
 
     let parsed = feed_rs::parser::parse(&bytes[..])?;
+
+    // Best-effort: resolves the icon for feeds that never got one (OPML
+    // imports, pre-icon feeds) and retries week-old misses.
+    crate::icon::ensure_feed_icon(pool, http, &task.feed, &parsed).await;
 
     let filters = CompiledFilters::new(&task.feed.filters);
 
