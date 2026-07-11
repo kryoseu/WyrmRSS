@@ -43,10 +43,11 @@ export function useCreateFeed() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateFeed) => createFeed(body),
-    onSuccess: () => {
+    onSuccess: (_feed, body) => {
       qc.invalidateQueries({ queryKey: feedKeys.all });
-      // Submitting a folder name can resolve-or-create a folder server-side.
-      qc.invalidateQueries({ queryKey: folderKeys.all });
+      // Submitting a folder name can resolve-or-create a folder server-side;
+      // without one the folder list can't have changed.
+      if (body.folder) qc.invalidateQueries({ queryKey: folderKeys.all });
       const refresh = () => {
         qc.invalidateQueries({ queryKey: postKeys.all });
         // Unread counts live on the feeds query; refetch once the poll lands.
@@ -62,9 +63,11 @@ export function useUpdateFeed() {
   return useMutation({
     mutationFn: ({ id, body }: { id: FeedId; body: UpdateFeed }) =>
       updateFeed(id, body),
-    onSuccess: () => {
+    onSuccess: (_feed, { body }) => {
       qc.invalidateQueries({ queryKey: feedKeys.all });
-      qc.invalidateQueries({ queryKey: folderKeys.all });
+      // Only assigning a folder name can create one; clearing (null/blank)
+      // or leaving it untouched never changes the folder list.
+      if (body.folder) qc.invalidateQueries({ queryKey: folderKeys.all });
     },
   });
 }
