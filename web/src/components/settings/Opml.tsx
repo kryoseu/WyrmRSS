@@ -50,7 +50,7 @@ export function Opml() {
       <p className="settings-hint">
         Tags are inferred from OPML folders. Feeds with duplicate URLs are skipped.
       </p>
-      {isPending && <p className="settings-status">Importing...</p>}
+      {isPending && <p className="settings-status">Importing and fetching posts...</p>}
       {isSuccess && <p className="settings-status settings-status-ok">Import complete.</p>}
       {isError && <p className="settings-status settings-status-err">Import failed.</p>}
 
