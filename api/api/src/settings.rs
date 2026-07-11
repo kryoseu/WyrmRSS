@@ -11,7 +11,7 @@ use database::{
     },
     newtypes::FolderId,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 use wyrm_rss::{
     opml::{Opml, Outline},
     worker::WorkerCommand,
@@ -27,7 +27,8 @@ pub async fn get(ctx: Data<WyrmContext>) -> WyrmResult<Json<Settings>> {
 }
 
 /// Imports feeds from a raw OPML request body. Duplicate URLs are skipped;
-/// all other errors propagate. Triggers a best-effort poll after import.
+/// all other errors propagate. Triggers a best-effort poll after import and
+/// waits for it (bounded by one http timeout) before responding.
 pub async fn import(body: web::Bytes, ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
     let opml = Opml::from_xml(body.as_ref())?;
 
@@ -47,8 +48,15 @@ pub async fn import(body: web::Bytes, ctx: Data<WyrmContext>) -> WyrmResult<Http
         }
     }
 
-    let (tx, _) = tokio::sync::oneshot::channel();
+    let (tx, rx) = tokio::sync::oneshot::channel();
     let _ = ctx.worker_tx.try_send(WorkerCommand::PollFeeds(tx));
+
+    // The import is complete and a poll is on the way: give it up to one
+    // http timeout to land so the frontend's refetch right after this
+    // response already sees the imported posts and their icons. A huge
+    // import may take longer; the frontend polls again as a safety net.
+    let http_timeout = ctx.runtime_settings.read()?.http_timeout;
+    let _ = tokio::time::timeout(Duration::from_secs(http_timeout as u64), rx).await;
 
     Ok(HttpResponse::NoContent().finish())
 }

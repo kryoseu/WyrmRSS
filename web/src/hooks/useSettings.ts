@@ -32,11 +32,11 @@ export function useImportOpml() {
       qc.invalidateQueries({ queryKey: feedKeys.all });
       // Import resolves-or-creates folders from OPML categories.
       qc.invalidateQueries({ queryKey: folderKeys.all });
-      // The server kicks off a background poll for the imported feeds but the
-      // import response doesn't wait for it. Poll again through the API purely
-      // to learn when it finishes (the worker queue is sequential, and
-      // re-polling already-fetched feeds is a no-op), then pull in the new
-      // posts and unread counts.
+      // The import response waits (bounded) for the post-import poll, so the
+      // invalidations above usually land with posts and icons already there.
+      // Poll again as a safety net for huge imports that outlast the server's
+      // wait (the worker queue is sequential, and re-polling already-fetched
+      // feeds is a no-op), then pull in the new posts and unread counts.
       const refresh = () => {
         qc.invalidateQueries({ queryKey: postKeys.all });
         qc.invalidateQueries({ queryKey: feedKeys.all });
