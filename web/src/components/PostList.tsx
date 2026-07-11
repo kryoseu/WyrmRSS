@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
-import { TbEye, TbEyeOff, TbRefresh } from "react-icons/tb";
+import { TbChecks, TbEye, TbEyeOff, TbRefresh } from "react-icons/tb";
 import { usePosts } from "../hooks/usePosts";
 import { useUnreadOnly } from "../hooks/useUnreadOnly";
 import { useFeeds, usePollFeeds } from "../hooks/useFeeds";
+import { useMarkRead } from "../hooks/usePostMutations";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { useOpenPostFromRoute } from "../hooks/useOpenPostFromRoute";
 import { useFeedMap } from "../hooks/useFeedMap";
@@ -28,6 +29,8 @@ export function PostList() {
   const { data: feeds } = useFeeds();
 
   const pollFeeds = usePollFeeds();
+
+  const markRead = useMarkRead();
 
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
 
@@ -74,6 +77,14 @@ export function PostList() {
           title={unreadOnly ? "Unread only — click to show all posts" : "All posts — click to show unread only"}
         >
           {unreadOnly ? <TbEyeOff /> : <TbEye />}
+        </button>
+        <button
+          className="posts-refresh-btn"
+          onClick={() => markRead.mutate({ feed_id: feedIdNum ?? null, folder_id: null })}
+          disabled={markRead.isPending}
+          title={feedIdNum !== undefined ? "Mark feed as read" : "Mark all as read"}
+        >
+          <TbChecks />
         </button>
         <button
           className="posts-refresh-btn"

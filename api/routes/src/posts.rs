@@ -11,11 +11,12 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(
                 web::scope("/archive")
                     .route("", web::get().to(archive::list))
-                    .route("/{post_id}", web::get().to(archive::get))
-                    .route("/{post_id}", web::delete().to(posts::unarchive))
-                    .route("/{post_id}", web::post().to(posts::archive)),
+                    .route("/{id}", web::get().to(archive::get))
+                    .route("/{id}", web::delete().to(posts::unarchive))
+                    .route("/{id}", web::post().to(posts::archive)),
             )
-            .route("/{post_id}", web::get().to(posts::get))
-            .route("/{post_id}", web::patch().to(api_crud::posts::update)),
+            .route("/mark-read", web::post().to(posts::mark_as_read))
+            .route("/{id}", web::get().to(posts::get))
+            .route("/{id}", web::patch().to(api_crud::posts::update)),
     );
 }

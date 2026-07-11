@@ -15,9 +15,9 @@
  * that list so the subscribed hook refetches and the row appears/disappears.
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { archivePost, unarchivePost, updatePost } from "../api/posts";
-import { setFeedUnreadCount } from "../cache/feeds";
-import { setPostArchived, setPostRead, setPostBookmarked } from "../cache/posts";
+import { archivePost, markPostsRead, unarchivePost, updatePost } from "../api/posts";
+import { feedKeys, setFeedUnreadCount } from "../cache/feeds";
+import { postKeys, setPostArchived, setPostRead, setPostBookmarked } from "../cache/posts";
 import type { PostId } from "../types/PostId";
 
 export function useArchivePost() {
@@ -44,6 +44,22 @@ export function useSetPostRead() {
     onSuccess: ({ post, feed_unread_count }) => {
       setPostRead(queryClient, post.id, post.is_read);
       setFeedUnreadCount(queryClient, post.feed_id, feed_unread_count);
+    },
+  });
+}
+
+/**
+ * Bulk mark-as-read: everything, one feed, or one folder. Unlike the
+ * single-post mutations there is no cache patching — arbitrarily many rows
+ * across many lists change, so refetch instead (feeds carry the badges).
+ */
+export function useMarkRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markPostsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: postKeys.all });
+      queryClient.invalidateQueries({ queryKey: feedKeys.all });
     },
   });
 }

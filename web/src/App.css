@@ -236,9 +236,7 @@
     background: var(--accent-bg);
     color: var(--text-h);
 
-    .feed-item-filter,
-    .feed-item-edit,
-    .feed-item-delete {
+    .row-menu-trigger {
       display: flex;
     }
 
@@ -247,8 +245,13 @@
     }
   }
 
+  /* Dim the content, not the row: opacity on the row would composite the
+     whole subtree — including an open row menu — at 45%. */
   &.excluded {
-    opacity: 0.45;
+    .feed-item-title,
+    .feed-item-unread {
+      opacity: 0.45;
+    }
   }
 
   &.active {
@@ -296,14 +299,19 @@
       color: var(--text-h);
     }
 
-    /* Swap the unread badge for the rename button, like feed rows do. */
-    .folder-group-edit {
+    /* Swap the unread badge for the menu trigger, like feed rows do. */
+    .row-menu-trigger {
       display: flex;
     }
 
     .folder-group-unread {
       display: none;
     }
+  }
+
+  /* Match the old rename button's spacing against the header edge. */
+  .row-menu-trigger {
+    padding: 0 12px 0 4px;
   }
 }
 
@@ -326,20 +334,76 @@
   cursor: pointer;
 }
 
-.folder-group-edit {
+/* ── Row action menu (kebab on feed rows / folder headers) ────── */
+
+.row-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.row-menu-trigger {
   display: none;
   align-items: center;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text);
-  font-size: 0.67rem;
-  padding: 0 12px 0 4px;
-  flex-shrink: 0;
+  font-size: 0.72rem;
+  line-height: 1;
+  padding: 0 2px;
   transition: color 0.15s;
 
   &:hover {
     color: var(--accent);
+  }
+
+  /* Keep the trigger visible while its dropdown is open, even when the
+     pointer leaves the row (the hover rules no longer apply then). */
+  &.open {
+    display: flex;
+    color: var(--accent);
+  }
+}
+
+.row-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 40;
+  min-width: 150px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+}
+
+.row-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.72rem;
+  font-family: var(--sans);
+  text-align: left;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--accent-bg);
+    color: var(--text-h);
+  }
+
+  &.danger:hover {
+    color: #ef4444;
   }
 }
 
@@ -397,45 +461,6 @@
   color: var(--accent);
   letter-spacing: 0.2px;
   line-height: 1.5;
-}
-
-.feed-item-filter,
-.feed-item-edit,
-.feed-item-delete {
-  display: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text);
-  font-size: 0.67rem;
-  line-height: 1;
-  padding: 0 2px;
-  flex-shrink: 0;
-  transition: color 0.15s;
-  align-items: center;
-}
-
-.feed-item-filter {
-  &.active {
-    display: flex;
-    color: var(--accent);
-  }
-
-  &:hover {
-    color: var(--accent);
-  }
-}
-
-.feed-item-edit {
-  &:hover {
-    color: var(--accent);
-  }
-}
-
-.feed-item-delete {
-  &:hover {
-    color: #ef4444;
-  }
 }
 
 /* ── Add-feed button & entity forms (feeds / folders / webhooks) ─ */

@@ -1,7 +1,10 @@
 use crate::{
     DatabasePool,
-    newtypes::{FeedId, PostId},
-    schema::posts::{self},
+    newtypes::{FeedId, FolderId, PostId},
+    schema::{
+        feeds,
+        posts::{self},
+    },
 };
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
@@ -122,6 +125,53 @@ impl Post {
         diesel::update(posts::table.find(post_id))
             .set(posts::is_read.eq(diesel::dsl::not(posts::is_read)))
             .get_result::<Self>(&mut conn)
+            .await
+            .map_err(WyrmError::from)
+    }
+
+    pub async fn mark_many_as_read(
+        pool: &DatabasePool,
+        feed_id: Option<FeedId>,
+        folder_id: Option<FolderId>,
+    ) -> WyrmResult<usize> {
+        match (feed_id, folder_id) {
+            (Some(feed_id), _) => Self::mark_feed_as_read(pool, feed_id).await,
+            (None, Some(folder_id)) => Self::mark_folder_as_read(pool, folder_id).await,
+            (None, None) => Self::mark_all_as_read(pool).await,
+        }
+    }
+
+    async fn mark_all_as_read(pool: &DatabasePool) -> WyrmResult<usize> {
+        let mut conn = pool.get().await?;
+        diesel::update(posts::table)
+            .filter(posts::is_read.eq(false))
+            .set(posts::is_read.eq(true))
+            .execute(&mut conn)
+            .await
+            .map_err(WyrmError::from)
+    }
+
+    async fn mark_feed_as_read(pool: &DatabasePool, feed_id: FeedId) -> WyrmResult<usize> {
+        let mut conn = pool.get().await?;
+        diesel::update(posts::table)
+            .filter(posts::feed_id.eq(feed_id))
+            .filter(posts::is_read.eq(false))
+            .set(posts::is_read.eq(true))
+            .execute(&mut conn)
+            .await
+            .map_err(WyrmError::from)
+    }
+
+    async fn mark_folder_as_read(pool: &DatabasePool, folder_id: FolderId) -> WyrmResult<usize> {
+        let mut conn = pool.get().await?;
+        let folder_feeds = feeds::table
+            .filter(feeds::folder_id.eq(folder_id))
+            .select(feeds::id);
+        diesel::update(posts::table)
+            .filter(posts::feed_id.eq_any(folder_feeds))
+            .filter(posts::is_read.eq(false))
+            .set(posts::is_read.eq(true))
+            .execute(&mut conn)
             .await
             .map_err(WyrmError::from)
     }

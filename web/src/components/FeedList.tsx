@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { TbChevronDown, TbChevronRight, TbEdit, TbFolder, TbFolderOpen } from "react-icons/tb";
+import { TbChecks, TbChevronDown, TbChevronRight, TbEdit, TbFolder, TbFolderOpen } from "react-icons/tb";
 import { useFeeds } from "../hooks/useFeeds";
 import { useFolders, useUpdateFolder } from "../hooks/useFolders";
+import { useMarkRead } from "../hooks/usePostMutations";
 import { FeedItem } from "./FeedItem";
+import { RowMenu } from "./RowMenu";
 import { useParams } from "react-router-dom";
 import { AddFeedForm } from "./AddFeedForm";
 import { FolderForm } from "./FolderForm";
@@ -27,6 +29,7 @@ export function FeedList({ excludedFeeds, onToggleExclude }: Props) {
   // At most one folder renames at a time, so one shared mutation is enough.
   const [renaming, setRenaming] = useState<FolderId | null>(null);
   const update = useUpdateFolder();
+  const markRead = useMarkRead();
 
   function toggleExpanded(id: FolderId) {
     setExpanded((prev) => {
@@ -102,17 +105,26 @@ export function FeedList({ excludedFeeds, onToggleExclude }: Props) {
                     </span>
                   )}
                 </button>
-                <button
-                  className="folder-group-edit"
-                  title="Rename folder"
-                  onClick={() => {
-                    // Clear any error left over from a previous rename attempt.
-                    update.reset();
-                    setRenaming((id) => (id === folder.id ? null : folder.id));
-                  }}
-                >
-                  <TbEdit />
-                </button>
+                <RowMenu
+                  label={`Actions for ${folder.name}`}
+                  items={[
+                    {
+                      icon: <TbChecks />,
+                      label: "Mark as read",
+                      onSelect: () =>
+                        markRead.mutate({ feed_id: null, folder_id: folder.id }),
+                    },
+                    {
+                      icon: <TbEdit />,
+                      label: "Rename",
+                      onSelect: () => {
+                        // Clear any error left over from a previous rename attempt.
+                        update.reset();
+                        setRenaming((id) => (id === folder.id ? null : folder.id));
+                      },
+                    },
+                  ]}
+                />
               </div>
               {renaming === folder.id && (
                 <div className="folder-group-rename">
