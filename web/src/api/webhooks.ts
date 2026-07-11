@@ -3,8 +3,9 @@ import type { FeedId } from "../types/FeedId";
 import type { WebhookId } from "../types/WebhookId";
 import type { CreateWebhook } from "../types/CreateWebhook";
 import type { UpdateWebhook } from "../types/UpdateWebhook";
-import { ENDPOINTS, json, noContent } from "../utils/api";
+import { ENDPOINTS } from "../utils/api";
 import { fetchWithAuth } from "../utils/auth";
+import { json, noContent } from "../utils/response";
 
 export const getWebhooks = (): Promise<Webhook[]> =>
   fetchWithAuth(ENDPOINTS.webhooks.list()).then<Webhook[]>(json);

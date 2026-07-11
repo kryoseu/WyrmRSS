@@ -1,11 +1,17 @@
 use actix_web::web::{Data, Json, Path};
 use api_utils::context::WyrmContext;
 use database::{
-    models::feed::{Feed, FeedInsertForm, FeedUpdateForm},
+    models::{
+        feed::{Feed, FeedInsertForm, FeedUpdateForm},
+        feed_icon::FeedIcon,
+    },
     newtypes::FeedId,
 };
 use serde::Deserialize;
-use wyrm_rss::discover::resolve_feed_url;
+use wyrm_rss::{
+    discover::{FetchedUrl, fetch_url, resolve_feed_url},
+    icon::ensure_feed_icon,
+};
 use wyrm_utils::result::WyrmResult;
 
 #[derive(Deserialize, ts_rs::TS)]
@@ -37,9 +43,11 @@ pub async fn create(
     Json(data): Json<CreateFeed>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<Feed>> {
-    // A page URL (blog homepage, YouTube channel) resolves to the feed it
-    // advertises; a URL that already serves a feed passes through unchanged.
-    let url = resolve_feed_url(&ctx.http, &data.url).await?;
+    // One fetch serves both discovery and the icon lookup below: we try to
+    // find a feed from a normal page url (blog homepage, YouTube channel),
+    // and if the URL provided already resolves to a feed, we simply pass through.
+    let fetched = fetch_url(&ctx.http, &data.url).await;
+    let url = resolve_feed_url(&data.url, &fetched)?;
     let feed = Feed::create(
         &ctx.db_pool,
         FeedInsertForm {
@@ -51,6 +59,13 @@ pub async fn create(
         },
     )
     .await?;
+
+    // Resolved here when discovery already parsed the feed, so the icon is
+    // stored before the frontend refetches the feed list.
+    if let Some(parsed) = fetched.parsed_feed() {
+        ensure_feed_icon(&ctx.db_pool, &ctx.http, &feed, parsed).await;
+    }
+
     Ok(Json(feed))
 }
 
@@ -62,14 +77,18 @@ pub async fn update(
     let id = path.into_inner();
     // Only a *changed* URL triggers discovery. The edit form always sends the
     // url field, so an unchanged one must pass through without a network
-    // round-trip — otherwise a TTL/title edit would fail while the feed's
+    // round-trip, otherwise a TTL/title edit would fail while the feed's
     // site happens to be down.
     let feed = Feed::get(&ctx.db_pool, id).await?;
-    let url = match data.url {
-        Some(u) if u == feed.url => Some(u),
-        Some(u) => Some(resolve_feed_url(&ctx.http, &u).await?),
-        None => None,
+    let (url, fetched) = match data.url {
+        Some(u) if u == feed.url => (Some(u), FetchedUrl::None),
+        Some(u) => {
+            let fetched = fetch_url(&ctx.http, &u).await;
+            (Some(resolve_feed_url(&u, &fetched)?), fetched)
+        }
+        None => (None, FetchedUrl::None),
     };
+    let url_changed = url.as_deref().is_some_and(|u| u != feed.url);
 
     let feed = Feed::update(
         &ctx.db_pool,
@@ -84,6 +103,17 @@ pub async fn update(
         },
     )
     .await?;
+
+    // When feed url has been updated, we need to delete current icon and
+    // fetch the new one; right away when discovery already parsed the feed,
+    // otherwise at the next poll (the missing row triggers resolution).
+    if url_changed {
+        FeedIcon::delete(&ctx.db_pool, id).await?;
+        if let Some(parsed) = fetched.parsed_feed() {
+            ensure_feed_icon(&ctx.db_pool, &ctx.http, &feed, parsed).await;
+        }
+    }
+
     Ok(Json(feed))
 }
 

@@ -3,14 +3,19 @@ import type { FeedView } from "../types/FeedView";
 import type { FeedId } from "../types/FeedId";
 import type { CreateFeed } from "../types/CreateFeed";
 import type { UpdateFeed } from "../types/UpdateFeed";
-import { ENDPOINTS, json, noContent } from "../utils/api";
+import { ENDPOINTS } from "../utils/api";
 import { fetchWithAuth } from "../utils/auth";
+import { blob, json, noContent } from "../utils/response";
 
 export const getFeeds = (): Promise<FeedView[]> =>
   fetchWithAuth(ENDPOINTS.feeds.list()).then<FeedView[]>(json);
 
 export const getFeed = (id: FeedId): Promise<Feed> =>
   fetchWithAuth(ENDPOINTS.feeds.get(id)).then<Feed>(json);
+
+export const getFeedIcon = (id: FeedId): Promise<Blob> =>
+  fetchWithAuth(ENDPOINTS.feeds.icon(id)).then(blob);
+
 
 export const createFeed = (body: CreateFeed): Promise<Feed> =>
   fetchWithAuth(ENDPOINTS.feeds.create(), {
