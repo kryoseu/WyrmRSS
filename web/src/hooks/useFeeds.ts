@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFeed, deleteFeed, getFeeds, pollFeeds, updateFeed } from "../api/feeds";
+import { createFeed, deleteFeed, getFeedIcon, getFeeds, pollFeeds, updateFeed } from "../api/feeds";
 import { feedKeys } from "../cache/feeds";
 import { postKeys } from "../cache/posts";
 import { folderKeys } from "./useFolders";
 import type { CreateFeed } from "../types/CreateFeed";
 import type { UpdateFeed } from "../types/UpdateFeed";
 import type { FeedId } from "../types/FeedId";
+import type { FeedMeta } from "../components/PostItem";
 
 export function useFeeds() {
   return useQuery({
@@ -17,6 +18,25 @@ export function useFeeds() {
     // until the next user action or reload.
     staleTime: Infinity,
   });
+}
+
+/**
+ * Object URL for a feed's icon, or `undefined` while it loads / when the
+ * feed has none (render the initials fallback then). The blob is fetched
+ * with auth once per feed and shared by every post row via the query cache;
+ * the key sits outside `feedKeys.all` so feed mutations don't refetch icons.
+ */
+export function useFeedIcon(feed?: FeedMeta): string | undefined {
+  const { data } = useQuery({
+    queryKey: ["feed-icon", feed?.id],
+    queryFn: () => getFeedIcon(feed!.id).then(URL.createObjectURL),
+    enabled: !!feed?.hasIcon,
+    // Object URLs stay valid for the whole session; never refetch or evict
+    // (eviction would leak the URL without revoking it).
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+  return data;
 }
 
 export function useCreateFeed() {

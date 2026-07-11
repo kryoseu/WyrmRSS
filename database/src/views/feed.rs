@@ -1,11 +1,13 @@
 use crate::{
     DatabasePool,
     models::feed::Feed,
-    schema::{feeds, posts},
+    newtypes::FeedId,
+    schema::{feed_icons, feeds, posts},
 };
 use diesel::{dsl::count, prelude::*};
 use diesel_async::RunQueryDsl;
 use serde::Serialize;
+use std::collections::HashSet;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 #[derive(Serialize, ts_rs::TS)]
@@ -14,6 +16,8 @@ pub struct FeedView {
     #[serde(flatten)]
     pub feed: Feed,
     pub unread_count: i64,
+    /// Whether `GET /feeds/{id}/icon` will serve an image.
+    pub has_icon: bool,
 }
 
 /// List of feeds with post unread count
@@ -30,9 +34,22 @@ pub async fn list(pool: &DatabasePool) -> WyrmResult<Vec<FeedView>> {
         .await
         .map_err(WyrmError::from)?;
 
+    let icon_ids: HashSet<FeedId> = feed_icons::table
+        .filter(feed_icons::data.is_not_null())
+        .select(feed_icons::feed_id)
+        .load::<FeedId>(&mut conn)
+        .await
+        .map_err(WyrmError::from)?
+        .into_iter()
+        .collect();
+
     Ok(rows
         .into_iter()
-        .map(|(feed, unread_count)| FeedView { feed, unread_count })
+        .map(|(feed, unread_count)| FeedView {
+            has_icon: icon_ids.contains(&feed.id),
+            feed,
+            unread_count,
+        })
         .collect())
 }
 
@@ -40,8 +57,10 @@ pub async fn list(pool: &DatabasePool) -> WyrmResult<Vec<FeedView>> {
 mod tests {
     use super::*;
     use crate::{
-        models::post::{Post, PostUpdateForm},
-        newtypes::FeedId,
+        models::{
+            feed_icon::{FeedIcon, FeedIconInsertForm},
+            post::{Post, PostUpdateForm},
+        },
         setup_test_db,
     };
 
@@ -75,11 +94,36 @@ mod tests {
         .await
         .expect("should mark post read");
 
+        // Only stored bytes flag has_icon; a "checked, nothing found" row
+        // must not.
+        FeedIcon::create(
+            &pool,
+            FeedIconInsertForm {
+                feed_id: feed.id,
+                data: Some(vec![1]),
+                content_type: Some("image/png".into()),
+            },
+        )
+        .await
+        .expect("should store icon");
+        FeedIcon::create(
+            &pool,
+            FeedIconInsertForm {
+                feed_id: postless_feed.id,
+                data: None,
+                content_type: None,
+            },
+        )
+        .await
+        .expect("should store icon lookup");
+
         let views = list(&pool).await.expect("list should succeed");
         assert_eq!(find(&views, feed.id).unread_count, 2);
         // A feed with no unread rows must survive the left join with a 0,
         // not vanish from the list.
         assert_eq!(find(&views, postless_feed.id).unread_count, 0);
+        assert!(find(&views, feed.id).has_icon);
+        assert!(!find(&views, postless_feed.id).has_icon);
 
         Feed::delete(&pool, feed.id)
             .await

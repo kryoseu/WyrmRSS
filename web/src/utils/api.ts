@@ -3,7 +3,6 @@ import type { ListPosts } from "../types/ListPosts";
 import type { FeedId } from "../types/FeedId";
 import type { PostId } from "../types/PostId";
 import type { WebhookId } from "../types/WebhookId";
-import { handleUnauthorized } from "./auth";
 import type { FolderId } from "../types/FolderId";
 
 const BASE = "/api/v1";
@@ -21,6 +20,7 @@ export const ENDPOINTS = {
     list: () => `${BASE}/feeds`,
     create: () => `${BASE}/feeds`,
     get: (id: FeedId) => `${BASE}/feeds/${id}`,
+    icon: (id: FeedId) => `${BASE}/feeds/${id}/icon`,
     update: (id: FeedId) => `${BASE}/feeds/${id}`,
     delete: (id: FeedId) => `${BASE}/feeds/${id}`,
     poll: () => `${BASE}/feeds/poll`,
@@ -71,36 +71,3 @@ export const ENDPOINTS = {
       `${BASE}/feeds/${feedId}/webhooks/${webhookId}`,
   },
 } as const;
-
-
-/** API failure carrying the status and the server's curated `error` message. */
-export class ApiError extends Error {
-  status: number;
-
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
-
-async function throwApiError(res: Response): Promise<never> {
-  const body = (await res.json().catch(() => undefined)) as { error?: string } | undefined;
-  throw new ApiError(res.status, body?.error ?? `${res.status} ${res.statusText}`);
-}
-
-export async function json<T>(res: Response): Promise<T> {
-  if (res.status === 401) {
-    handleUnauthorized();
-    throw new Error("Unauthorized");
-  }
-  if (!res.ok) await throwApiError(res);
-  return res.json();
-}
-
-export async function noContent(res: Response): Promise<void> {
-  if (res.status === 401) {
-    handleUnauthorized();
-    throw new Error("Unauthorized");
-  }
-  if (!res.ok) await throwApiError(res);
-}

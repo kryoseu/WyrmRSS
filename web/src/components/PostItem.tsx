@@ -3,12 +3,16 @@ import { Link } from "react-router-dom";
 import { HiMail, HiMailOpen } from "react-icons/hi";
 import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
 import type { Post } from "../types/Post";
+import type { FeedId } from "../types/FeedId";
 import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../hooks/usePostMutations";
 import { useSettings } from "../hooks/useSettings";
+import { useFeedIcon } from "../hooks/useFeeds";
 import { initials } from "../utils/posts";
 
 export interface FeedMeta {
+  id: FeedId;
   name: string;
+  hasIcon: boolean;
 }
 
 interface Props {
@@ -24,6 +28,7 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   const { mutate: archivePost } = useArchivePost();
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
+  const iconUrl = useFeedIcon(feed);
   const readMode = settings?.read_mode ?? "on_open";
   const isRead = readMode === "disabled" ? true : post.is_read;
 
@@ -69,7 +74,12 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
           {mailIcon}
         </button>
       )}
-      {feed && <span className="post-item-feed">{initials(feed.name)}</span>}
+      {feed &&
+        (iconUrl ? (
+          <img className="post-item-icon" src={iconUrl} alt="" loading="lazy" />
+        ) : (
+          <span className="post-item-feed">{initials(feed.name)}</span>
+        ))}
       <span className="post-item-title">{post.title ?? "Untitled"}</span>
       <button
         className={`post-item-archive${post.is_archived ? " archived" : ""}`}
