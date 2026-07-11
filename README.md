@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="images/app.png" width="80%" />
+  <img src="images/wyrm.png" width="80%" />
 </p>
 
 ## Features
