@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { TbCircleOff, TbPencil, TbX } from "react-icons/tb";
+import { TbChecks, TbCircleOff, TbPencil, TbX } from "react-icons/tb";
 import { useDeleteFeed } from "../hooks/useFeeds";
+import { useMarkRead } from "../hooks/usePostMutations";
 import type { FeedView } from "../types/FeedView";
 import type { FeedId } from "../types/FeedId";
 import { EditFeedForm } from "./EditFeedForm";
+import { RowMenu } from "./RowMenu";
 
 interface Props {
   feed: FeedView;
@@ -15,25 +17,8 @@ interface Props {
 
 export function FeedItem({ feed, active, excluded, onToggleExclude }: Props) {
   const deleteFeed = useDeleteFeed();
+  const markRead = useMarkRead();
   const [editing, setEditing] = useState(false);
-
-  function handleDelete(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    deleteFeed.mutate(feed.id);
-  }
-
-  function handleEdit(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    setEditing(true);
-  }
-
-  function handleFilter(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    onToggleExclude(feed.id);
-  }
 
   if (editing) {
     return <EditFeedForm feed={feed} onClose={() => setEditing(false)} />;
@@ -45,30 +30,33 @@ export function FeedItem({ feed, active, excluded, onToggleExclude }: Props) {
       className={`feed-item${active ? " active" : ""}${excluded ? " excluded" : ""}`}
     >
       <span className="feed-item-title">{feed.title}</span>
-      <button
-        className={`feed-item-filter${excluded ? " active" : ""}`}
-        onClick={handleFilter}
-        title={excluded ? "Show feed posts" : "Hide feed posts"}
-        aria-label={excluded ? `Show ${feed.title} posts` : `Hide ${feed.title} posts`}
-      >
-        <TbCircleOff />
-      </button>
-      <button
-        className="feed-item-edit"
-        onClick={handleEdit}
-        title="Edit feed"
-        aria-label={`Edit ${feed.title}`}
-      >
-        <TbPencil />
-      </button>
-      <button
-        className="feed-item-delete"
-        onClick={handleDelete}
-        title="Remove feed"
-        aria-label={`Remove ${feed.title}`}
-      >
-        <TbX />
-      </button>
+      <RowMenu
+        label={`Actions for ${feed.title}`}
+        items={[
+          {
+            icon: <TbCircleOff />,
+            label: excluded ? "Show posts" : "Mute posts",
+            onSelect: () => onToggleExclude(feed.id),
+          },
+          {
+            icon: <TbChecks />,
+            label: "Mark as read",
+            onSelect: () => markRead.mutate({ feed_id: feed.id, folder_id: null }),
+          },
+          {
+            icon: <TbPencil />,
+            label: "Edit",
+            onSelect: () => setEditing(true),
+          },
+          {
+            icon: <TbX />,
+            label: "Remove",
+            confirmLabel: "Confirm remove?",
+            danger: true,
+            onSelect: () => deleteFeed.mutate(feed.id),
+          },
+        ]}
+      />
       {feed.unread_count > 0 && (
         <span className="feed-item-unread" title={`${feed.unread_count} unread`}>
           {feed.unread_count > 999 ? "999+" : feed.unread_count}

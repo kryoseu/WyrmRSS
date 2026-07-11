@@ -37,6 +37,7 @@ export const ENDPOINTS = {
       }),
 
     get: (id: PostId) => `${BASE}/posts/${id}`,
+    markRead: () => `${BASE}/posts/mark-read`,
 
     listArchived: ({ page, search }: ListPostArchive) =>
       buildUrl(`${BASE}/posts/archive`, { page, search }),

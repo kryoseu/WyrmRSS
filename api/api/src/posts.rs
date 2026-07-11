@@ -5,7 +5,7 @@ use actix_web::{
 use api_utils::context::WyrmContext;
 use database::{
     models::{archive::PostArchive, post::Post},
-    newtypes::{FeedId, PostId},
+    newtypes::{FeedId, FolderId, PostId},
     utils::pagination::{PagedResponse, PaginationCursor},
     views::{archive::get_post_archive_insert_form, post::PostQuery},
 };
@@ -24,6 +24,13 @@ pub struct ListPosts {
     pub exclude: Option<Vec<FeedId>>,
 }
 
+#[derive(Deserialize, ts_rs::TS)]
+#[ts(export)]
+pub struct MarkRead {
+    feed_id: Option<FeedId>,
+    folder_id: Option<FolderId>,
+}
+
 pub async fn get(path: Path<PostId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Post>> {
     let post_id = path.into_inner();
     let post = Post::get(&ctx.db_pool, post_id).await?;
@@ -40,6 +47,14 @@ pub async fn archive(path: Path<PostId>, ctx: Data<WyrmContext>) -> WyrmResult<J
 pub async fn unarchive(path: Path<PostId>, ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
     let post_id = path.into_inner();
     PostArchive::delete(&ctx.db_pool, post_id).await?;
+    Ok(HttpResponse::NoContent().finish())
+}
+
+pub async fn mark_as_read(
+    Json(data): Json<MarkRead>,
+    ctx: Data<WyrmContext>,
+) -> WyrmResult<HttpResponse> {
+    let _ = Post::mark_many_as_read(&ctx.db_pool, data.feed_id, data.folder_id).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 

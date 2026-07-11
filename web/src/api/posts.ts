@@ -4,6 +4,7 @@ import type { PagedResponse } from "../types/PagedResponse";
 import type { UpdatePost } from "../types/UpdatePost";
 import type { UpdatePostResponse } from "../types/UpdatePostResponse";
 import type { ListPosts } from "../types/ListPosts";
+import type { MarkRead } from "../types/MarkRead";
 import { ENDPOINTS } from "../utils/api";
 import type { ListPostArchive } from "../types/ListPostArchive";
 import type { PostArchive } from "../types/PostArchive";
@@ -27,6 +28,13 @@ export const archivePost = (id: PostId): Promise<PostArchive> =>
 
 export const unarchivePost = (id: PostId): Promise<void> =>
   fetchWithAuth(ENDPOINTS.posts.unarchive(id), { method: "DELETE" }).then(noContent);
+
+export const markPostsRead = (body: MarkRead): Promise<void> =>
+  fetchWithAuth(ENDPOINTS.posts.markRead(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(noContent);
 
 export const updatePost = (id: PostId, data: UpdatePost): Promise<UpdatePostResponse> =>
   fetchWithAuth(ENDPOINTS.posts.update(id), {
