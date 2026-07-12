@@ -36,13 +36,15 @@ pub struct Feed {
     pub created_at: DateTime<Utc>,
     /// Optional folder used to group and filter feeds.
     pub folder_id: Option<FolderId>,
+    /// Whether the feed is paused (not polled by the worker).
+    pub is_paused: bool,
 }
 
 impl Feed {
-    pub async fn get(pool: &DatabasePool, feed_id: FeedId) -> WyrmResult<Self> {
+    pub async fn get(pool: &DatabasePool, id: FeedId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         feeds::table
-            .find(feed_id)
+            .find(id)
             .select(Feed::as_select())
             .first(&mut conn)
             .await
@@ -99,9 +101,9 @@ impl Feed {
         .await
     }
 
-    pub async fn delete(pool: &DatabasePool, feed_id: FeedId) -> WyrmResult<Self> {
+    pub async fn delete(pool: &DatabasePool, id: FeedId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        diesel::delete(feeds::table.find(feed_id))
+        diesel::delete(feeds::table.find(id))
             .returning(Self::as_returning())
             .get_result(&mut conn)
             .await
@@ -154,6 +156,7 @@ pub struct FeedUpdateForm {
     #[diesel(skip_update)]
     pub folder: Option<Option<String>>,
     pub filters: Option<Vec<Option<String>>>,
+    pub is_paused: Option<bool>,
     pub last_fetched_at: Option<DateTime<Utc>>,
 }
 
@@ -224,6 +227,7 @@ mod tests {
                 ttl: Some(120),
                 folder: Some(Some(folder.name.clone())),
                 filters: None,
+                is_paused: Some(true),
                 last_fetched_at: None,
             },
         )
@@ -233,6 +237,7 @@ mod tests {
         assert_eq!(updated.title, "Renamed");
         assert_eq!(updated.ttl, 120);
         assert_eq!(updated.folder_id, Some(folder.id));
+        assert!(updated.is_paused);
         // A `None` field is left unchanged.
         assert_eq!(updated.url, feed.url);
 

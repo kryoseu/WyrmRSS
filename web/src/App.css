@@ -247,7 +247,7 @@
 
   /* Dim the content, not the row: opacity on the row would composite the
      whole subtree — including an open row menu — at 45%. */
-  &.excluded {
+  &.paused {
     .feed-item-title,
     .feed-item-unread {
       opacity: 0.45;

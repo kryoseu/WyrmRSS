@@ -35,4 +35,8 @@ created_at: string,
 /**
  * Optional folder used to group and filter feeds.
  */
-folder_id?: FolderId, };
+folder_id?: FolderId, 
+/**
+ * Whether the feed is paused (not polled by the worker).
+ */
+is_paused: boolean, };

@@ -23,3 +23,14 @@ export function setFeedUnreadCount(
     cached?.map((f) => (f.id === feedId ? { ...f, unread_count: unreadCount } : f)),
   );
 }
+
+// Overwrite one feed's is_paused state, so the sidebar feed can show the new state without fetching data.
+export function setFeedPauseState(
+  queryClient: QueryClient,
+  feedId: FeedId,
+  isPaused: boolean,
+) {
+  queryClient.setQueryData(feedKeys.all, (cached: FeedView[] | undefined) =>
+    cached?.map((f) => (f.id === feedId ? { ...f, is_paused: isPaused } : f)),
+  );
+}

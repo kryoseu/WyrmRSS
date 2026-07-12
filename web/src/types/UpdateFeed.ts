@@ -6,4 +6,4 @@ export type UpdateFeed = { title: string | null, url: string | null, ttl: number
  * `null` or blank (Some(None)) = remove the feed from its folder;
  * a name (Some(Some("name"))) = assign (creating the folder if needed).
  */
-folder?: string | null, filters: Array<string> | null, };
+folder?: string | null, filters: Array<string> | null, is_paused: boolean | null, };

@@ -37,12 +37,12 @@ export function usePost(id?: PostId) {
 // `params.page` is ignored: the infinite query owns the cursor and sets it per page.
 // `feed_id` scopes the list to one feed and keeps its own cache namespace.
 export function usePosts(params: ListPosts = {}) {
-  const { feed_id, search, exclude, unread_only } = params;
+  const { feed_id, search, unread_only } = params;
   return useInfiniteQuery(
     infinitePostsQuery(
       feed_id
         ? postKeys.byFeed(feed_id, search, unread_only)
-        : postKeys.listed(search, exclude, unread_only),
+        : postKeys.listed(search, unread_only),
       (page) => listPosts({ ...params, page }),
     ),
   );
