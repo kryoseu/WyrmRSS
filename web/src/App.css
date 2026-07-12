@@ -973,7 +973,7 @@
 /* Feed columns: title · url · ttl · folder · fetched · actions */
 .feeds-table .settings-table-header,
 .feeds-table .settings-table-row {
-  grid-template-columns: 180px 1fr 52px 90px 110px 60px;
+  grid-template-columns: 180px 1fr 52px 90px 110px 84px;
 }
 
 .settings-table-header {
@@ -1002,6 +1002,13 @@
 
   &.editing {
     background: var(--accent-bg);
+  }
+
+  &.paused {
+    .settings-table-title,
+    .settings-table-url {
+      opacity: 0.45;
+    }
   }
 }
 
