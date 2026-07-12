@@ -21,6 +21,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
   const [urlFilters, setUrlFilters] = useState<string[]>(
     feed.filters.filter((f): f is string => f !== null)
   );
+  const [paused, setPaused] = useState(feed.is_paused);
   const update = useUpdateFeed();
   const qc = useQueryClient();
 
@@ -79,8 +80,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
           // "cleared" from "not yet seeded", so omit the key (= keep current).
           folder: folderSeeded ? folder.trim() || null : undefined,
           filters: urlFilters.map((f) => f.trim()).filter(Boolean),
-          // Pause is toggled from the feed's row menu, not this form.
-          is_paused: null,
+          is_paused: paused,
         },
       });
 
@@ -126,6 +126,18 @@ export function EditFeedForm({ feed, onClose }: Props) {
         required
       />
       <FolderCombobox value={folder} onChange={setFolder} />
+      <label
+        className="feed-paused-option"
+        title="Paused feeds are not polled; existing posts stay"
+      >
+        Pause updates
+        <input
+          type="checkbox"
+          checked={paused}
+          onChange={(e) => setPaused(e.target.checked)}
+        />
+        <span className="switch" aria-hidden="true" />
+      </label>
       <div className="url-filters">
         {urlFilters.map((filter, i) => (
           <div key={i} className="url-filter-row">
