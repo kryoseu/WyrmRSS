@@ -18,6 +18,8 @@ pub struct UpdateSettings {
     http_connect_timeout: Option<i32>,
     http_retries: Option<i32>,
     http_user_agent: Option<String>,
+    expire_read_after_days: Option<i32>,
+    expire_unread_after_days: Option<i32>,
 }
 
 pub async fn update(
@@ -34,6 +36,8 @@ pub async fn update(
             http_connect_timeout: data.http_connect_timeout,
             http_retries: data.http_retries,
             http_user_agent: data.http_user_agent,
+            expire_read_after_days: data.expire_read_after_days,
+            expire_unread_after_days: data.expire_unread_after_days,
         },
     )
     .await?;
