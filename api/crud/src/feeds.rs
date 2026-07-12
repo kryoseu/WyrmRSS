@@ -37,6 +37,7 @@ pub struct UpdateFeed {
     #[ts(optional, as = "Option<Option<String>>")]
     folder: Option<Option<String>>,
     filters: Option<Vec<String>>,
+    is_paused: Option<bool>,
 }
 
 pub async fn create(
@@ -99,6 +100,7 @@ pub async fn update(
             ttl: data.ttl,
             folder: data.folder,
             filters: data.filters.map(|v| v.into_iter().map(Some).collect()),
+            is_paused: data.is_paused,
             last_fetched_at: None,
         },
     )

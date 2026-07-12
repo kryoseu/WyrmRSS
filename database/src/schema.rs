@@ -36,6 +36,7 @@ diesel::table! {
         last_fetched_at -> Nullable<Timestamptz>,
         created_at -> Timestamptz,
         folder_id -> Nullable<Int4>,
+        is_paused -> Bool,
     }
 }
 

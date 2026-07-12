@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
 import { TbChecks, TbEye, TbEyeOff, TbRefresh } from "react-icons/tb";
 import { usePosts } from "../hooks/usePosts";
@@ -20,7 +19,7 @@ import { postPath } from "../utils/posts";
 const groupDate = (post: Post) => post.created_at;
 
 export function PostList() {
-  const { excludedFeeds, activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
+  const { activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
 
   const { feedId, postId } = useParams();
 
@@ -36,16 +35,6 @@ export function PostList() {
 
   const { unreadOnly, setUnreadOnly } = useUnreadOnly();
 
-  // Exclusion applies only to the all-posts list, never the per-feed view.
-  // Sorted so the query key is order-stable; undefined when nothing is excluded.
-  const exclude = useMemo(
-    () =>
-      feedIdNum === undefined && excludedFeeds.size > 0
-        ? [...excludedFeeds].sort((a, b) => a - b)
-        : undefined,
-    [excludedFeeds, feedIdNum]
-  );
-
   const {
     data,
     isLoading,
@@ -56,7 +45,6 @@ export function PostList() {
     = usePosts({
       feed_id: feedIdNum,
       search: debouncedSearch || undefined,
-      exclude,
       // unread-only is the API default; only "all" mode needs the param
       unread_only: unreadOnly ? undefined : false,
     });

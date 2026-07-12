@@ -1,14 +1,10 @@
 import { useState, useRef } from "react";
-import { Outlet, useLocation, useOutletContext } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { ArchiveReader } from "../components/ArchiveReader";
 import { PostReader } from "../components/PostReader";
-import type { AppLayoutContext } from "./AppLayout";
-import type { FeedId } from "../types/FeedId";
 import type { PostId } from "../types/PostId";
 
 export type ReaderOutletContext = {
-  excludedFeeds: Set<FeedId>;
-  onToggleExclude: (id: FeedId) => void;
   activePostId: PostId | null;
   onOpenPost: (id: PostId) => void;
 };
@@ -17,7 +13,6 @@ const MIN_WIDTH = 280;
 const MAX_WIDTH = Math.round(window.innerWidth * 0.65);
 
 export function ReaderPage() {
-  const { excludedFeeds, onToggleExclude } = useOutletContext<AppLayoutContext>();
   const { pathname } = useLocation();
   const isArchive = pathname.startsWith("/archive");
   const [activePostId, setActivePostId] = useState<PostId | null>(null);
@@ -47,7 +42,7 @@ export function ReaderPage() {
 
   return (
     <>
-      <Outlet context={{ excludedFeeds, onToggleExclude, activePostId, onOpenPost: setActivePostId } satisfies ReaderOutletContext} />
+      <Outlet context={{ activePostId, onOpenPost: setActivePostId } satisfies ReaderOutletContext} />
       {activePostId !== null && (
         <div
           className="reader-resize-handle"

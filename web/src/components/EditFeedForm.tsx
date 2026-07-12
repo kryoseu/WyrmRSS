@@ -79,6 +79,8 @@ export function EditFeedForm({ feed, onClose }: Props) {
           // "cleared" from "not yet seeded", so omit the key (= keep current).
           folder: folderSeeded ? folder.trim() || null : undefined,
           filters: urlFilters.map((f) => f.trim()).filter(Boolean),
+          // Pause is toggled from the feed's row menu, not this form.
+          is_paused: null,
         },
       });
 

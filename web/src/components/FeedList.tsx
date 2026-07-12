@@ -9,15 +9,9 @@ import { useParams } from "react-router-dom";
 import { AddFeedForm } from "./AddFeedForm";
 import { FolderForm } from "./FolderForm";
 import { renameErrorMessage } from "../api/folders";
-import type { FeedId } from "../types/FeedId";
 import type { FolderId } from "../types/FolderId";
 
-interface Props {
-  excludedFeeds: Set<FeedId>;
-  onToggleExclude: (id: FeedId) => void;
-}
-
-export function FeedList({ excludedFeeds, onToggleExclude }: Props) {
+export function FeedList() {
   const { feedId } = useParams();
   const { data: feeds, isLoading } = useFeeds();
   const { data: folders } = useFolders();
@@ -61,13 +55,7 @@ export function FeedList({ excludedFeeds, onToggleExclude }: Props) {
     .sort((a, b) => a.folder.name.localeCompare(b.folder.name));
 
   const renderFeed = (f: (typeof filtered)[number]) => (
-    <FeedItem
-      key={f.id}
-      feed={f}
-      active={feedId === String(f.id)}
-      excluded={excludedFeeds.has(f.id)}
-      onToggleExclude={onToggleExclude}
-    />
+    <FeedItem key={f.id} feed={f} active={feedId === String(f.id)} />
   );
 
   return (
