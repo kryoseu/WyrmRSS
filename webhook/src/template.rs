@@ -139,6 +139,7 @@ mod tests {
             url: "https://feed.test".to_string(),
             ttl: 60,
             filters: vec![],
+            is_paused: false,
             last_fetched_at: None,
             created_at: Utc::now(),
             folder_id: None,

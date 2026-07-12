@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TbToggleLeft, TbToggleRightFilled } from "react-icons/tb";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpdateFeed } from "../hooks/useFeeds";
 import { useFolders } from "../hooks/useFolders";
@@ -21,6 +22,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
   const [urlFilters, setUrlFilters] = useState<string[]>(
     feed.filters.filter((f): f is string => f !== null)
   );
+  const [paused, setPaused] = useState(feed.is_paused);
   const update = useUpdateFeed();
   const qc = useQueryClient();
 
@@ -79,6 +81,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
           // "cleared" from "not yet seeded", so omit the key (= keep current).
           folder: folderSeeded ? folder.trim() || null : undefined,
           filters: urlFilters.map((f) => f.trim()).filter(Boolean),
+          is_paused: paused,
         },
       });
 
@@ -124,6 +127,18 @@ export function EditFeedForm({ feed, onClose }: Props) {
         required
       />
       <FolderCombobox value={folder} onChange={setFolder} />
+      <label
+        className="feed-paused-option"
+        title="Paused feeds are not polled; existing posts stay"
+      >
+        Pause updates
+        <input
+          type="checkbox"
+          checked={paused}
+          onChange={(e) => setPaused(e.target.checked)}
+        />
+        {paused ? <TbToggleRightFilled aria-hidden /> : <TbToggleLeft aria-hidden />}
+      </label>
       <div className="url-filters">
         {urlFilters.map((filter, i) => (
           <div key={i} className="url-filter-row">

@@ -247,7 +247,7 @@
 
   /* Dim the content, not the row: opacity on the row would composite the
      whole subtree — including an open row menu — at 45%. */
-  &.excluded {
+  &.paused {
     .feed-item-title,
     .feed-item-unread {
       opacity: 0.45;
@@ -597,6 +597,42 @@
 .url-filters .btn {
   flex: unset;
   align-self: flex-start;
+}
+
+/* Pause row: label left, toggle icon right. The real checkbox is visually
+   hidden but keeps focus/keyboard behavior; the Tb toggle icon renders it. */
+.feed-paused-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-h);
+  cursor: pointer;
+  user-select: none;
+
+  & svg {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    color: var(--text);
+  }
+
+  & input:checked ~ svg {
+    color: var(--accent);
+  }
+
+  & input:focus-visible ~ svg {
+    outline: 2px solid var(--accent-border);
+    border-radius: 4px;
+  }
+}
+
+.entity-form .feed-paused-option input[type="checkbox"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: none;
+  opacity: 0;
 }
 
 .entity-form-actions {

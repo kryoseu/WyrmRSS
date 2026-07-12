@@ -19,7 +19,7 @@
  * Structure:
  *  - `postKeys`  — the single source of truth for every query key. Each entry
  *                  is either a `*Prefix` (matches *every* variant of a list,
- *                  e.g. all search/exclude combos — used for bulk updates) or a
+ *                  e.g. all search/unread combos — used for bulk updates) or a
  *                  function that builds the exact key one query is stored under.
  *  - patch helpers (`patchPostInPages`, `patchPostInLists`, `patchPost`) — edit
  *                  the cached copies in place so the UI updates without a refetch.
@@ -34,7 +34,6 @@
  */
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 import type { Post } from "../types/Post";
-import type { FeedId } from "../types/FeedId";
 import type { PagedResponse } from "../types/PagedResponse";
 
 // ─── Cache keys ───
@@ -46,8 +45,8 @@ export const postKeys = {
   all: ["posts"] as const,
 
   listPrefix: ["posts", "list"] as const,
-  listed: (search?: string, exclude?: FeedId[], unreadOnly?: boolean) =>
-    [...postKeys.listPrefix, { search, exclude, unreadOnly }] as const,
+  listed: (search?: string, unreadOnly?: boolean) =>
+    [...postKeys.listPrefix, { search, unreadOnly }] as const,
 
   feedPrefix: ["posts", "feed"] as const,
   byFeed: (feedId: number, search?: string, unreadOnly?: boolean) =>

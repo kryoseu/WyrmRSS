@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFeed, deleteFeed, getFeedIcon, getFeeds, pollFeeds, updateFeed } from "../api/feeds";
-import { feedKeys } from "../cache/feeds";
+import { feedKeys, setFeedPauseState } from "../cache/feeds";
 import { postKeys } from "../cache/posts";
 import { folderKeys } from "./useFolders";
 import type { CreateFeed } from "../types/CreateFeed";
@@ -69,6 +69,17 @@ export function useUpdateFeed() {
       // or leaving it untouched never changes the folder list.
       if (body.folder) qc.invalidateQueries({ queryKey: folderKeys.all });
     },
+  });
+}
+
+// Pause/resume is a one-field toggle: patch the cached list with the value the
+// response carried back instead of refetching every feed.
+export function useSetFeedPaused() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, paused }: { id: FeedId; paused: boolean }) =>
+      updateFeed(id, { title: null, url: null, ttl: null, filters: null, is_paused: paused }),
+    onSuccess: (feed) => setFeedPauseState(qc, feed.id, feed.is_paused),
   });
 }
 

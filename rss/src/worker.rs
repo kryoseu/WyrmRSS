@@ -83,7 +83,10 @@ impl FeedWorker {
     async fn poll_feeds(&mut self) -> WyrmResult<()> {
         let feeds = Feed::get_all(&self.db_pool).await?;
 
-        let due_feeds: Vec<Feed> = feeds.into_iter().filter(|f| f.is_due()).collect();
+        let due_feeds: Vec<Feed> = feeds
+            .into_iter()
+            .filter(|f| f.is_due() && !f.is_paused)
+            .collect();
 
         info!("Processing {} due feeds", due_feeds.len());
 
@@ -190,6 +193,7 @@ async fn process_feed(pool: &DatabasePool, http: &HttpClient, task: &FeedTask) -
             ttl: None,
             folder: None,
             filters: None,
+            is_paused: None,
             last_fetched_at: Some(Utc::now()),
         },
     )
