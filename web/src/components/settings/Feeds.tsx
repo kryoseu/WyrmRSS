@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { TbEdit, TbPlus, TbTrash } from "react-icons/tb";
-import { useDeleteFeed, useFeeds } from "../../hooks/useFeeds";
+import { TbEdit, TbPlayerPause, TbPlayerPlay, TbPlus, TbTrash } from "react-icons/tb";
+import { useDeleteFeed, useFeeds, useSetFeedPaused } from "../../hooks/useFeeds";
 import { useFolders } from "../../hooks/useFolders";
 import { AddFeedForm } from "../AddFeedForm";
 import { EditFeedForm } from "../EditFeedForm";
@@ -10,10 +10,11 @@ import { formatLastFetched } from "../../utils/utils";
 function FeedRow({ feed, folderName }: { feed: Feed; folderName?: string }) {
   const [editing, setEditing] = useState(false);
   const { mutate: deleteFeed } = useDeleteFeed();
+  const setPaused = useSetFeedPaused();
 
   return (
     <>
-      <div className={`settings-table-row${editing ? " editing" : ""}`}>
+      <div className={`settings-table-row${editing ? " editing" : ""}${feed.is_paused ? " paused" : ""}`}>
         <span className="settings-table-title">{feed.title}</span>
         <span className="settings-table-url" title={feed.url}>{feed.url}</span>
         <span className="settings-table-meta">{feed.ttl}m</span>
@@ -22,6 +23,13 @@ function FeedRow({ feed, folderName }: { feed: Feed; folderName?: string }) {
         </span>
         <span className="settings-table-meta">{formatLastFetched(feed.last_fetched_at)}</span>
         <div className="settings-table-actions">
+          <button
+            className="settings-table-btn"
+            onClick={() => setPaused.mutate({ id: feed.id, paused: !feed.is_paused })}
+            title={feed.is_paused ? "Resume feed updates" : "Pause feed updates"}
+          >
+            {feed.is_paused ? <TbPlayerPlay /> : <TbPlayerPause />}
+          </button>
           <button
             className={`settings-table-btn${editing ? " active" : ""}`}
             onClick={() => setEditing((e) => !e)}
