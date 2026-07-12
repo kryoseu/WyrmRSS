@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TbToggleLeft, TbToggleRightFilled } from "react-icons/tb";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpdateFeed } from "../hooks/useFeeds";
 import { useFolders } from "../hooks/useFolders";
@@ -136,7 +137,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
           checked={paused}
           onChange={(e) => setPaused(e.target.checked)}
         />
-        <span className="switch" aria-hidden="true" />
+        {paused ? <TbToggleRightFilled aria-hidden /> : <TbToggleLeft aria-hidden />}
       </label>
       <div className="url-filters">
         {urlFilters.map((filter, i) => (

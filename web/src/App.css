@@ -599,8 +599,8 @@
   align-self: flex-start;
 }
 
-/* Pause row: label left, toggle switch right. The real checkbox is visually
-   hidden but keeps focus/keyboard behavior; the .switch span renders it. */
+/* Pause row: label left, toggle icon right. The real checkbox is visually
+   hidden but keeps focus/keyboard behavior; the Tb toggle icon renders it. */
 .feed-paused-option {
   display: flex;
   align-items: center;
@@ -609,6 +609,21 @@
   color: var(--text-h);
   cursor: pointer;
   user-select: none;
+
+  & svg {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    color: var(--text);
+  }
+
+  & input:checked ~ svg {
+    color: var(--accent);
+  }
+
+  & input:focus-visible ~ svg {
+    outline: 2px solid var(--accent-border);
+    border-radius: 4px;
+  }
 }
 
 .entity-form .feed-paused-option input[type="checkbox"] {
@@ -618,44 +633,6 @@
   padding: 0;
   border: none;
   opacity: 0;
-}
-
-.feed-paused-option .switch {
-  position: relative;
-  width: 26px;
-  height: 14px;
-  flex-shrink: 0;
-  border-radius: 999px;
-  background: var(--code-bg);
-  border: 1px solid var(--border);
-  transition: background 0.15s, border-color 0.15s;
-
-  &::after {
-    content: "";
-    position: absolute;
-    top: 1px;
-    left: 1px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--text);
-    transition: transform 0.15s, background 0.15s;
-  }
-}
-
-.feed-paused-option input:checked + .switch {
-  background: var(--accent-bg);
-  border-color: var(--accent-border);
-
-  &::after {
-    transform: translateX(12px);
-    background: var(--accent);
-  }
-}
-
-.feed-paused-option input:focus-visible + .switch {
-  outline: 2px solid var(--accent-border);
-  outline-offset: 1px;
 }
 
 .entity-form-actions {
