@@ -17,6 +17,8 @@ function GeneralForm({ initial }: { initial: Settings }) {
   const [retries, setRetries] = useState(String(initial.http_retries));
   const [userAgent, setUserAgent] = useState(initial.http_user_agent ?? "");
   const [readMode, setReadMode] = useState<ReadMode>(initial.read_mode);
+  const [expireReadAfterDays, setExpireReadAfterDays] = useState(String(initial.expire_read_after_days ?? ""));
+  const [expireUnreadAfterDays, setExpireUnreadAfterDays] = useState(String(initial.expire_unread_after_days ?? ""));
 
   const update = useUpdateSettings();
 
@@ -30,6 +32,8 @@ function GeneralForm({ initial }: { initial: Settings }) {
       http_retries: parseInt(retries),
       http_user_agent: userAgent.trim() || null,
       read_mode: readMode,
+      expire_read_after_days: parseInt(expireReadAfterDays),
+      expire_unread_after_days: parseInt(expireUnreadAfterDays),
     });
   }
 
@@ -54,6 +58,16 @@ function GeneralForm({ initial }: { initial: Settings }) {
       <div className="settings-field">
         <label>Page size</label>
         <input type="number" min={1} value={pageSize} onChange={(e) => setPageSize(e.target.value)} required />
+      </div>
+      <div className="settings-field">
+        <label>Expire read posts after</label>
+        <input type="number" min={1} placeholder="Never expire" value={expireReadAfterDays} onChange={(e) => setExpireReadAfterDays(e.target.value)} />
+        <label>days</label>
+      </div>
+      <div className="settings-field">
+        <label>Expire unread posts after</label>
+        <input type="number" min={1} placeholder="Never expire" value={expireUnreadAfterDays} onChange={(e) => setExpireUnreadAfterDays(e.target.value)} />
+        <label>days</label>
       </div>
 
       <h2 className="settings-section-title">Polling</h2>

@@ -46,6 +46,12 @@ pub struct Settings {
     pub http_user_agent: Option<String>,
     /// When posts get marked as read (see [`ReadMode`]).
     pub read_mode: ReadMode,
+    /// Delete read posts after N days.
+    /// Skips bookmarked (read later) and archived posts.
+    pub expire_read_after_days: Option<i32>,
+    /// Delete unread posts after N days.
+    /// Skips bookmarked (read later) and archived posts.
+    pub expire_unread_after_days: Option<i32>,
 }
 
 impl Settings {
@@ -80,6 +86,10 @@ pub struct SettingsUpdateForm {
     #[diesel(treat_none_as_null = true)]
     pub http_user_agent: Option<String>,
     pub read_mode: Option<ReadMode>,
+    #[diesel(treat_none_as_null = true)]
+    pub expire_read_after_days: Option<i32>,
+    #[diesel(treat_none_as_null = true)]
+    pub expire_unread_after_days: Option<i32>,
 }
 
 #[cfg(test)]
@@ -108,6 +118,8 @@ mod tests {
                 http_retries: None,
                 http_user_agent: Some("wyrm-test/1.0".to_string()),
                 read_mode: Some(ReadMode::Disabled),
+                expire_read_after_days: None,
+                expire_unread_after_days: None,
             },
         )
         .await
@@ -124,6 +136,8 @@ mod tests {
                 http_retries: None,
                 http_user_agent: None,
                 read_mode: None,
+                expire_read_after_days: None,
+                expire_unread_after_days: None,
             },
         )
         .await
@@ -140,6 +154,8 @@ mod tests {
                 http_retries: Some(original.http_retries),
                 http_user_agent: original.http_user_agent.clone(),
                 read_mode: Some(original.read_mode.clone()),
+                expire_read_after_days: None,
+                expire_unread_after_days: None,
             },
         )
         .await

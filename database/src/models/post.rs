@@ -6,7 +6,7 @@ use crate::{
         posts::{self},
     },
 };
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use feed_rs::model::Entry;
@@ -185,6 +185,36 @@ impl Post {
             .get_result(&mut conn)
             .await
             .map_err(WyrmError::from)
+    }
+
+    pub async fn expire_read(pool: &DatabasePool, days: i32) -> WyrmResult<usize> {
+        let mut conn = pool.get().await?;
+        let cutoff = Utc::now() - Duration::days(days as i64);
+        diesel::delete(
+            posts::table
+                .filter(posts::is_read.eq(true))
+                .filter(posts::is_archived.eq(false))
+                .filter(posts::bookmarked.eq(false))
+                .filter(posts::created_at.lt(cutoff)),
+        )
+        .execute(&mut conn)
+        .await
+        .map_err(WyrmError::from)
+    }
+
+    pub async fn expire_unread(pool: &DatabasePool, days: i32) -> WyrmResult<usize> {
+        let mut conn = pool.get().await?;
+        let cutoff = Utc::now() - Duration::days(days as i64);
+        diesel::delete(
+            posts::table
+                .filter(posts::is_read.eq(false))
+                .filter(posts::is_archived.eq(false))
+                .filter(posts::bookmarked.eq(false))
+                .filter(posts::created_at.lt(cutoff)),
+        )
+        .execute(&mut conn)
+        .await
+        .map_err(WyrmError::from)
     }
 }
 

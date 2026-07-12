@@ -30,4 +30,14 @@ http_user_agent?: string,
 /**
  * When posts get marked as read (see [`ReadMode`]).
  */
-read_mode: ReadMode, };
+read_mode: ReadMode, 
+/**
+ * Delete read posts after N days.
+ * Skips bookmarked (read later) and archived posts.
+ */
+expire_read_after_days?: number, 
+/**
+ * Delete unread posts after N days.
+ * Skips bookmarked (read later) and archived posts.
+ */
+expire_unread_after_days?: number, };

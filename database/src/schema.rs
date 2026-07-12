@@ -91,6 +91,8 @@ diesel::table! {
         http_retries -> Int4,
         http_user_agent -> Nullable<Text>,
         read_mode -> ReadMode,
+        expire_read_after_days -> Nullable<Int4>,
+        expire_unread_after_days -> Nullable<Int4>,
     }
 }
 
