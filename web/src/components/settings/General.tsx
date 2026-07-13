@@ -60,15 +60,16 @@ function GeneralForm({ initial }: { initial: Settings }) {
         <input type="number" min={1} value={pageSize} onChange={(e) => setPageSize(e.target.value)} required />
       </div>
       <div className="settings-field">
-        <label>Expire read posts after</label>
-        <input type="number" min={1} placeholder="Never expire" value={expireReadAfterDays} onChange={(e) => setExpireReadAfterDays(e.target.value)} />
+        <label>Delete read posts after</label>
+        <input type="number" min={1} placeholder="Never" value={expireReadAfterDays} onChange={(e) => setExpireReadAfterDays(e.target.value)} />
         <label>days</label>
       </div>
       <div className="settings-field">
-        <label>Expire unread posts after</label>
-        <input type="number" min={1} placeholder="Never expire" value={expireUnreadAfterDays} onChange={(e) => setExpireUnreadAfterDays(e.target.value)} />
+        <label>Delete unread posts after</label>
+        <input type="number" min={1} placeholder="Never" value={expireUnreadAfterDays} onChange={(e) => setExpireUnreadAfterDays(e.target.value)} />
         <label>days</label>
       </div>
+      <p className="settings-hint">Read Later and archived posts are never deleted.</p>
 
       <h2 className="settings-section-title">Polling</h2>
       <div className="settings-field">
