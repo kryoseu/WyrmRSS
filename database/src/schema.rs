@@ -11,6 +11,14 @@ pub mod sql_types {
 }
 
 diesel::table! {
+    expired_posts (feed_id, url) {
+        feed_id -> Int4,
+        url -> Text,
+        expired_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     feed_icons (feed_id) {
         feed_id -> Int4,
         data -> Nullable<Bytea>,
@@ -110,6 +118,7 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(expired_posts -> feeds (feed_id));
 diesel::joinable!(feed_icons -> feeds (feed_id));
 diesel::joinable!(feed_webhooks -> feeds (feed_id));
 diesel::joinable!(feed_webhooks -> webhooks (webhook_id));
@@ -117,6 +126,7 @@ diesel::joinable!(feeds -> folders (folder_id));
 diesel::joinable!(posts -> feeds (feed_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    expired_posts,
     feed_icons,
     feed_webhooks,
     feeds,

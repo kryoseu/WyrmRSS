@@ -1,5 +1,6 @@
 use crate::{
     DatabasePool,
+    models::expired::{ExpiredPost, ExpiredPostInsertForm},
     newtypes::{FeedId, FolderId, PostId},
     schema::{
         feeds,
@@ -8,7 +9,7 @@ use crate::{
 };
 use chrono::{DateTime, Duration, Utc};
 use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel_async::{AsyncConnection, RunQueryDsl};
 use feed_rs::model::Entry;
 use serde::{Deserialize, Serialize};
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
@@ -84,6 +85,10 @@ impl Post {
     /// that already exist and never creates duplicates. The returned count is
     /// the number of rows actually inserted (conflicts excluded).
     ///
+    /// Forms whose `(feed_id, url)` is recorded in `expired_posts` are also
+    /// dropped before the insert, so posts expired (deleted) by the expiry  
+    /// can't come back (see [`ExpiredPost`]).
+    ///
     /// Because all rows share one statement, error granularity differs from
     /// inserting row-by-row: a genuine row-level failure (a constraint the
     /// database cannot skip, e.g. a NOT NULL / CHECK / foreign-key violation)
@@ -92,15 +97,26 @@ impl Post {
     /// the conflict clause above.
     ///
     /// An empty `forms` is a no-op and returns `Ok(0)` without touching the
-    /// pool.
+    /// pool. A batch that becomes empty after the expired-posts filter is
+    /// also fine.
     pub async fn create_many(
         pool: &DatabasePool,
-        forms: Vec<PostInsertForm>,
+        mut forms: Vec<PostInsertForm>,
     ) -> WyrmResult<Vec<Post>> {
         if forms.is_empty() {
             return Ok(vec![]);
         }
         let mut conn = pool.get().await?;
+
+        // Filter out anything recorded in the expired_posts table before inserting.
+        let feed_ids = forms.iter().map(|f| f.feed_id).collect();
+        let urls = forms.iter().filter_map(|f| f.url.as_deref()).collect();
+        let expired = ExpiredPost::matching(&conn, feed_ids, urls).await?;
+        forms.retain(|f| match &f.url {
+            Some(url) => !expired.contains(&(f.feed_id, url.clone())),
+            None => true,
+        });
+
         diesel::insert_into(posts::table)
             .values(&forms)
             .on_conflict((posts::feed_id, posts::url))
@@ -188,33 +204,43 @@ impl Post {
     }
 
     pub async fn expire_read(pool: &DatabasePool, days: i32) -> WyrmResult<usize> {
-        let mut conn = pool.get().await?;
-        let cutoff = Utc::now() - Duration::days(days as i64);
-        diesel::delete(
-            posts::table
-                .filter(posts::is_read.eq(true))
-                .filter(posts::is_archived.eq(false))
-                .filter(posts::bookmarked.eq(false))
-                .filter(posts::created_at.lt(cutoff)),
-        )
-        .execute(&mut conn)
-        .await
-        .map_err(WyrmError::from)
+        Self::expire(pool, days, true).await
     }
 
     pub async fn expire_unread(pool: &DatabasePool, days: i32) -> WyrmResult<usize> {
+        Self::expire(pool, days, false).await
+    }
+    /// Deletes read or unread posts older than `days` and tombstones their urls
+    /// in `expired_posts` in the same transaction, so a later poll can't
+    /// re-insert them while they're still listed in the upstream feed.
+    async fn expire(pool: &DatabasePool, days: i32, is_read: bool) -> WyrmResult<usize> {
         let mut conn = pool.get().await?;
+        let conn = &mut *conn;
+
         let cutoff = Utc::now() - Duration::days(days as i64);
-        diesel::delete(
-            posts::table
-                .filter(posts::is_read.eq(false))
-                .filter(posts::is_archived.eq(false))
-                .filter(posts::bookmarked.eq(false))
-                .filter(posts::created_at.lt(cutoff)),
-        )
-        .execute(&mut conn)
+
+        conn.transaction(async |conn| {
+            let deleted: Vec<(FeedId, Option<String>)> = diesel::delete(
+                posts::table
+                    .filter(posts::is_read.eq(is_read))
+                    .filter(posts::is_archived.eq(false))
+                    .filter(posts::bookmarked.eq(false))
+                    .filter(posts::created_at.lt(cutoff)),
+            )
+            .returning((posts::feed_id, posts::url))
+            .get_results(conn)
+            .await?;
+
+            let count = deleted.len();
+            let forms: Vec<ExpiredPostInsertForm> = deleted
+                .into_iter()
+                .filter_map(|(feed_id, url)| url.map(|url| ExpiredPostInsertForm { feed_id, url }))
+                .collect();
+            ExpiredPost::create_many_on(conn, forms).await?;
+
+            Ok::<usize, WyrmError>(count)
+        })
         .await
-        .map_err(WyrmError::from)
     }
 }
 
@@ -616,5 +642,82 @@ mod tests {
         assert_eq!(form.authors.as_deref(), Some("Test Author"));
         assert_eq!(form.description.as_deref(), Some("Test description."));
         assert_eq!(form.content, None);
+    }
+
+    /// One test covers both sweeps and the refetch: the sweeps scan the whole
+    /// (shared) test database, so parallel tests with backdated posts would
+    /// expire each other's fixtures.
+    #[tokio::test]
+    async fn expire_records_expired_posts_and_blocks_refetch() {
+        let pool = setup_test_db().await;
+        let feed = test_feed!(&pool);
+
+        // Look up the id a url got on insert.
+        macro_rules! post_id {
+            ($url:expr) => {{
+                let mut conn = pool.get().await.expect("should get conn");
+                posts::table
+                    .filter(posts::feed_id.eq(feed.id))
+                    .filter(posts::url.eq($url))
+                    .select(posts::id)
+                    .first::<PostId>(&mut conn)
+                    .await
+                    .expect("post should exist")
+            }};
+        }
+
+        // Three posts old enough to expire: one read, one unread, and one
+        // read + bookmarked that must survive the sweep.
+        let read_url = format!("https://example.com/post/{}", unique!());
+        let unread_url = format!("https://example.com/post/{}", unique!());
+        let kept_url = format!("https://example.com/post/{}", unique!());
+        for url in [&read_url, &unread_url, &kept_url] {
+            let mut form = post_form!(feed.id, url);
+            form.created_at = Some(Utc::now() - Duration::days(10));
+            Post::create(&pool, form).await.expect("should create post");
+        }
+        let read_id = post_id!(&read_url);
+        let kept_id = post_id!(&kept_url);
+        for (id, bookmarked) in [(read_id, None), (kept_id, Some(true))] {
+            Post::update(
+                &pool,
+                PostUpdateForm {
+                    id,
+                    bookmarked,
+                    is_read: Some(true),
+                },
+            )
+            .await
+            .expect("should mark post read");
+        }
+
+        // Other tests share the database, so rows besides ours may expire:
+        // assert on our posts, not exact counts.
+        assert!(Post::expire_read(&pool, 5).await.unwrap() >= 1);
+        assert!(Post::expire_unread(&pool, 5).await.unwrap() >= 1);
+        assert!(Post::get(&pool, read_id).await.is_err());
+        assert!(Post::get(&pool, kept_id).await.is_ok());
+        assert_eq!(Post::unread_count(&pool, feed.id).await.unwrap(), 0);
+
+        // Re-fetch: the expired urls must stay gone — their rows are deleted,
+        // so only the expired_posts filter can block them — while a fresh url
+        // in the same batch inserts normally.
+        let fresh_url = format!("https://example.com/post/{}", unique!());
+        let inserted = Post::create_many(
+            &pool,
+            vec![
+                post_form!(feed.id, &read_url),
+                post_form!(feed.id, &unread_url),
+                post_form!(feed.id, &fresh_url),
+            ],
+        )
+        .await
+        .expect("create_many should succeed");
+        assert_eq!(inserted.len(), 1);
+        assert_eq!(inserted[0].url.as_deref(), Some(fresh_url.as_str()));
+
+        Feed::delete(&pool, feed.id)
+            .await
+            .expect("should delete feed");
     }
 }
