@@ -74,18 +74,17 @@ jobs:
           # any platform (still true as of this libpq 18.4 keg). So: link
           # dynamically instead, embed our own copies of libpq/libssl/
           # libcrypto in the .app bundle (tauri.macos.conf.json's
-          # bundle.macOS.frameworks), and add an rpath so the binary finds
-          # its own bundled copies instead of this runner's Homebrew keg —
-          # see scripts/fix-macos-dylibs.sh (run via beforeBundleCommand)
-          # for the install_name_tool rewrite that makes that actually work.
-          export RUSTFLAGS="-C link-arg=-Wl,-rpath,@executable_path/../Frameworks"
+          # bundle.macOS.frameworks — which also adds the
+          # @executable_path/../Frameworks rpath automatically), and rewrite
+          # the load commands to point at those bundled copies instead of
+          # this runner's Homebrew keg — see scripts/fix-macos-dylibs.sh
+          # (run via beforeBundleCommand).
 
           echo "PQ_LIB_DIR=$PQ_LIB_DIR" >> "$GITHUB_ENV"
           echo "PQ_LIB_NAME=$PQ_LIB_NAME" >> "$GITHUB_ENV"
           echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
           echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
           echo "LIBRARY_PATH=$LIBRARY_PATH" >> "$GITHUB_ENV"
-          echo "RUSTFLAGS=$RUSTFLAGS" >> "$GITHUB_ENV"
 
           echo "libpq prefix:"
           echo "$LIBPQ_PREFIX"

@@ -15,8 +15,12 @@
 # Homebrew or not.
 set -euo pipefail
 
-BIN="../../target/release/desktop"
-LIBS_DIR="external-libs"
+# Invoked via beforeBundleCommand with an explicit absolute path (see
+# tauri.macos.conf.json) specifically to sidestep guessing this hook's
+# actual default working directory, which doesn't match the beforeDevCommand/
+# beforeBuildCommand convention (relative to the projectPath's parent).
+BIN="$GITHUB_WORKSPACE/target/release/desktop"
+LIBS_DIR="$GITHUB_WORKSPACE/desktop/src-tauri/external-libs"
 
 LIBPQ_PREFIX="$(brew --prefix libpq)"
 OPENSSL_PREFIX="$(brew --prefix openssl@3)"
