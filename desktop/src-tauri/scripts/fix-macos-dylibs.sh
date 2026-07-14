@@ -38,9 +38,17 @@ fix_refs() {
 for dylib in "$LIBS_DIR"/*.dylib; do
   install_name_tool -id "@rpath/$(basename "$dylib")" "$dylib"
   fix_refs "$dylib"
+  # install_name_tool edits invalidate whatever signature Homebrew's build
+  # shipped (a real one, in this case) without stripping it — on Apple
+  # Silicon an *invalid* signature gets a hard SIGKILL from the kernel the
+  # moment dyld maps the file, unlike a missing one. Ad-hoc re-sign so it's
+  # valid again; Tauri's own later codesign pass re-signs the whole .app
+  # over this anyway, so this only has to hold until then.
+  codesign --force -s - "$dylib"
 done
 
 fix_refs "$BIN"
+codesign --force -s - "$BIN"
 
 echo "=== Fixed dylib references ==="
 otool -L "$BIN"
