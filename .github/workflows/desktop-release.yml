@@ -1,21 +1,19 @@
-name: Desktop Release
+name: Desktop Build Test
 
 on:
   push:
-    tags: ["desktop-v*"]
+    tags:
+      - "desktop-v*"
   workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
-    permissions:
-      contents: write
-
+  build:
     strategy:
       fail-fast: false
       matrix:
@@ -29,6 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.0
 
+      # Linux dependencies
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-latest'
         run: |
@@ -50,6 +49,7 @@ jobs:
             libpq-dev \
             pkg-config
 
+      # macOS libpq
       - name: Install libpq (macOS)
         if: matrix.platform == 'macos-latest'
         shell: bash
@@ -59,13 +59,21 @@ jobs:
           LIBPQ_PREFIX="$(brew --prefix libpq)"
 
           echo "PQ_LIB_DIR=$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
-          echo "LIBPQ_LIB_DIR=$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
+          echo "PQ_LIB_NAME=pq" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=$LIBPQ_PREFIX/lib/pkgconfig" >> "$GITHUB_ENV"
+          echo "LDFLAGS=-L$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
+          echo "LIBRARY_PATH=$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
 
           echo "libpq prefix:"
           echo "$LIBPQ_PREFIX"
 
           ls -la "$LIBPQ_PREFIX/lib"
+          ls -la "$LIBPQ_PREFIX/lib/pkgconfig"
 
+          pkg-config --libs libpq
+          pkg-config --cflags libpq
+
+      # Windows libpq
       - name: Install libpq (Windows)
         if: matrix.platform == 'windows-latest'
         shell: powershell
@@ -73,9 +81,11 @@ jobs:
           choco install postgresql14 --force --params '/Password:root'
 
           echo "PQ_LIB_DIR=C:\Program Files\PostgreSQL\14\lib" >> $env:GITHUB_ENV
-          echo "PQ_LIB_NAME=libpq" >> $env:GITHUB_ENV
+          echo "PQ_LIB_NAME=pq" >> $env:GITHUB_ENV
+          echo "PQ_LIB_STATIC=0" >> $env:GITHUB_ENV
 
           Get-ChildItem "C:\Program Files\PostgreSQL\14\lib"
+          Get-ChildItem "C:\Program Files\PostgreSQL\14\include"
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -91,30 +101,23 @@ jobs:
           cache-dependency-path: web/pnpm-lock.yaml
 
       - name: Install frontend dependencies
-        run: pnpm install --frozen-lockfile
         working-directory: web
+        run: pnpm install --frozen-lockfile
 
       - name: Verify environment
         shell: bash
         run: |
+          echo "Platform: ${{ matrix.platform }}"
           echo "PQ_LIB_DIR=$PQ_LIB_DIR"
-          echo "LIBPQ_LIB_DIR=$LIBPQ_LIB_DIR"
+          echo "PQ_LIB_NAME=$PQ_LIB_NAME"
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+          echo "LDFLAGS=$LDFLAGS"
+          echo "LIBRARY_PATH=$LIBRARY_PATH"
 
-          if [ "${{ matrix.platform }}" = "macos-latest" ]; then
-            ls -la "$PQ_LIB_DIR"
-          fi
-
-      - uses: tauri-apps/tauri-action@v1.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PQ_LIB_DIR: ${{ env.PQ_LIB_DIR }}
-          LIBPQ_LIB_DIR: ${{ env.LIBPQ_LIB_DIR }}
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v1.0.0
         with:
           projectPath: desktop
-          tagName: ${{ github.ref_name }}
-          releaseName: "Wyrm Desktop ${{ github.ref_name }}"
-          releaseDraft: true
-          prerelease: false
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7.0.1
