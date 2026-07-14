@@ -17,10 +17,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Fixed, known-in-advance PQ_LIB_DIR per platform (GH-hosted
+          # macos-latest is always arm64 Homebrew at /opt/homebrew; the
+          # Windows path is choco's fixed install location). Set as a
+          # job-level env below instead of an in-step `>> $GITHUB_ENV`
+          # write — that runtime propagation was not reliably reaching the
+          # pq-sys build script (linker errors showed no -L search path at
+          # all, only a bare -lpq).
           - platform: macos-latest
+            pq_lib_dir: /opt/homebrew/opt/libpq/lib
           - platform: windows-latest
+            pq_lib_dir: 'C:\Program Files\PostgreSQL\14\lib'
           - platform: ubuntu-latest
+            pq_lib_dir: ""
     runs-on: ${{ matrix.platform }}
+    env:
+      PQ_LIB_DIR: ${{ matrix.pq_lib_dir }}
     steps:
       - uses: actions/checkout@v7.0.0
 
@@ -34,16 +46,19 @@ jobs:
 
       - name: Install libpq (macOS)
         if: matrix.platform == 'macos-latest'
-        run: |
-          brew install libpq
-          echo "PQ_LIB_DIR=$(brew --prefix libpq)/lib" >> "$GITHUB_ENV"
+        run: brew install libpq
 
       # Same approach diesel-rs's own CI uses for this exact linker error.
       - name: Install libpq (Windows)
         if: matrix.platform == 'windows-latest'
+        run: choco install postgresql14 --force --params '/Password:root'
+
+      - name: Verify libpq install
+        if: matrix.platform != 'ubuntu-latest'
+        shell: bash
         run: |
-          choco install postgresql14 --force --params '/Password:root'
-          echo "PQ_LIB_DIR=C:\Program Files\PostgreSQL\14\lib" >> $env:GITHUB_ENV
+          echo "PQ_LIB_DIR=$PQ_LIB_DIR"
+          ls -la "$PQ_LIB_DIR"
 
       - uses: pnpm/action-setup@v6.0.9
         with:
@@ -62,6 +77,7 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PQ_LIB_DIR: ${{ matrix.pq_lib_dir }}
         with:
           projectPath: desktop
           # Manual workflow_dispatch runs (no tag) omit these and just build,
