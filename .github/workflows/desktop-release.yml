@@ -71,6 +71,11 @@ jobs:
           export PKG_CONFIG_PATH="$LIBPQ_PREFIX/lib/pkgconfig"
           export LDFLAGS="-L$LIBPQ_PREFIX/lib"
           export LIBRARY_PATH="$LIBPQ_PREFIX/lib"
+          # libpq.a alone is missing SCRAM/string/random helpers that live in
+          # libpgcommon.a and libpgport.a (also shipped by the libpq keg) —
+          # pq-sys only links the lib named by PQ_LIB_NAME, so pull these in
+          # explicitly or the final link fails with undefined symbols.
+          export RUSTFLAGS="-L $LIBPQ_PREFIX/lib -l static=pgcommon -l static=pgport"
 
           echo "PQ_LIB_DIR=$PQ_LIB_DIR" >> "$GITHUB_ENV"
           echo "PQ_LIB_NAME=$PQ_LIB_NAME" >> "$GITHUB_ENV"
@@ -78,6 +83,7 @@ jobs:
           echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
           echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
           echo "LIBRARY_PATH=$LIBRARY_PATH" >> "$GITHUB_ENV"
+          echo "RUSTFLAGS=$RUSTFLAGS" >> "$GITHUB_ENV"
 
           echo "libpq prefix:"
           echo "$LIBPQ_PREFIX"
@@ -101,6 +107,17 @@ jobs:
 
           Get-ChildItem "C:\Program Files\PostgreSQL\14\lib"
           Get-ChildItem "C:\Program Files\PostgreSQL\14\include"
+
+          # pq-sys only supports dynamic linking on MSVC, so libpq.dll (and
+          # whatever it depends on — libcrypto/libssl/libintl/iconv from the
+          # choco Postgres install) has to ship next to the exe or the app
+          # fails at launch with "couldn't find libpq.dll". Copying every DLL
+          # from the Postgres bin dir is a superset but harmless — bundled as
+          # a Tauri resource via tauri.windows.conf.json.
+          $dest = "desktop\src-tauri\resources-windows"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item "C:\Program Files\PostgreSQL\14\bin\*.dll" -Destination $dest
+          Get-ChildItem $dest
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
