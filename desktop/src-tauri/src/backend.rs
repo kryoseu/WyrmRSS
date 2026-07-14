@@ -1,0 +1,235 @@
+use crate::error::{WyrmDesktopError, WyrmDesktopResult};
+use actix_cors::Cors;
+use actix_web::{App, HttpServer, middleware::from_fn, web};
+use api_utils::context::WyrmContext;
+use database::{models::settings::Settings, utils::settings::RuntimeSettings};
+use postgresql_embedded::PostgreSQL;
+use rand::Rng;
+use rand::distr::Alphanumeric;
+use std::net::{IpAddr, Ipv4Addr, TcpListener};
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, OnceLock, RwLock};
+use tracing::info;
+use wyrm_rss::{
+    http::{HttpClient, HttpConfig},
+    worker::{FeedWorker, WorkerCommand},
+};
+use wyrm_utils::{
+    config::WyrmStartupConfig,
+    error::{DatabaseError, HttpServerError},
+    middleware::api_key_middleware,
+};
+
+/// Info the frontend needs to talk to the embedded backend, resolved once at
+/// startup since the port is OS-assigned and the api key is generated fresh
+/// per launch.
+#[derive(Clone, serde::Serialize)]
+pub struct ServerInfo {
+    pub base_url: String,
+    pub api_key: String,
+}
+
+static SERVER_INFO: OnceLock<ServerInfo> = OnceLock::new();
+// `PostgreSQL::drop` stops the embedded server, so this must outlive the app
+// (kept for the whole process lifetime rather than dropped at the end of
+// `bootstrap`).
+static EMBEDDED_PG: OnceLock<PostgreSQL> = OnceLock::new();
+
+#[tauri::command]
+pub fn server_info() -> Option<ServerInfo> {
+    SERVER_INFO.get().cloned()
+}
+
+static SHUTDOWN_STARTED: AtomicBool = AtomicBool::new(false);
+
+/// Stops the embedded Postgres server cleanly. Safe to call from multiple
+/// exit paths (window close, Ctrl+C) since only the first call does
+/// anything; without this, the server is left running orphaned or dies
+/// mid-write and corrupts its own lock file, so the next launch fails with
+/// "another server might be running".
+pub async fn shutdown() {
+    if SHUTDOWN_STARTED.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    if let Some(pg) = EMBEDDED_PG.get() {
+        info!("Stopping embedded Postgres");
+        if let Err(err) = pg.stop().await {
+            tracing::error!("failed to stop embedded postgres cleanly: {err}");
+        }
+    }
+}
+
+const DATABASE_NAME: &str = "wyrm";
+
+fn persistent_pg_password(data_dir: &std::path::Path) -> WyrmDesktopResult<String> {
+    let path = data_dir.join(".pg-superuser-password");
+    if let Ok(existing) = std::fs::read_to_string(&path)
+        && !existing.is_empty()
+    {
+        return Ok(existing);
+    }
+    let generated: String = rand::rng()
+        .sample_iter(&Alphanumeric)
+        .take(32)
+        .map(char::from)
+        .collect();
+    std::fs::write(&path, &generated)?;
+    Ok(generated)
+}
+
+pub async fn start_backend(app: &tauri::AppHandle) -> WyrmDesktopResult<()> {
+    use tauri::{Emitter, Manager};
+
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| WyrmDesktopError::AppDataDir(e.to_string()))?;
+    let info = bootstrap(data_dir).await?;
+    let _ = app.emit("wyrm://backend-ready", ());
+    let _ = SERVER_INFO.set(info);
+    Ok(())
+}
+
+/// Spins up embedded Postgres + the actix backend for the given app-data
+/// directory and returns how to reach it. Kept independent of `AppHandle` so
+/// it can be exercised directly (e.g. from tests) without a GUI/display.
+pub async fn bootstrap(data_dir: PathBuf) -> WyrmDesktopResult<ServerInfo> {
+    std::fs::create_dir_all(&data_dir)?;
+
+    // `Settings::default()` generates a fresh random superuser password every
+    // call, but the on-disk cluster keeps whatever password it was `initdb`'d
+    // with on the first launch (data_dir persists across restarts). Pin it to
+    // a value that's stable across launches so later runs can still connect.
+    let pg_password = persistent_pg_password(&data_dir)?;
+
+    info!("Setting up embedded Postgres");
+    let mut pg = PostgreSQL::new(postgresql_embedded::Settings {
+        installation_dir: data_dir.join("postgres-install"),
+        data_dir: data_dir.join("postgres-data"),
+        host: "127.0.0.1".to_string(),
+        password: pg_password,
+        temporary: false,
+        ..Default::default()
+    });
+    pg.setup().await?;
+    pg.start().await?;
+
+    if !pg.database_exists(DATABASE_NAME).await.unwrap_or(false) {
+        pg.create_database(DATABASE_NAME).await?;
+    }
+
+    let api_key: String = rand::rng()
+        .sample_iter(&Alphanumeric)
+        .take(32)
+        .map(char::from)
+        .collect();
+
+    let startup_conf = WyrmStartupConfig {
+        database_connection: pg.settings().url(DATABASE_NAME),
+        api_key: Some(api_key.clone()),
+        bind: IpAddr::V4(Ipv4Addr::LOCALHOST),
+        ..Default::default()
+    };
+
+    // `PostgreSQL::drop` stops the server, so keep it alive for the process
+    // lifetime instead of letting it drop at the end of this function.
+    let _ = EMBEDDED_PG.set(pg);
+
+    info!("Establishing database connection for migrations");
+    let mut db_sync_conn = database::establish_sync_connection(&startup_conf)?;
+
+    info!("Running database migrations");
+    database::run_migrations(&mut db_sync_conn)
+        .map_err(|e| wyrm_utils::error::WyrmError::from(DatabaseError::MigrationError(e)))?;
+
+    info!("Creating database pool");
+    let db_pool = database::create_pool(&startup_conf).await?;
+
+    let settings = Settings::get(&db_pool).await?;
+    let rs = RuntimeSettings::from(&settings);
+
+    info!("Building http client");
+    let http = HttpClient::new(&HttpConfig::from(&rs))?;
+
+    let runtime_settings = Arc::new(RwLock::new(rs));
+    let (tx, rx) = tokio::sync::mpsc::channel::<WorkerCommand>(1);
+
+    let ctx = web::Data::new(WyrmContext {
+        db_pool: db_pool.clone(),
+        runtime_settings: runtime_settings.clone(),
+        http: http.clone(),
+        worker_tx: tx,
+    });
+
+    tokio::spawn(async move {
+        let mut rss_worker = FeedWorker::new(db_pool, http, runtime_settings);
+        let _ = rss_worker.run(rx).await;
+    });
+
+    info!("Starting up embedded HTTP server");
+    let listener = TcpListener::bind((startup_conf.bind, 0))?;
+    let port = listener.local_addr()?.port();
+
+    let api_key_data = startup_conf.api_key.clone();
+    let server = HttpServer::new(move || {
+        App::new()
+            .app_data(ctx.clone())
+            .app_data(web::Data::new(api_key_data.clone()))
+            .wrap(from_fn(api_key_middleware))
+            // The webview's origin (tauri://localhost, http://tauri.localhost,
+            // etc.) differs from this server's, so cross-origin fetches need
+            // CORS. Permissive is acceptable here: the server only binds
+            // 127.0.0.1 and every request still needs the per-launch api key.
+            .wrap(Cors::permissive())
+            .configure(api_routes::config)
+    })
+    .listen(listener)
+    .map_err(HttpServerError::BindError)
+    .map_err(wyrm_utils::error::WyrmError::from)?
+    .run();
+
+    tokio::spawn(server);
+
+    Ok(ServerInfo {
+        base_url: format!("http://127.0.0.1:{port}"),
+        api_key,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Proves the desktop bootstrap end-to-end: initdb an embedded Postgres
+    /// into a scratch dir, run migrations, start the actix server on an
+    /// OS-assigned port, and hit a real API route through it.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn bootstrap_serves_api_requests() {
+        let _ = tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::DEBUG)
+            .try_init();
+        let data_dir =
+            std::env::temp_dir().join(format!("wyrm-desktop-poc-{}", std::process::id()));
+
+        let info = bootstrap(data_dir.clone())
+            .await
+            .expect("bootstrap should succeed");
+
+        let client = reqwest::Client::new();
+        let res = client
+            .get(format!("{}/api/v1/settings", info.base_url))
+            .header("x-api-key", &info.api_key)
+            .send()
+            .await
+            .expect("request should succeed");
+
+        assert!(
+            res.status().is_success(),
+            "unexpected status: {}",
+            res.status()
+        );
+
+        let _ = std::fs::remove_dir_all(&data_dir);
+    }
+}

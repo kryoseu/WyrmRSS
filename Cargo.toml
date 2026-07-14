@@ -10,6 +10,7 @@ members = [
   "webhook",
   "server",
   "utils",
+  "desktop/src-tauri",
 ]
 
 [workspace.package]

@@ -1,0 +1,36 @@
+[package]
+name = "desktop"
+version.workspace = true
+edition.workspace = true
+description = "Desktop build of Wyrm (Tauri)"
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+serde_json = { workspace = true }
+serde = { workspace = true }
+tauri = { version = "2.11.3", features = [] }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+actix-web = { workspace = true }
+thiserror = { workspace = true }
+api_routes = { path = "../../api/routes" }
+api_utils = { path = "../../api/utils" }
+database = { path = "../../database" }
+wyrm_utils = { path = "../../utils" }
+wyrm-rss = { path = "../../rss" }
+postgresql_embedded = "0.20"
+rand = "0.9.5"
+actix-cors = "0.7.1"
+
+[dev-dependencies]
+reqwest.workspace = true
