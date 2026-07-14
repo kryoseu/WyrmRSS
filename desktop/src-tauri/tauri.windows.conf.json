@@ -3,6 +3,11 @@
   "bundle": {
     "resources": {
       "resources-windows/*.dll": "./"
+    },
+    "windows": {
+      "nsis": {
+        "installerHooks": "nsis/hooks.nsh"
+      }
     }
   }
 }

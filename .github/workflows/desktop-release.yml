@@ -54,56 +54,34 @@ jobs:
         if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
-          brew install libpq
+          brew install libpq openssl@3
 
           LIBPQ_PREFIX="$(brew --prefix libpq)"
+          OPENSSL_PREFIX="$(brew --prefix openssl@3)"
 
           # export for use later in *this* step (e.g. the pkg-config calls
           # below) — writing to $GITHUB_ENV alone only affects later steps.
           export PQ_LIB_DIR="$LIBPQ_PREFIX/lib"
           export PQ_LIB_NAME=pq
-          # Link libpq statically — otherwise the app dynamically links
-          # against this CI runner's own Homebrew keg
-          # (/opt/homebrew/opt/libpq/lib/libpq.5.dylib), and every user
-          # without that exact keg installed gets "Library not loaded" at
-          # launch.
-          export PQ_LIB_STATIC=1
           export PKG_CONFIG_PATH="$LIBPQ_PREFIX/lib/pkgconfig"
           export LDFLAGS="-L$LIBPQ_PREFIX/lib"
           export LIBRARY_PATH="$LIBPQ_PREFIX/lib"
-          # libpq.a alone is missing SCRAM/string/random helpers that live in
-          # libpgcommon.a and libpgport.a (also shipped by the libpq keg) —
-          # pq-sys only links the lib named by PQ_LIB_NAME, so pull these in
-          # explicitly or the final link fails with undefined symbols. On top
-          # of that, this keg was built --with-gssapi, so anything touching
-          # fe-connect.o also needs macOS's system GSS.framework, plus
-          # whatever else the keg's own pkg-config metadata says it needs
-          # (e.g. encoding helpers we don't want to keep guessing about
-          # symbol-by-symbol) — ask pkg-config for the authoritative static
-          # dependency closure instead of hand-enumerating it. Each token has
-          # to go through as its own -C link-arg=TOKEN because RUSTFLAGS is
-          # split on whitespace and rustc's own flag parser rejects raw
-          # clang/ld syntax like "-framework GSS".
-          STATIC_PQ_LIBS="$(pkg-config --static --libs libpq)"
-          echo "pkg-config --static --libs libpq => $STATIC_PQ_LIBS"
-          LINK_ARGS=""
-          for tok in $STATIC_PQ_LIBS; do
-            # pkg-config's Libs: line includes a bare "-lpq" alongside the
-            # Libs.private static deps we actually want. Passed through raw
-            # like this it prefers libpq.dylib over libpq.a (both sit in the
-            # same search dir), silently re-introducing the dynamic
-            # dependency PQ_LIB_STATIC/PQ_LIB_NAME already force statically
-            # via rustc's own -l static=pq — drop it, keep everything else.
-            if [ "$tok" = "-lpq" ]; then
-              continue
-            fi
-            LINK_ARGS="$LINK_ARGS -C link-arg=$tok"
-          done
-          export RUSTFLAGS="-L $LIBPQ_PREFIX/lib -l static=pgcommon -l static=pgport -C link-arg=-framework -C link-arg=GSS$LINK_ARGS"
+          # Static linking against this keg is a dead end: PostgreSQL's own
+          # build has dropped pg_encoding_to_char/pg_char_to_encoding
+          # (encnames.o) from the objects that go into libpq.a since PG13,
+          # and never added them to libpgcommon.a either — the symbols
+          # genuinely don't exist in any static archive upstream ships, on
+          # any platform (still true as of this libpq 18.4 keg). So: link
+          # dynamically instead, embed our own copies of libpq/libssl/
+          # libcrypto in the .app bundle (tauri.macos.conf.json's
+          # bundle.macOS.frameworks), and add an rpath so the binary finds
+          # its own bundled copies instead of this runner's Homebrew keg —
+          # see scripts/fix-macos-dylibs.sh (run via beforeBundleCommand)
+          # for the install_name_tool rewrite that makes that actually work.
+          export RUSTFLAGS="-C link-arg=-Wl,-rpath,@executable_path/../Frameworks"
 
           echo "PQ_LIB_DIR=$PQ_LIB_DIR" >> "$GITHUB_ENV"
           echo "PQ_LIB_NAME=$PQ_LIB_NAME" >> "$GITHUB_ENV"
-          echo "PQ_LIB_STATIC=$PQ_LIB_STATIC" >> "$GITHUB_ENV"
           echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
           echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
           echo "LIBRARY_PATH=$LIBRARY_PATH" >> "$GITHUB_ENV"
@@ -117,6 +95,17 @@ jobs:
 
           pkg-config --libs libpq
           pkg-config --cflags libpq
+
+          # Bundled (via tauri.macos.conf.json) into the .app's Frameworks/
+          # dir; fix-macos-dylibs.sh rewrites both these copies' and the
+          # compiled binary's load commands to point at each other instead
+          # of this runner's absolute Homebrew paths.
+          DEST="desktop/src-tauri/external-libs"
+          mkdir -p "$DEST"
+          cp "$LIBPQ_PREFIX/lib/libpq.5.dylib" "$DEST/"
+          cp "$OPENSSL_PREFIX/lib/libssl.3.dylib" "$DEST/"
+          cp "$OPENSSL_PREFIX/lib/libcrypto.3.dylib" "$DEST/"
+          ls -la "$DEST"
 
       # Windows libpq
       - name: Install libpq (Windows)
