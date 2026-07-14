@@ -110,23 +110,27 @@ jobs:
           DEST="desktop/src-tauri/external-libs"
           mkdir -p "$DEST"
 
-          declare -A seen
+          # macOS's system bash is frozen at 3.2 (last GPLv2 release before
+          # GPLv3) — no associative arrays there, so track "seen" as a
+          # space-delimited string instead of declare -A.
+          seen=""
           queue=("$LIBPQ_PREFIX/lib/libpq.5.dylib")
           while [ ${#queue[@]} -gt 0 ]; do
             current="${queue[0]}"
             queue=("${queue[@]:1}")
             name="$(basename "$current")"
-            if [ -z "${seen[$name]:-}" ]; then
-              seen[$name]=1
-              cp "$current" "$DEST/"
-              while IFS= read -r dep; do
-                case "$dep" in
-                  /opt/homebrew/*|/usr/local/*)
-                    queue+=("$dep")
-                    ;;
-                esac
-              done < <(otool -L "$current" | tail -n +2 | awk '{print $1}')
-            fi
+            case " $seen " in
+              *" $name "*) continue ;;
+            esac
+            seen="$seen $name"
+            cp "$current" "$DEST/"
+            while IFS= read -r dep; do
+              case "$dep" in
+                /opt/homebrew/*|/usr/local/*)
+                  queue+=("$dep")
+                  ;;
+              esac
+            done < <(otool -L "$current" | tail -n +2 | awk '{print $1}')
           done
 
           ls -la "$DEST"
