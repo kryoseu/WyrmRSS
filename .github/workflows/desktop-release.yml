@@ -8,6 +8,9 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: write
+
 jobs:
   release:
     strategy:
@@ -51,10 +54,6 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: ". -> target"
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
