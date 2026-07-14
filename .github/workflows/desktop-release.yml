@@ -99,12 +99,48 @@ jobs:
           # dir; fix-macos-dylibs.sh rewrites both these copies' and the
           # compiled binary's load commands to point at each other instead
           # of this runner's absolute Homebrew paths.
+          #
+          # libpq.5.dylib doesn't just depend on libssl/libcrypto — it also
+          # pulls in Homebrew's krb5 keg (libgssapi_krb5, which itself pulls
+          # in more libkrb5/libk5crypto/etc.), and hardcoding each one as it
+          # turns up has been a losing game. Instead, walk the real
+          # dependency graph with otool -L, copying every non-system
+          # (Homebrew-prefixed) dependency and recursing into it, until no
+          # new ones turn up.
           DEST="desktop/src-tauri/external-libs"
           mkdir -p "$DEST"
-          cp "$LIBPQ_PREFIX/lib/libpq.5.dylib" "$DEST/"
-          cp "$OPENSSL_PREFIX/lib/libssl.3.dylib" "$DEST/"
-          cp "$OPENSSL_PREFIX/lib/libcrypto.3.dylib" "$DEST/"
+
+          declare -A seen
+          queue=("$LIBPQ_PREFIX/lib/libpq.5.dylib")
+          while [ ${#queue[@]} -gt 0 ]; do
+            current="${queue[0]}"
+            queue=("${queue[@]:1}")
+            name="$(basename "$current")"
+            if [ -z "${seen[$name]:-}" ]; then
+              seen[$name]=1
+              cp "$current" "$DEST/"
+              while IFS= read -r dep; do
+                case "$dep" in
+                  /opt/homebrew/*|/usr/local/*)
+                    queue+=("$dep")
+                    ;;
+                esac
+              done < <(otool -L "$current" | tail -n +2 | awk '{print $1}')
+            fi
+          done
+
           ls -la "$DEST"
+
+          # tauri.macos.conf.json's bundle.macOS.frameworks needs literal
+          # paths (no glob support), so fill it in with whatever the walk
+          # above actually found rather than a list that'll go stale the
+          # next time a Homebrew dylib version bumps.
+          FRAMEWORKS_JSON="$(cd "$DEST" && printf '%s\n' *.dylib | jq -R -s -c 'split("\n") | map(select(length > 0)) | map("./external-libs/" + .)')"
+          echo "bundle.macOS.frameworks -> $FRAMEWORKS_JSON"
+          jq --argjson frameworks "$FRAMEWORKS_JSON" '.bundle.macOS.frameworks = $frameworks' \
+            desktop/src-tauri/tauri.macos.conf.json > /tmp/tauri.macos.conf.json
+          mv /tmp/tauri.macos.conf.json desktop/src-tauri/tauri.macos.conf.json
+          cat desktop/src-tauri/tauri.macos.conf.json
 
       # Windows libpq
       - name: Install libpq (Windows)

@@ -4,15 +4,18 @@
 # binary but before Tauri copies/codesigns it into the .app. Modifying the
 # binary after that point would invalidate Tauri's own signature.
 #
-# libpq.5.dylib/libssl.3.dylib/libcrypto.3.dylib get copied into
-# external-libs/ by the "Install libpq (macOS)" workflow step and bundled
-# into Contents/Frameworks/ via bundle.macOS.frameworks. As copied, though,
-# they (and our own binary) still reference each other via this CI runner's
-# absolute Homebrew paths (e.g. /opt/homebrew/Cellar/libpq/18.4/lib/...) —
-# rewrite every such reference to @rpath/<name> so the app resolves them
-# from its own bundled Frameworks/ dir (via the -rpath the RUSTFLAGS in
-# that workflow step already baked into the binary) on any machine,
-# Homebrew or not.
+# The "Install libpq (macOS)" workflow step walks libpq.5.dylib's full
+# dependency closure (libssl, libcrypto, krb5's libgssapi_krb5 and whatever
+# *that* pulls in, etc.) and copies all of it into external-libs/, which
+# gets bundled into Contents/Frameworks/ via bundle.macOS.frameworks. As
+# copied, though, they (and our own binary) still reference each other via
+# this CI runner's absolute Homebrew paths (e.g.
+# /opt/homebrew/Cellar/libpq/18.4/lib/...) — rewrite every such reference to
+# @rpath/<name> so the app resolves them from its own bundled Frameworks/
+# dir (Tauri adds the @executable_path/../Frameworks rpath automatically
+# once bundle.macOS.frameworks is non-empty) on any machine, Homebrew or
+# not. Driven off whatever's actually in external-libs/ rather than a fixed
+# set of Homebrew prefixes, since the exact dependency closure isn't fixed.
 set -euo pipefail
 
 # Invoked via beforeBundleCommand with an explicit absolute path (see
@@ -22,17 +25,15 @@ set -euo pipefail
 BIN="$GITHUB_WORKSPACE/target/release/desktop"
 LIBS_DIR="$GITHUB_WORKSPACE/desktop/src-tauri/external-libs"
 
-LIBPQ_PREFIX="$(brew --prefix libpq)"
-OPENSSL_PREFIX="$(brew --prefix openssl@3)"
-
 fix_refs() {
   local file="$1"
-  for dep in "$LIBPQ_PREFIX"/lib/*.dylib "$OPENSSL_PREFIX"/lib/*.dylib; do
-    [ -e "$dep" ] || continue
+  while IFS= read -r dep; do
     local name
     name="$(basename "$dep")"
-    install_name_tool -change "$dep" "@rpath/$name" "$file" 2>/dev/null || true
-  done
+    if [ -f "$LIBS_DIR/$name" ]; then
+      install_name_tool -change "$dep" "@rpath/$name" "$file"
+    fi
+  done < <(otool -L "$file" | tail -n +2 | awk '{print $1}')
 }
 
 for dylib in "$LIBS_DIR"/*.dylib; do
