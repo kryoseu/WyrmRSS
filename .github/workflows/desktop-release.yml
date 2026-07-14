@@ -49,15 +49,14 @@ jobs:
 
       - name: Install libpq (macOS)
         if: matrix.platform == 'macos-latest'
+        shell: bash
         run: |
-          brew install libpq pkg-config
+          brew install libpq
 
           LIBPQ_PREFIX="$(brew --prefix libpq)"
 
-          echo "LIBPQ_LIB_DIR=$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
           echo "PQ_LIB_DIR=$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
-          echo "PKG_CONFIG_PATH=$LIBPQ_PREFIX/lib/pkgconfig" >> "$GITHUB_ENV"
-          echo "LDFLAGS=-L$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
+          echo "LIBPQ_LIB_DIR=$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
 
           echo "libpq prefix:"
           echo "$LIBPQ_PREFIX"
@@ -92,31 +91,22 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: web
 
-      - name: Verify environment
+      - name: Verify libpq
         shell: bash
         run: |
-          echo "LDFLAGS=$LDFLAGS"
-          echo "LIBPQ_LIB_DIR=$LIBPQ_LIB_DIR"
           echo "PQ_LIB_DIR=$PQ_LIB_DIR"
-          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
-
-          if command -v pkg-config; then
-            pkg-config --modversion libpq || true
-            pkg-config --libs libpq || true
-          fi
+          echo "LIBPQ_LIB_DIR=$LIBPQ_LIB_DIR"
 
           if [ "${{ matrix.platform }}" = "macos-latest" ]; then
-            test -f "$(brew --prefix libpq)/lib/libpq.dylib"
+            ls -la "$PQ_LIB_DIR"
+            test -f "$PQ_LIB_DIR/libpq.dylib"
           fi
 
       - uses: tauri-apps/tauri-action@v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LDFLAGS: ${{ env.LDFLAGS }}
-          LIBPQ_LIB_DIR: ${{ env.LIBPQ_LIB_DIR }}
           PQ_LIB_DIR: ${{ env.PQ_LIB_DIR }}
-          PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
-          PQ_LIB_NAME: ${{ env.PQ_LIB_NAME }}
+          LIBPQ_LIB_DIR: ${{ env.LIBPQ_LIB_DIR }}
         with:
           projectPath: desktop
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
