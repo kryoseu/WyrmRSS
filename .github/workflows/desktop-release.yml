@@ -74,8 +74,23 @@ jobs:
           # libpq.a alone is missing SCRAM/string/random helpers that live in
           # libpgcommon.a and libpgport.a (also shipped by the libpq keg) —
           # pq-sys only links the lib named by PQ_LIB_NAME, so pull these in
-          # explicitly or the final link fails with undefined symbols.
-          export RUSTFLAGS="-L $LIBPQ_PREFIX/lib -l static=pgcommon -l static=pgport"
+          # explicitly or the final link fails with undefined symbols. On top
+          # of that, this keg was built --with-gssapi, so anything touching
+          # fe-connect.o also needs macOS's system GSS.framework, plus
+          # whatever else the keg's own pkg-config metadata says it needs
+          # (e.g. encoding helpers we don't want to keep guessing about
+          # symbol-by-symbol) — ask pkg-config for the authoritative static
+          # dependency closure instead of hand-enumerating it. Each token has
+          # to go through as its own -C link-arg=TOKEN because RUSTFLAGS is
+          # split on whitespace and rustc's own flag parser rejects raw
+          # clang/ld syntax like "-framework GSS".
+          STATIC_PQ_LIBS="$(pkg-config --static --libs libpq)"
+          echo "pkg-config --static --libs libpq => $STATIC_PQ_LIBS"
+          LINK_ARGS=""
+          for tok in $STATIC_PQ_LIBS; do
+            LINK_ARGS="$LINK_ARGS -C link-arg=$tok"
+          done
+          export RUSTFLAGS="-L $LIBPQ_PREFIX/lib -l static=pgcommon -l static=pgport -C link-arg=-framework -C link-arg=GSS$LINK_ARGS"
 
           echo "PQ_LIB_DIR=$PQ_LIB_DIR" >> "$GITHUB_ENV"
           echo "PQ_LIB_NAME=$PQ_LIB_NAME" >> "$GITHUB_ENV"
