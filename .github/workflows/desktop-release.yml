@@ -88,6 +88,15 @@ jobs:
           echo "pkg-config --static --libs libpq => $STATIC_PQ_LIBS"
           LINK_ARGS=""
           for tok in $STATIC_PQ_LIBS; do
+            # pkg-config's Libs: line includes a bare "-lpq" alongside the
+            # Libs.private static deps we actually want. Passed through raw
+            # like this it prefers libpq.dylib over libpq.a (both sit in the
+            # same search dir), silently re-introducing the dynamic
+            # dependency PQ_LIB_STATIC/PQ_LIB_NAME already force statically
+            # via rustc's own -l static=pq — drop it, keep everything else.
+            if [ "$tok" = "-lpq" ]; then
+              continue
+            fi
             LINK_ARGS="$LINK_ARGS -C link-arg=$tok"
           done
           export RUSTFLAGS="-L $LIBPQ_PREFIX/lib -l static=pgcommon -l static=pgport -C link-arg=-framework -C link-arg=GSS$LINK_ARGS"
