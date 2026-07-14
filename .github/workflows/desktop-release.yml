@@ -52,14 +52,17 @@ jobs:
         run: |
           brew install libpq pkg-config
 
-          echo "$(brew --prefix libpq)/bin" >> $GITHUB_PATH
-          echo "PKG_CONFIG_PATH=$(brew --prefix libpq)/lib/pkgconfig" >> $GITHUB_ENV
-          echo "LDFLAGS=-L$(brew --prefix libpq)/lib" >> $GITHUB_ENV
-          echo "LIBRARY_PATH=$(brew --prefix libpq)/lib" >> $GITHUB_ENV
+          LIBPQ_PREFIX="$(brew --prefix libpq)"
 
-          echo "libpq location:"
-          brew --prefix libpq
-          ls -la "$(brew --prefix libpq)/lib"
+          echo "LIBPQ_LIB_DIR=$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
+          echo "PQ_LIB_DIR=$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=$LIBPQ_PREFIX/lib/pkgconfig" >> "$GITHUB_ENV"
+          echo "LDFLAGS=-L$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
+
+          echo "libpq prefix:"
+          echo "$LIBPQ_PREFIX"
+
+          ls -la "$LIBPQ_PREFIX/lib"
 
       - name: Install libpq (Windows)
         if: matrix.platform == 'windows-latest'
@@ -93,20 +96,26 @@ jobs:
         shell: bash
         run: |
           echo "LDFLAGS=$LDFLAGS"
-          echo "LIBRARY_PATH=$LIBRARY_PATH"
+          echo "LIBPQ_LIB_DIR=$LIBPQ_LIB_DIR"
+          echo "PQ_LIB_DIR=$PQ_LIB_DIR"
           echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
 
           if command -v pkg-config; then
+            pkg-config --modversion libpq || true
             pkg-config --libs libpq || true
+          fi
+
+          if [ "${{ matrix.platform }}" = "macos-latest" ]; then
+            test -f "$(brew --prefix libpq)/lib/libpq.dylib"
           fi
 
       - uses: tauri-apps/tauri-action@v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LDFLAGS: ${{ env.LDFLAGS }}
-          LIBRARY_PATH: ${{ env.LIBRARY_PATH }}
-          PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
+          LIBPQ_LIB_DIR: ${{ env.LIBPQ_LIB_DIR }}
           PQ_LIB_DIR: ${{ env.PQ_LIB_DIR }}
+          PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
           PQ_LIB_NAME: ${{ env.PQ_LIB_NAME }}
         with:
           projectPath: desktop
