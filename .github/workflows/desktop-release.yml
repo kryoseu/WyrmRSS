@@ -13,6 +13,9 @@ permissions:
 
 jobs:
   release:
+    permissions:
+      contents: write
+
     strategy:
       fail-fast: false
       matrix:
@@ -91,7 +94,7 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: web
 
-      - name: Verify libpq
+      - name: Verify environment
         shell: bash
         run: |
           echo "PQ_LIB_DIR=$PQ_LIB_DIR"
@@ -99,7 +102,6 @@ jobs:
 
           if [ "${{ matrix.platform }}" = "macos-latest" ]; then
             ls -la "$PQ_LIB_DIR"
-            test -f "$PQ_LIB_DIR/libpq.dylib"
           fi
 
       - uses: tauri-apps/tauri-action@v1.0.0
@@ -109,8 +111,8 @@ jobs:
           LIBPQ_LIB_DIR: ${{ env.LIBPQ_LIB_DIR }}
         with:
           projectPath: desktop
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
-          releaseName: "Wyrm Desktop ${{ github.ref_type == 'tag' && github.ref_name || '' }}"
+          tagName: ${{ github.ref_name }}
+          releaseName: "Wyrm Desktop ${{ github.ref_name }}"
           releaseDraft: true
           prerelease: false
 
