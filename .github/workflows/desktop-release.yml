@@ -62,12 +62,19 @@ jobs:
           # below) — writing to $GITHUB_ENV alone only affects later steps.
           export PQ_LIB_DIR="$LIBPQ_PREFIX/lib"
           export PQ_LIB_NAME=pq
+          # Link libpq statically — otherwise the app dynamically links
+          # against this CI runner's own Homebrew keg
+          # (/opt/homebrew/opt/libpq/lib/libpq.5.dylib), and every user
+          # without that exact keg installed gets "Library not loaded" at
+          # launch.
+          export PQ_LIB_STATIC=1
           export PKG_CONFIG_PATH="$LIBPQ_PREFIX/lib/pkgconfig"
           export LDFLAGS="-L$LIBPQ_PREFIX/lib"
           export LIBRARY_PATH="$LIBPQ_PREFIX/lib"
 
           echo "PQ_LIB_DIR=$PQ_LIB_DIR" >> "$GITHUB_ENV"
           echo "PQ_LIB_NAME=$PQ_LIB_NAME" >> "$GITHUB_ENV"
+          echo "PQ_LIB_STATIC=$PQ_LIB_STATIC" >> "$GITHUB_ENV"
           echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
           echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
           echo "LIBRARY_PATH=$LIBRARY_PATH" >> "$GITHUB_ENV"
