@@ -58,11 +58,19 @@ jobs:
 
           LIBPQ_PREFIX="$(brew --prefix libpq)"
 
-          echo "PQ_LIB_DIR=$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
-          echo "PQ_LIB_NAME=pq" >> "$GITHUB_ENV"
-          echo "PKG_CONFIG_PATH=$LIBPQ_PREFIX/lib/pkgconfig" >> "$GITHUB_ENV"
-          echo "LDFLAGS=-L$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
-          echo "LIBRARY_PATH=$LIBPQ_PREFIX/lib" >> "$GITHUB_ENV"
+          # export for use later in *this* step (e.g. the pkg-config calls
+          # below) — writing to $GITHUB_ENV alone only affects later steps.
+          export PQ_LIB_DIR="$LIBPQ_PREFIX/lib"
+          export PQ_LIB_NAME=pq
+          export PKG_CONFIG_PATH="$LIBPQ_PREFIX/lib/pkgconfig"
+          export LDFLAGS="-L$LIBPQ_PREFIX/lib"
+          export LIBRARY_PATH="$LIBPQ_PREFIX/lib"
+
+          echo "PQ_LIB_DIR=$PQ_LIB_DIR" >> "$GITHUB_ENV"
+          echo "PQ_LIB_NAME=$PQ_LIB_NAME" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
+          echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
+          echo "LIBRARY_PATH=$LIBRARY_PATH" >> "$GITHUB_ENV"
 
           echo "libpq prefix:"
           echo "$LIBPQ_PREFIX"
