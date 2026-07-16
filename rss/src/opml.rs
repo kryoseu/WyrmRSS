@@ -10,8 +10,9 @@ pub struct Opml {
     pub body: Body,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Head {
+    #[serde(default)]
     pub title: String,
 }
 
@@ -25,7 +26,9 @@ pub struct Body {
 pub struct Outline {
     #[serde(rename = "@text")]
     pub text: String,
-    #[serde(rename = "@title")]
+    // Optional per the OPML spec; many producers omit it. Use `name()`
+    // rather than this field directly when a display name is needed.
+    #[serde(rename = "@title", default)]
     pub title: String,
     #[serde(rename = "@type", skip_serializing_if = "Option::is_none")]
     pub kind: Option<String>,
@@ -33,6 +36,18 @@ pub struct Outline {
     pub xml_url: Option<String>,
     #[serde(rename = "outline", skip_serializing_if = "Vec::is_empty", default)]
     pub children: Vec<Outline>,
+}
+
+impl Outline {
+    /// Display name for this outline: `title` if set, falling back to the
+    /// spec-mandated `text` attribute.
+    pub fn name(&self) -> &str {
+        if self.title.is_empty() {
+            &self.text
+        } else {
+            &self.title
+        }
+    }
 }
 
 impl Opml {
@@ -105,5 +120,35 @@ mod tests {
             r#"</opml>"#,
         );
         assert_eq!(Opml::new(vec![folder]).to_xml().unwrap(), expected);
+    }
+
+    #[test]
+    fn outline_missing_title_falls_back_to_text() {
+        let xml = concat!(
+            r#"<opml version="2.0">"#,
+            r#"<head><title>Test</title></head>"#,
+            r#"<body>"#,
+            r#"<outline text="Hacker News" type="rss" xmlUrl="https://news.ycombinator.com/rss"/>"#,
+            r#"</body>"#,
+            r#"</opml>"#,
+        );
+
+        let opml = Opml::from_xml(xml.as_bytes()).expect("outline without @title should parse");
+        assert_eq!(opml.body.outlines[0].name(), "Hacker News");
+    }
+
+    #[test]
+    fn head_missing_title_still_parses() {
+        let xml = concat!(
+            r#"<opml version="2.0">"#,
+            r#"<head></head>"#,
+            r#"<body>"#,
+            r#"<outline text="Hacker News" title="Hacker News" type="rss" xmlUrl="https://news.ycombinator.com/rss"/>"#,
+            r#"</body>"#,
+            r#"</opml>"#,
+        );
+
+        let opml = Opml::from_xml(xml.as_bytes()).expect("<head> without <title> should parse");
+        assert_eq!(opml.head.title, "");
     }
 }

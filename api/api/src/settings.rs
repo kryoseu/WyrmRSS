@@ -32,17 +32,15 @@ pub async fn get(ctx: Data<WyrmContext>) -> WyrmResult<Json<Settings>> {
 pub async fn import(body: web::Bytes, ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
     let opml = Opml::from_xml(body.as_ref())?;
 
-    for outline in opml.body.outlines {
+    for outline in &opml.body.outlines {
         // standalone leaf feed
-        if outline.xml_url.is_some() {
-            if let Some(url) = outline.xml_url {
-                create_feed(&ctx, outline.title, url, None).await?;
-            }
+        if let Some(url) = &outline.xml_url {
+            create_feed(&ctx, outline.name(), url, None).await?;
         // folder - children are feeds, each resolves/creates the folder by name
         } else {
-            for child in outline.children {
-                if let Some(url) = child.xml_url {
-                    create_feed(&ctx, child.title, url, Some(outline.text.as_str())).await?;
+            for child in &outline.children {
+                if let Some(url) = &child.xml_url {
+                    create_feed(&ctx, child.name(), url, Some(outline.name())).await?;
                 }
             }
         }
@@ -107,15 +105,15 @@ pub async fn export(ctx: Data<WyrmContext>) -> WyrmResult<XmlResponse> {
 /// Creates a feed, silently skipping it if the URL already exists.
 async fn create_feed(
     ctx: &WyrmContext,
-    title: String,
-    url: String,
+    title: &str,
+    url: &str,
     folder: Option<&str>,
 ) -> WyrmResult<()> {
     match Feed::create(
         &ctx.db_pool,
         FeedInsertForm {
-            title,
-            url,
+            title: title.to_string(),
+            url: url.to_string(),
             ttl: 60,
             folder: folder.map(String::from),
             ..Default::default()
