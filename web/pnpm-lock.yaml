@@ -15,8 +15,8 @@ importers:
         specifier: ^3.14.5
         version: 3.14.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       dompurify:
-        specifier: ^3.4.11
-        version: 3.4.11
+        specifier: ^3.4.12
+        version: 3.4.12
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -511,8 +511,8 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
-  dompurify@3.4.11:
-    resolution: {integrity: sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==}
+  dompurify@3.4.12:
+    resolution: {integrity: sha512-zQvGet8Z2sWbQhCmfFz/T5QWH2oBmjnqK3qvOjaqaNLrLEF912WamU+ohnTp0TCep/MFVHpdJuCZEdFOdTnEFg==}
 
   electron-to-chromium@1.5.361:
     resolution: {integrity: sha512-Q6Hts7N9FnJc5LeGRINFvLhCI9xZmNtTDe5ZbcVezQz7cU4a8Aua3GH1b8J2XY8Al9PF+OCwYqhgsOOheMdvkA==}
@@ -1464,7 +1464,7 @@ snapshots:
 
   detect-libc@2.1.2: {}
 
-  dompurify@3.4.11:
+  dompurify@3.4.12:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
