@@ -16,7 +16,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - uses: dorny/paths-filter@v4.0.2
         id: filter
         with:
@@ -48,7 +48,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - name: Install nightly rustfmt
         run: rustup toolchain install nightly --component rustfmt --no-self-update
       - name: Format check
@@ -69,7 +69,7 @@ jobs:
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - uses: pnpm/action-setup@v6.0.9
         with:
           version: 11.7.0
