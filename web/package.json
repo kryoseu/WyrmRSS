@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.101.2",
+    "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-virtual": "^3.14.6",
     "dompurify": "^3.4.12",
     "react": "^19.2.8",
