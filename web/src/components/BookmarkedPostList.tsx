@@ -1,4 +1,4 @@
-import { useOutletContext, useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router";
 import { useBookmarkedPosts } from "../hooks/usePosts";
 import { useFeeds } from "../hooks/useFeeds";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";

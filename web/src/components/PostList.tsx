@@ -1,4 +1,4 @@
-import { useOutletContext, useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router";
 import { TbChecks, TbEye, TbEyeOff, TbRefresh } from "react-icons/tb";
 import { usePosts } from "../hooks/usePosts";
 import { useUnreadOnly } from "../hooks/useUnreadOnly";

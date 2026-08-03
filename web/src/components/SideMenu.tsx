@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router";
 import { useTheme, PALETTES } from "../hooks/useTheme";
 import type { AccentKey } from "../hooks/useTheme";
 import { FeedList } from "./FeedList";
