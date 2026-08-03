@@ -12,13 +12,8 @@ importers:
         specifier: ^5.101.4
         version: 5.101.4(react@19.2.8)
       '@tanstack/react-virtual':
-<<<<<<< HEAD
         specifier: ^3.14.8
-        version: 3.14.8(react-dom@19.2.7(react@19.2.8))(react@19.2.8)
-=======
-        specifier: ^3.14.6
-        version: 3.14.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
->>>>>>> b49690b (fix: upgrade react-router to 8.3.0, resolving CVE-2026-22030)
+        version: 3.14.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       dompurify:
         specifier: ^3.4.12
         version: 3.4.12
@@ -1284,11 +1279,7 @@ snapshots:
       '@tanstack/query-core': 5.101.4
       react: 19.2.8
 
-<<<<<<< HEAD
-  '@tanstack/react-virtual@3.14.8(react-dom@19.2.7(react@19.2.8))(react@19.2.8)':
-=======
-  '@tanstack/react-virtual@3.14.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
->>>>>>> b49690b (fix: upgrade react-router to 8.3.0, resolving CVE-2026-22030)
+  '@tanstack/react-virtual@3.14.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@tanstack/virtual-core': 3.17.6
       react: 19.2.8
