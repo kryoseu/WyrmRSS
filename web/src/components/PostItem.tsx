@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { HiMail, HiMailOpen } from "react-icons/hi";
 import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
 import type { Post } from "../types/Post";
