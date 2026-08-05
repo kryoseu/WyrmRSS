@@ -5,7 +5,7 @@ import { useFolders, useUpdateFolder } from "../hooks/useFolders";
 import { useMarkRead } from "../hooks/usePostMutations";
 import { FeedItem } from "./FeedItem";
 import { RowMenu } from "./RowMenu";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router";
 import { AddFeedForm } from "./AddFeedForm";
 import { FolderForm } from "./FolderForm";
 import { renameErrorMessage } from "../api/folders";

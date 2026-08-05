@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router";
 import { ArchiveReader } from "../components/ArchiveReader";
 import { PostReader } from "../components/PostReader";
 import type { PostId } from "../types/PostId";

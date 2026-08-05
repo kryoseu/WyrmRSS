@@ -23,10 +23,11 @@ services:
     volumes:
       - wyrm_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wyrm -d wyrm"]
+      test: ["CMD-SHELL", "pg_isready -U wyrm -d wyrm -h 127.0.0.1"]
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   wyrm-server:
@@ -40,6 +41,11 @@ services:
       # WYRM_API_KEY: "changeme"  # set to protect the API
     ports:
       - 3001:3001
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/3001"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - /path/to/config:/app/config
     depends_on:
@@ -56,6 +62,9 @@ services:
       # WYRM_API_KEY: "changeme"  # must match the server's WYRM_API_KEY
     ports:
       - 3000:3000
+    depends_on:
+      wyrm-server:
+        condition: service_healthy
     restart: unless-stopped
 volumes:
   wyrm_data:

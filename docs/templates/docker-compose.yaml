@@ -9,10 +9,11 @@ services:
     volumes:
       - wyrm_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wyrm -d wyrm"]
+      test: ["CMD-SHELL", "pg_isready -U wyrm -d wyrm -h 127.0.0.1"]
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   wyrm-server:
@@ -20,11 +21,17 @@ services:
     container_name: wyrm-rss
     environment:
       # all env vars are optional, these are default values
-      WYRM_PORT: 3001 
+      WYRM_PORT: 3001
       WYRM_DATABASE_CONNECTION: "postgres://wyrm:wyrm@wyrm-db/wyrm"
       WYRM_DATABASE_POOL_SIZE: 30
+      # WYRM_API_KEY: "changeme"  # set to protect the API
     ports:
       - 3001:3001
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/3001"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - /path/to/config:/app/config
     depends_on:
@@ -38,8 +45,12 @@ services:
     environment:
       WYRM_WEB_PORT: 3000
       WYRM_BACKEND_URL: "http://wyrm-server:3001"
+      # WYRM_API_KEY: "changeme"  # must match the server's WYRM_API_KEY
     ports:
       - 3000:3000
+    depends_on:
+      wyrm-server:
+        condition: service_healthy
     restart: unless-stopped
 volumes:
   wyrm_data:

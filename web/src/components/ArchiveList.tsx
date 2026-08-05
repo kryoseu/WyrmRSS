@@ -1,4 +1,4 @@
-import { useOutletContext, useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router";
 import { useArchivedPosts } from "../hooks/usePosts";
 import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { useOpenPostFromRoute } from "../hooks/useOpenPostFromRoute";

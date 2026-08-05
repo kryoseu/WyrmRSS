@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { TbArchiveOff } from "react-icons/tb";
 import type { PostArchive } from "../types/PostArchive";
 import { useUnarchivePost } from "../hooks/usePostMutations";

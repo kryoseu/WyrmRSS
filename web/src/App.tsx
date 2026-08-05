@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import "./App.css";
 import { ApiKeyGate } from "./components/ApiKeyGate";
 import { ArchiveList } from "./components/ArchiveList";
