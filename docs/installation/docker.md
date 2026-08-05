@@ -61,6 +61,9 @@ services:
       # WYRM_API_KEY: "changeme"  # must match the server's WYRM_API_KEY
     ports:
       - 3000:3000
+    depends_on:
+      wyrm-server:
+        condition: service_healthy
     restart: unless-stopped
 volumes:
   wyrm_data:
