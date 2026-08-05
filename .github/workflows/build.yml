@@ -26,6 +26,11 @@ jobs:
               - '**/Cargo.toml'
               - 'Cargo.lock'
               - 'migrations/**'
+              - 'migrations_sqlite/**'
+              # generated schemas are covered by '**/*.rs', but the patch that
+              # diesel applies on top of the sqlite one is not
+              - 'database/src/schema_sqlite.patch'
+              - 'diesel.toml'
             frontend:
               - 'web/**'
 
