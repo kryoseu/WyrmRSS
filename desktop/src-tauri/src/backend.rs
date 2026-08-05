@@ -3,11 +3,12 @@ use actix_cors::Cors;
 use actix_web::{App, HttpServer, middleware::from_fn, web};
 use api_utils::context::WyrmContext;
 use database::{models::settings::Settings, utils::settings::RuntimeSettings};
-use rand::Rng;
-use rand::distr::Alphanumeric;
-use std::net::{IpAddr, Ipv4Addr, TcpListener};
-use std::path::PathBuf;
-use std::sync::{Arc, OnceLock, RwLock};
+use rand::{Rng, distr::Alphanumeric};
+use std::{
+    net::{IpAddr, Ipv4Addr, TcpListener},
+    path::PathBuf,
+    sync::{Arc, OnceLock, RwLock},
+};
 use tracing::info;
 use wyrm_rss::{
     http::{HttpClient, HttpConfig},

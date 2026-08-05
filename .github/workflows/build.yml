@@ -131,10 +131,16 @@ jobs:
             libssl-dev
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+      # `cargo fmt` only walks workspace members, and this crate is no longer
+      # one, so the root format check in the backend job does not reach it.
+      - name: Install nightly rustfmt
+        run: rustup toolchain install nightly --component rustfmt --no-self-update
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: desktop/src-tauri
+      - name: Format check
+        run: cargo +nightly fmt --check
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
       # The frontend dist is only needed to bundle, not to compile, so this
