@@ -1,0 +1,217 @@
+name: Desktop Build Test
+
+on:
+  push:
+    tags:
+      - "desktop-v*"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+          - platform: windows-latest
+          - platform: ubuntu-latest
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v7.0.0
+
+      # Linux dependencies
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libfuse2 \
+            rpm \
+            libpq-dev \
+            pkg-config
+
+      # macOS libpq
+      - name: Install libpq (macOS)
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          brew install libpq openssl@3
+
+          LIBPQ_PREFIX="$(brew --prefix libpq)"
+          OPENSSL_PREFIX="$(brew --prefix openssl@3)"
+
+          # export for use later in *this* step (e.g. the pkg-config calls
+          # below) — writing to $GITHUB_ENV alone only affects later steps.
+          export PQ_LIB_DIR="$LIBPQ_PREFIX/lib"
+          export PQ_LIB_NAME=pq
+          export PKG_CONFIG_PATH="$LIBPQ_PREFIX/lib/pkgconfig"
+          export LDFLAGS="-L$LIBPQ_PREFIX/lib"
+          export LIBRARY_PATH="$LIBPQ_PREFIX/lib"
+          # Static linking against this keg is a dead end: PostgreSQL's own
+          # build has dropped pg_encoding_to_char/pg_char_to_encoding
+          # (encnames.o) from the objects that go into libpq.a since PG13,
+          # and never added them to libpgcommon.a either — the symbols
+          # genuinely don't exist in any static archive upstream ships, on
+          # any platform (still true as of this libpq 18.4 keg). So: link
+          # dynamically instead, embed our own copies of libpq/libssl/
+          # libcrypto in the .app bundle (tauri.macos.conf.json's
+          # bundle.macOS.frameworks — which also adds the
+          # @executable_path/../Frameworks rpath automatically), and rewrite
+          # the load commands to point at those bundled copies instead of
+          # this runner's Homebrew keg — see scripts/fix-macos-dylibs.sh
+          # (run via beforeBundleCommand).
+
+          echo "PQ_LIB_DIR=$PQ_LIB_DIR" >> "$GITHUB_ENV"
+          echo "PQ_LIB_NAME=$PQ_LIB_NAME" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH" >> "$GITHUB_ENV"
+          echo "LDFLAGS=$LDFLAGS" >> "$GITHUB_ENV"
+          echo "LIBRARY_PATH=$LIBRARY_PATH" >> "$GITHUB_ENV"
+
+          echo "libpq prefix:"
+          echo "$LIBPQ_PREFIX"
+
+          ls -la "$LIBPQ_PREFIX/lib"
+          ls -la "$LIBPQ_PREFIX/lib/pkgconfig"
+
+          pkg-config --libs libpq
+          pkg-config --cflags libpq
+
+          # Bundled (via tauri.macos.conf.json) into the .app's Frameworks/
+          # dir; fix-macos-dylibs.sh rewrites both these copies' and the
+          # compiled binary's load commands to point at each other instead
+          # of this runner's absolute Homebrew paths.
+          #
+          # libpq.5.dylib doesn't just depend on libssl/libcrypto — it also
+          # pulls in Homebrew's krb5 keg (libgssapi_krb5, which itself pulls
+          # in more libkrb5/libk5crypto/etc.), and hardcoding each one as it
+          # turns up has been a losing game. Instead, walk the real
+          # dependency graph with otool -L, copying every non-system
+          # (Homebrew-prefixed) dependency and recursing into it, until no
+          # new ones turn up.
+          DEST="desktop/src-tauri/external-libs"
+          mkdir -p "$DEST"
+
+          # macOS's system bash is frozen at 3.2 (last GPLv2 release before
+          # GPLv3) — no associative arrays there, so track "seen" as a
+          # space-delimited string instead of declare -A.
+          seen=""
+          queue=("$LIBPQ_PREFIX/lib/libpq.5.dylib")
+          while [ ${#queue[@]} -gt 0 ]; do
+            current="${queue[0]}"
+            queue=("${queue[@]:1}")
+            name="$(basename "$current")"
+            case " $seen " in
+              *" $name "*) continue ;;
+            esac
+            seen="$seen $name"
+            cp "$current" "$DEST/"
+            while IFS= read -r dep; do
+              case "$dep" in
+                /opt/homebrew/*|/usr/local/*)
+                  queue+=("$dep")
+                  ;;
+              esac
+            done < <(otool -L "$current" | tail -n +2 | awk '{print $1}')
+          done
+
+          ls -la "$DEST"
+
+          # tauri.macos.conf.json's bundle.macOS.frameworks needs literal
+          # paths (no glob support), so fill it in with whatever the walk
+          # above actually found rather than a list that'll go stale the
+          # next time a Homebrew dylib version bumps.
+          FRAMEWORKS_JSON="$(cd "$DEST" && printf '%s\n' *.dylib | jq -R -s -c 'split("\n") | map(select(length > 0)) | map("./external-libs/" + .)')"
+          echo "bundle.macOS.frameworks -> $FRAMEWORKS_JSON"
+          jq --argjson frameworks "$FRAMEWORKS_JSON" '.bundle.macOS.frameworks = $frameworks' \
+            desktop/src-tauri/tauri.macos.conf.json > /tmp/tauri.macos.conf.json
+          mv /tmp/tauri.macos.conf.json desktop/src-tauri/tauri.macos.conf.json
+          cat desktop/src-tauri/tauri.macos.conf.json
+
+      # Windows libpq
+      - name: Install libpq (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: powershell
+        run: |
+          choco install postgresql14 --force --params '/Password:root'
+
+          echo "PQ_LIB_DIR=C:\Program Files\PostgreSQL\14\lib" >> $env:GITHUB_ENV
+          echo "PQ_LIB_NAME=pq" >> $env:GITHUB_ENV
+          echo "PQ_LIB_STATIC=0" >> $env:GITHUB_ENV
+
+          Get-ChildItem "C:\Program Files\PostgreSQL\14\lib"
+          Get-ChildItem "C:\Program Files\PostgreSQL\14\include"
+
+          # pq-sys only supports dynamic linking on MSVC, so libpq.dll (and
+          # whatever it depends on — libcrypto/libssl/libintl/iconv from the
+          # choco Postgres install) has to ship next to the exe or the app
+          # fails at launch with "couldn't find libpq.dll". Copying every DLL
+          # from the Postgres bin dir is a superset but harmless — bundled as
+          # a Tauri resource via tauri.windows.conf.json.
+          $dest = "desktop\src-tauri\resources-windows"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item "C:\Program Files\PostgreSQL\14\bin\*.dll" -Destination $dest
+          Get-ChildItem $dest
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: pnpm/action-setup@v6.0.9
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify environment
+        shell: bash
+        run: |
+          echo "Platform: ${{ matrix.platform }}"
+          echo "PQ_LIB_DIR=$PQ_LIB_DIR"
+          echo "PQ_LIB_NAME=$PQ_LIB_NAME"
+          echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+          echo "LDFLAGS=$LDFLAGS"
+          echo "LIBRARY_PATH=$LIBRARY_PATH"
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v1.0.0
+        with:
+          projectPath: desktop
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: wyrm-desktop-${{ matrix.platform }}
+          path: |
+            target/release/bundle/dmg/*.dmg
+            target/release/bundle/msi/*.msi
+            target/release/bundle/nsis/*.exe
+            target/release/bundle/deb/*.deb
+            target/release/bundle/rpm/*.rpm
+            target/release/bundle/appimage/*.AppImage
+          if-no-files-found: ignore

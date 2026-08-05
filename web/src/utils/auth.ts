@@ -1,3 +1,5 @@
+import { ENDPOINTS } from "./api";
+
 export function getApiKey(): string | null {
   return import.meta.env.WYRM_API_KEY || localStorage.getItem("WYRM_API_KEY");
 }
@@ -23,7 +25,7 @@ export function handleUnauthorized(): void {
 }
 
 export async function verifyApiKey(key: string): Promise<boolean> {
-  const res = await fetch("/api/v1/auth/verify", {
+  const res = await fetch(ENDPOINTS.auth.verify(), {
     headers: { "x-api-key": `${key}` },
   });
   return res.ok;
