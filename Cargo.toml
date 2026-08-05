@@ -10,8 +10,13 @@ members = [
   "webhook",
   "server",
   "utils",
-  "desktop/src-tauri",
 ]
+
+# `desktop/src-tauri` is deliberately NOT a member: it builds the database crate
+# with `sqlite` while everything here uses `postgres`, and cargo unions the
+# features asked of a crate within one workspace. It carries its own
+# `[workspace]` and lockfile instead.
+exclude = ["desktop/src-tauri"]
 
 [workspace.package]
 version = "0.25.3"

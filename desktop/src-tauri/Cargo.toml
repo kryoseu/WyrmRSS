@@ -1,11 +1,16 @@
+# Its own workspace: this crate selects the `sqlite` backend while the root
+# workspace is `postgres`, and cargo would union those into one build of the
+# database crate. See `exclude` in the root Cargo.toml.
+[workspace]
+
 [package]
 name = "desktop"
-version.workspace = true
-edition.workspace = true
+version = "0.25.3"
+edition = "2024"
 description = "Desktop build of Wyrm (Tauri)"
-license.workspace = true
-repository.workspace = true
-rust-version.workspace = true
+license = "GPL-3.0-only"
+repository = "https://github.com/kryoseu/WyrmRSS"
+rust-version = "1.94.1"
 
 [lib]
 name = "desktop_lib"
@@ -15,22 +20,33 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.6.3", features = [] }
 
 [dependencies]
-serde_json = { workspace = true }
-serde = { workspace = true }
+# Versions are spelled out rather than inherited: this crate is outside the root
+# workspace, so `workspace = true` has nothing to resolve against. Keep these in
+# step with the root [workspace.dependencies].
+serde_json = "1.0.150"
+serde = { version = "1.0.228", features = ["derive"] }
 tauri = { version = "2.11.3", features = [] }
-tokio = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-actix-web = { workspace = true }
-thiserror = { workspace = true }
-api_routes = { path = "../../api/routes" }
-api_utils = { path = "../../api/utils" }
-database = { path = "../../database" }
+tokio = { version = "1.52.3", features = ["full"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+actix-web = "4.13.0"
+thiserror = "2.0.18"
+# The whole point of the desktop build: sqlite instead of an embedded postgres.
+api_routes = { path = "../../api/routes", default-features = false, features = [
+  "sqlite",
+] }
+api_utils = { path = "../../api/utils", default-features = false, features = [
+  "sqlite",
+] }
+database = { path = "../../database", default-features = false, features = [
+  "sqlite",
+] }
 wyrm_utils = { path = "../../utils" }
-wyrm-rss = { path = "../../rss" }
-postgresql_embedded = "0.20"
+wyrm-rss = { path = "../../rss", default-features = false, features = [
+  "sqlite",
+] }
 rand = "0.9.5"
 actix-cors = "0.7.1"
 
 [dev-dependencies]
-reqwest.workspace = true
+reqwest = { version = "0.13.4", features = ["gzip"] }
