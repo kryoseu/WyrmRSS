@@ -23,10 +23,11 @@ services:
     volumes:
       - wyrm_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U wyrm -d wyrm"]
+      test: ["CMD-SHELL", "pg_isready -U wyrm -d wyrm -h 127.0.0.1"]
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   wyrm-server:
