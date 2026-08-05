@@ -110,9 +110,7 @@ fn connection_manager(conf: &WyrmStartupConfig) -> AsyncDieselConnectionManager<
 /// returns `SQLITE_BUSY` the moment two writes overlap.
 #[cfg(feature = "sqlite")]
 fn connection_manager(conf: &WyrmStartupConfig) -> AsyncDieselConnectionManager<DatabaseConn> {
-    use diesel_async::{
-        AsyncConnection, SimpleAsyncConnection, pooled_connection::ManagerConfig,
-    };
+    use diesel_async::{AsyncConnection, SimpleAsyncConnection, pooled_connection::ManagerConfig};
 
     let mut config = ManagerConfig::default();
     config.custom_setup = Box::new(|url| {

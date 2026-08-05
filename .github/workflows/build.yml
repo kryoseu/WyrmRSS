@@ -63,6 +63,13 @@ jobs:
         run: cargo test --verbose
         env:
           WYRM_DATABASE_CONNECTION: postgres://wyrm:wyrm@localhost:5432/wyrm
+      # The sqlite backend (desktop) is never exercised by the steps above,
+      # and it fails silently: the postgres build stays green while it rots.
+      # Needs no service container -- the tests run against temp files.
+      - name: Test sqlite backend
+        run: cargo test -p database --no-default-features --features sqlite --verbose
+      - name: Check sqlite server build
+        run: cargo check -p server --no-default-features --features sqlite
 
   frontend:
     needs: [changes]

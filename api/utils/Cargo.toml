@@ -11,5 +11,10 @@ rust-version.workspace = true
 tokio = { workspace = true }
 actix-web = { workspace = true }
 serde = { workspace = true }
-database = { path = "../../database" }
-wyrm-rss = { path = "../../rss" }
+database = { path = "../../database", default-features = false }
+wyrm-rss = { path = "../../rss", default-features = false }
+
+[features]
+default = ["postgres"]
+postgres = ["database/postgres", "wyrm-rss/postgres"]
+sqlite = ["database/sqlite", "wyrm-rss/sqlite"]

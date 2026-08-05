@@ -7,6 +7,12 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+# libsqlite3-sys is never named in Rust code — it's depended on purely so its
+# `bundled` feature compiles SQLite in rather than linking a system copy.
+# Nothing references it, so cargo-machete flags it as unused.
+[package.metadata.cargo-machete]
+ignored = ["libsqlite3-sys"]
+
 [dependencies]
 ts-rs = { workspace = true }
 diesel = { workspace = true }

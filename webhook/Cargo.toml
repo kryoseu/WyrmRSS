@@ -11,7 +11,16 @@ rust-version.workspace = true
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-database = { path = "../database" }
+database = { path = "../database", default-features = false }
+
+# Cargo builds `database` once per graph and unions the features asked of it,
+# so every crate on a path to it must forward the choice instead of pulling in
+# the default. Otherwise one stray default edge enables postgres alongside
+# sqlite and trips the mutual-exclusion check in database/src/lib.rs.
+[features]
+default = ["postgres"]
+postgres = ["database/postgres"]
+sqlite = ["database/sqlite"]
 
 [dev-dependencies]
 chrono = { workspace = true }

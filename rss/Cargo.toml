@@ -21,8 +21,13 @@ serde_json = { workspace = true }
 quick-xml = { workspace = true }
 scraper = { workspace = true }
 wyrm_utils = { path = "../utils" }
-wyrm_webhook = { path = "../webhook" }
-database = { path = "../database" }
+wyrm_webhook = { path = "../webhook", default-features = false }
+database = { path = "../database", default-features = false }
 async-trait = "0.1.89"
 http = "1.4.1"
 bytes = "1.11.1"
+
+[features]
+default = ["postgres"]
+postgres = ["database/postgres", "wyrm_webhook/postgres"]
+sqlite = ["database/sqlite", "wyrm_webhook/sqlite"]

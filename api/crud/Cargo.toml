@@ -12,8 +12,23 @@ actix-web = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
 ts-rs = { workspace = true }
-api_utils = { path = "../utils" }
+api_utils = { path = "../utils", default-features = false }
 wyrm_utils = { path = "../../utils" }
-database = { path = "../../database" }
-wyrm-rss = { path = "../../rss" }
-wyrm_webhook = { path = "../../webhook" }
+database = { path = "../../database", default-features = false }
+wyrm-rss = { path = "../../rss", default-features = false }
+wyrm_webhook = { path = "../../webhook", default-features = false }
+
+[features]
+default = ["postgres"]
+postgres = [
+  "database/postgres",
+  "api_utils/postgres",
+  "wyrm-rss/postgres",
+  "wyrm_webhook/postgres",
+]
+sqlite = [
+  "database/sqlite",
+  "api_utils/sqlite",
+  "wyrm-rss/sqlite",
+  "wyrm_webhook/sqlite",
+]

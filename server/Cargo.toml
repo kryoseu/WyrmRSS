@@ -12,8 +12,26 @@ tokio = { workspace = true }
 actix-web = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-api_routes = { path = "../api/routes" }
-api_utils = { path = "../api/utils" }
-database = { path = "../database" }
+api_routes = { path = "../api/routes", default-features = false }
+api_utils = { path = "../api/utils", default-features = false }
+database = { path = "../database", default-features = false }
 wyrm_utils = { path = "../utils" }
-wyrm-rss = { path = "../rss" }
+wyrm-rss = { path = "../rss", default-features = false }
+
+# Backend selection for the whole tree lands here. `cargo run` keeps postgres;
+# the desktop build uses `--no-default-features --features sqlite`. Not
+# documented as a deployment option -- sqlite exists for the desktop app.
+[features]
+default = ["postgres"]
+postgres = [
+  "database/postgres",
+  "api_routes/postgres",
+  "api_utils/postgres",
+  "wyrm-rss/postgres",
+]
+sqlite = [
+  "database/sqlite",
+  "api_routes/sqlite",
+  "api_utils/sqlite",
+  "wyrm-rss/sqlite",
+]

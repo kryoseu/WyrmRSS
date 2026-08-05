@@ -114,14 +114,20 @@ mod tests {
                 url: url_b.clone(),
             },
         ];
-        assert_eq!(ExpiredPost::create_many_on(&mut conn, forms).await.unwrap(), 2);
+        assert_eq!(
+            ExpiredPost::create_many_on(&mut conn, forms).await.unwrap(),
+            2
+        );
 
         // Same (feed_id, url) hits ON CONFLICT DO NOTHING: no error, no dup.
         let dup = vec![ExpiredPostInsertForm {
             feed_id: feed.id,
             url: url_a.clone(),
         }];
-        assert_eq!(ExpiredPost::create_many_on(&mut conn, dup).await.unwrap(), 0);
+        assert_eq!(
+            ExpiredPost::create_many_on(&mut conn, dup).await.unwrap(),
+            0
+        );
 
         // Exact pairs only: other_feed and an unknown url appear in the
         // filters, but neither (other_feed, url_a) nor (feed, unknown) is a
@@ -140,10 +146,13 @@ mod tests {
         Feed::delete(&pool, feed.id)
             .await
             .expect("should delete feed");
-        let hits =
-            ExpiredPost::matching(&mut conn, vec![feed.id], vec![url_a.as_str(), url_b.as_str()])
-                .await
-                .unwrap();
+        let hits = ExpiredPost::matching(
+            &mut conn,
+            vec![feed.id],
+            vec![url_a.as_str(), url_b.as_str()],
+        )
+        .await
+        .unwrap();
         assert!(hits.is_empty());
 
         Feed::delete(&pool, other_feed.id)

@@ -11,7 +11,9 @@
 
 use chrono::Utc;
 use database::{
-    DatabasePool, create_pool, establish_sync_connection,
+    DatabasePool,
+    create_pool,
+    establish_sync_connection,
     models::{
         feed::{Feed, FeedInsertForm},
         post::{Post, PostInsertForm},
@@ -35,7 +37,9 @@ impl TestDb {
         let path = std::env::temp_dir()
             .join(format!(
                 "wyrm_smoke_{label}_{}.db",
-                Utc::now().timestamp_nanos_opt().expect("timestamp in range")
+                Utc::now()
+                    .timestamp_nanos_opt()
+                    .expect("timestamp in range")
             ))
             .to_string_lossy()
             .into_owned();
@@ -154,7 +158,10 @@ async fn filters_round_trip_through_json() {
     let empty = Feed::create(&db.pool, feed_form("https://example.com/b", None))
         .await
         .expect("should create feed without filters");
-    assert!(empty.filters.0.is_empty(), "default should be an empty list");
+    assert!(
+        empty.filters.0.is_empty(),
+        "default should be an empty list"
+    );
 }
 
 /// Timestamps are TEXT under sqlite; the strftime defaults in the migration
