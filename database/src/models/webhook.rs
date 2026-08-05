@@ -11,7 +11,12 @@ use serde::{Deserialize, Serialize};
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 #[derive(Clone, Debug, DbEnum, Serialize, Deserialize, ts_rs::TS)]
-#[ExistingTypePath = "crate::schema::sql_types::WebhookKind"]
+// See the note on `ReadMode` in models/settings.rs: sqlite needs the derive to
+// generate its own `WebhookKindMapping` rather than reuse a schema type.
+#[cfg_attr(
+    feature = "postgres",
+    ExistingTypePath = "crate::schema::sql_types::WebhookKind"
+)]
 #[serde(rename_all = "snake_case")]
 #[ts(rename_all = "snake_case", export)]
 pub enum WebhookKind {
@@ -23,7 +28,7 @@ pub enum WebhookKind {
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::feed_webhooks)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 #[derive(ts_rs::TS)]
 #[ts(optional_fields, export)]
 /// A join-table row linking a feed to a webhook (many-to-many): a feed can have
@@ -38,7 +43,7 @@ pub struct FeedWebhook {
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Serialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::webhooks)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 #[derive(ts_rs::TS)]
 #[ts(optional_fields, export)]
 /// A reusable notification destination. A webhook is created independently and
@@ -147,7 +152,7 @@ impl FeedWebhook {
 
 #[derive(Identifiable, AsChangeset)]
 #[diesel(table_name = crate::schema::webhooks)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 pub struct WebhookUpdateForm {
     pub id: WebhookId,
     pub name: Option<String>,
@@ -158,7 +163,7 @@ pub struct WebhookUpdateForm {
 
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::webhooks)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 pub struct WebhookInsertForm {
     pub name: String,
     pub url: String,

@@ -17,7 +17,7 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Deserialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::posts)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 #[derive(ts_rs::TS)]
 #[ts(optional_fields, export)]
 /// A single entry fetched from a feed.
@@ -111,20 +111,52 @@ impl Post {
         // Filter out anything recorded in the expired_posts table before inserting.
         let feed_ids = forms.iter().map(|f| f.feed_id).collect();
         let urls = forms.iter().filter_map(|f| f.url.as_deref()).collect();
-        let expired = ExpiredPost::matching(&conn, feed_ids, urls).await?;
+        let expired = ExpiredPost::matching(&mut conn, feed_ids, urls).await?;
         forms.retain(|f| match &f.url {
             Some(url) => !expired.contains(&(f.feed_id, url.clone())),
             None => true,
         });
 
-        diesel::insert_into(posts::table)
-            .values(&forms)
-            .on_conflict((posts::feed_id, posts::url))
-            .do_nothing()
-            .returning(Post::as_select())
-            .get_results(&mut conn)
+        #[cfg(feature = "postgres")]
+        {
+            diesel::insert_into(posts::table)
+                .values(&forms)
+                .on_conflict((posts::feed_id, posts::url))
+                .do_nothing()
+                .returning(Post::as_select())
+                .get_results(&mut conn)
+                .await
+                .map_err(WyrmError::from)
+        }
+        // SQLite cannot take a multi-row VALUES list here: `PostInsertForm`'s
+        // `Option` fields make the values defaultable, and SQLite rejects the
+        // `DEFAULT` keyword inside a multi-row insert. One statement per row
+        // keeps `None` meaning "use the column default" exactly as on postgres.
+        // Wrapped in a transaction so a mid-batch failure inserts nothing.
+        #[cfg(feature = "sqlite")]
+        {
+            use diesel_async::AsyncConnection;
+            let conn = &mut *conn;
+            conn.transaction(async |conn| {
+                let mut inserted = Vec::with_capacity(forms.len());
+                for form in &forms {
+                    // `do_nothing` means a conflicting row yields no row back,
+                    // so an absent result is expected rather than an error.
+                    let row = diesel::insert_into(posts::table)
+                        .values(form)
+                        .on_conflict((posts::feed_id, posts::url))
+                        .do_nothing()
+                        .returning(Post::as_select())
+                        .get_result(conn)
+                        .await
+                        .optional()
+                        .map_err(WyrmError::from)?;
+                    inserted.extend(row);
+                }
+                Ok::<Vec<Post>, WyrmError>(inserted)
+            })
             .await
-            .map_err(WyrmError::from)
+        }
     }
 
     pub async fn update(pool: &DatabasePool, form: PostUpdateForm) -> WyrmResult<Self> {
@@ -246,7 +278,7 @@ impl Post {
 
 #[derive(Identifiable, AsChangeset)]
 #[diesel(table_name = crate::schema::posts)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 pub struct PostUpdateForm {
     pub id: PostId,
     pub bookmarked: Option<bool>,
@@ -255,7 +287,7 @@ pub struct PostUpdateForm {
 
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::posts)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 pub struct PostInsertForm {
     pub feed_id: FeedId,
     pub title: Option<String>,

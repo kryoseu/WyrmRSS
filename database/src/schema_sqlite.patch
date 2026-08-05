@@ -1,0 +1,94 @@
+@@ -4,7 +4,7 @@
+     expired_posts (feed_id, url) {
+         feed_id -> Integer,
+         url -> Text,
+-        expired_at -> Timestamp,
++        expired_at -> TimestamptzSqlite,
+     }
+ }
+ 
+@@ -13,7 +13,7 @@
+         feed_id -> Integer,
+         data -> Nullable<Binary>,
+         content_type -> Nullable<Text>,
+-        checked_at -> Timestamp,
++        checked_at -> TimestamptzSqlite,
+     }
+ }
+ 
+@@ -31,8 +31,8 @@
+         url -> Text,
+         ttl -> Integer,
+         filters -> Text,
+-        last_fetched_at -> Nullable<Timestamp>,
+-        created_at -> Timestamp,
++        last_fetched_at -> Nullable<TimestamptzSqlite>,
++        created_at -> TimestamptzSqlite,
+         folder_id -> Nullable<Integer>,
+         is_paused -> Bool,
+     }
+@@ -51,10 +51,10 @@
+         title -> Nullable<Text>,
+         url -> Nullable<Text>,
+         authors -> Nullable<Text>,
+-        published_at -> Timestamp,
++        published_at -> TimestamptzSqlite,
+         description -> Nullable<Text>,
+         content -> Nullable<Text>,
+-        archived_at -> Timestamp,
++        archived_at -> TimestamptzSqlite,
+     }
+ }
+ 
+@@ -65,18 +65,21 @@
+         title -> Nullable<Text>,
+         url -> Nullable<Text>,
+         authors -> Nullable<Text>,
+-        published_at -> Timestamp,
+-        updated_at -> Nullable<Timestamp>,
++        published_at -> TimestamptzSqlite,
++        updated_at -> Nullable<TimestamptzSqlite>,
+         description -> Nullable<Text>,
+         content -> Nullable<Text>,
+         bookmarked -> Bool,
+         is_read -> Bool,
+         is_archived -> Bool,
+-        created_at -> Timestamp,
++        created_at -> TimestamptzSqlite,
+     }
+ }
+ 
+ diesel::table! {
++    use diesel::sql_types::*;
++    use crate::models::settings::ReadModeMapping;
++
+     settings (is_singleton) {
+         is_singleton -> Bool,
+         page_size -> Integer,
+@@ -85,20 +88,23 @@
+         http_connect_timeout -> Integer,
+         http_retries -> Integer,
+         http_user_agent -> Nullable<Text>,
+-        read_mode -> Text,
++        read_mode -> ReadModeMapping,
+         expire_read_after_days -> Nullable<Integer>,
+         expire_unread_after_days -> Nullable<Integer>,
+     }
+ }
+ 
+ diesel::table! {
++    use diesel::sql_types::*;
++    use crate::models::webhook::WebhookKindMapping;
++
+     webhooks (id) {
+         id -> Integer,
+         name -> Text,
+         url -> Text,
+-        kind -> Text,
++        kind -> WebhookKindMapping,
+         payload_template -> Nullable<Text>,
+-        created_at -> Timestamp,
++        created_at -> TimestamptzSqlite,
+     }
+ }
+ 

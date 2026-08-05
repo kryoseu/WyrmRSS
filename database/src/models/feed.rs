@@ -1,7 +1,7 @@
 use crate::{
     DatabasePool,
     models::folder::Folder,
-    newtypes::{FeedId, FolderId},
+    newtypes::{FeedId, Filters, FolderId},
     schema::feeds,
 };
 use chrono::{DateTime, Utc};
@@ -16,7 +16,7 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Serialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::feeds)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 #[derive(ts_rs::TS)]
 #[ts(optional_fields, export)]
 pub struct Feed {
@@ -29,7 +29,7 @@ pub struct Feed {
     /// elapsed since `last_fetched_at`.
     pub ttl: i32,
     /// Substrings that exclude a post when matched against its URL.
-    pub filters: Vec<Option<String>>,
+    pub filters: Filters,
     /// Timestamp of the last successful poll; `None` until the feed is first fetched.
     pub last_fetched_at: Option<DateTime<Utc>>,
     /// Timestamp the feed was added.
@@ -123,7 +123,7 @@ impl Feed {
 
 #[derive(Default, Insertable)]
 #[diesel(table_name = crate::schema::feeds)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 pub struct FeedInsertForm {
     pub title: String,
     pub url: String,
@@ -135,12 +135,12 @@ pub struct FeedInsertForm {
     /// create transaction.
     #[diesel(skip_insertion)]
     pub folder: Option<String>,
-    pub filters: Option<Vec<Option<String>>>,
+    pub filters: Option<Filters>,
 }
 
 #[derive(Identifiable, AsChangeset)]
 #[diesel(table_name = crate::schema::feeds)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 pub struct FeedUpdateForm {
     pub id: FeedId,
     pub title: Option<String>,
@@ -155,7 +155,7 @@ pub struct FeedUpdateForm {
     /// insertion: this is a name, not the `folder_id` the column needs.
     #[diesel(skip_update)]
     pub folder: Option<Option<String>>,
-    pub filters: Option<Vec<Option<String>>>,
+    pub filters: Option<Filters>,
     pub is_paused: Option<bool>,
     pub last_fetched_at: Option<DateTime<Utc>>,
 }

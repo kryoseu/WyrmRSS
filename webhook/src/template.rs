@@ -130,7 +130,7 @@ fn resolve<'a>(ctx: &'a Value, path: &str) -> Option<&'a Value> {
 mod tests {
     use super::*;
     use chrono::Utc;
-    use database::newtypes::{FeedId, PostId};
+    use database::newtypes::{FeedId, Filters, PostId};
 
     fn feed() -> Feed {
         Feed {
@@ -138,7 +138,7 @@ mod tests {
             title: "MyFeed".to_string(),
             url: "https://feed.test".to_string(),
             ttl: 60,
-            filters: vec![],
+            filters: Filters(vec![]),
             is_paused: false,
             last_fetched_at: None,
             created_at: Utc::now(),

@@ -13,7 +13,7 @@ define_sql_function! {
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Serialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::folders)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 #[derive(ts_rs::TS)]
 #[ts(optional_fields, export)]
 pub struct Folder {
@@ -27,7 +27,7 @@ impl Folder {
         folders::table
             .find(id)
             .select(Folder::as_select())
-            .first(&mut conn)
+            .first(&mut *conn)
             .await
             .map_err(WyrmError::from)
     }
@@ -45,19 +45,19 @@ impl Folder {
     /// creates it. If the folder exists, its stored spelling is kept — the
     /// caller's casing does not overwrite it. Blank names are rejected.
     pub async fn resolve_or_create(pool: &DatabasePool, name: &str) -> WyrmResult<Self> {
-        let conn = pool.get().await?;
-        Self::resolve_or_create_on(&conn, name).await
+        let mut conn = pool.get().await?;
+        Self::resolve_or_create_on(&mut conn, name).await
     }
 
     /// Like [`resolve_or_create`](Self::resolve_or_create), but runs on an
     /// existing connection so it can join a caller's transaction.
-    pub async fn resolve_or_create_on(mut conn: &DatabaseConn, name: &str) -> WyrmResult<Self> {
+    pub async fn resolve_or_create_on(conn: &mut DatabaseConn, name: &str) -> WyrmResult<Self> {
         let name = normalize_name(name)?;
 
         let existing = folders::table
             .filter(lower(folders::name).eq(lower(name)))
             .select(Self::as_select())
-            .first(&mut conn)
+            .first(&mut *conn)
             .await
             .optional()
             .map_err(WyrmError::from)?;
@@ -66,7 +66,7 @@ impl Folder {
             Some(folder) => Ok(folder),
             None => diesel::insert_into(folders::table)
                 .values(FolderInsertForm { name: name.into() })
-                .get_result(&mut conn)
+                .get_result(&mut *conn)
                 .await
                 .map_err(WyrmError::from),
         }
@@ -78,7 +78,7 @@ impl Folder {
     /// the user (or an OPML outline) typed. A blank or absent name resolves
     /// to `None` (no folder) rather than erroring.
     pub(crate) async fn resolve_name_on(
-        conn: &DatabaseConn,
+        conn: &mut DatabaseConn,
         name: Option<&str>,
     ) -> WyrmResult<Option<FolderId>> {
         match name.map(str::trim).filter(|n| !n.is_empty()) {
@@ -120,14 +120,14 @@ fn normalize_name(name: &str) -> WyrmResult<&str> {
 
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::folders)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 pub struct FolderInsertForm {
     pub name: String,
 }
 
 #[derive(Identifiable, AsChangeset)]
 #[diesel(table_name = crate::schema::folders)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 pub struct FolderUpdateForm {
     pub id: FolderId,
     pub name: String,

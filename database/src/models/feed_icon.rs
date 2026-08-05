@@ -10,7 +10,7 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[derive(Queryable, Selectable, Identifiable)]
 #[diesel(table_name = crate::schema::feed_icons)]
 #[diesel(primary_key(feed_id))]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 pub struct FeedIcon {
     pub feed_id: FeedId,
     /// Raw image bytes; `None` = checked, nothing found.
@@ -67,7 +67,7 @@ impl FeedIcon {
 
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::feed_icons)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 pub struct FeedIconInsertForm {
     pub feed_id: FeedId,
     /// `None` records a lookup that found no icon.

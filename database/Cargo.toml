@@ -17,8 +17,38 @@ diesel-derive-newtype = { workspace = true }
 chrono = { workspace = true }
 feed-rs = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 serde_with = { workspace = true }
 wyrm_utils = { path = "../utils" }
+# Only pulled in by the `sqlite` feature; `bundled` compiles SQLite from
+# vendored C so the desktop build has no native library to locate or ship.
+libsqlite3-sys = { workspace = true, optional = true }
+
+# `postgres` and `sqlite` are mutually exclusive — `DatabaseConn`/`DatabasePool`
+# resolve to a single connection type, so exactly one must be on. Enforced by a
+# `compile_error!` in src/lib.rs.
+#
+# Cargo unifies features per package across one build graph, so a consumer of
+# this crate that wants sqlite must NOT be a member of the root workspace, or
+# `cargo build --workspace` would turn both features on at once and trip that
+# check. The desktop (tauri) crate therefore declares its own `[workspace]`.
+[features]
+default = ["postgres"]
+postgres = [
+  "diesel/postgres",
+  "diesel-async/postgres",
+  "diesel-derive-enum/postgres",
+]
+sqlite = [
+  "diesel/sqlite",
+  # The models lean on `get_result`/`returning` throughout. SQLite has supported
+  # RETURNING since 3.35 and libsqlite3-sys vendors a much newer one, but diesel
+  # still gates it behind this feature.
+  "diesel/returning_clauses_for_sqlite_3_35",
+  "diesel-async/sqlite",
+  "diesel-derive-enum/sqlite",
+  "dep:libsqlite3-sys",
+]
 
 [dev-dependencies]
 tokio = { workspace = true }
