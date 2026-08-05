@@ -54,6 +54,8 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v7.0.1
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
       - name: Install nightly rustfmt
         run: rustup toolchain install nightly --component rustfmt --no-self-update
       - name: Format check
@@ -129,6 +131,10 @@ jobs:
             libssl-dev
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
       # The frontend dist is only needed to bundle, not to compile, so this

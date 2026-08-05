@@ -1,4 +1,4 @@
-name: Desktop Build Test
+name: Desktop Release
 
 on:
   push:
@@ -18,18 +18,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # One fat binary covering Apple Silicon and Intel. Building only on
+          # macos-latest would ship arm64 alone and leave Intel Macs with
+          # nothing. Note the bundle lands under the target triple, not
+          # target/release.
           - platform: macos-latest
+            args: "--target universal-apple-darwin"
+            bundle: desktop/src-tauri/target/universal-apple-darwin/release/bundle
           - platform: windows-latest
-          - platform: ubuntu-latest
+            args: ""
+            bundle: desktop/src-tauri/target/release/bundle
+          # Pinned, NOT ubuntu-latest: the .deb and AppImage link against the
+          # builder's glibc, so building on a newer runner silently produces
+          # packages that refuse to start on older distros. This pin is the
+          # oldest release we intend to support.
+          - platform: ubuntu-22.04
+            args: ""
+            bundle: desktop/src-tauri/target/release/bundle
 
     runs-on: ${{ matrix.platform }}
 
     steps:
       - uses: actions/checkout@v7.0.0
 
-      # Linux dependencies
+      # Tauri links against the system webview. No database libraries: sqlite
+      # is compiled in via libsqlite3-sys/bundled.
       - name: Install Linux dependencies
-        if: matrix.platform == 'ubuntu-latest'
+        if: startsWith(matrix.platform, 'ubuntu')
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -50,6 +65,18 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Add Intel target (macOS universal build)
+        if: matrix.platform == 'macos-latest'
+        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+
+      # The tauri dependency tree is large and is otherwise rebuilt from
+      # scratch on every run, which is where timeouts come from.
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+          key: ${{ matrix.platform }}
+
       - uses: pnpm/action-setup@v6.0.9
         with:
           version: 11.7.0
@@ -68,18 +95,41 @@ jobs:
         uses: tauri-apps/tauri-action@v1.0.0
         with:
           projectPath: desktop
+          args: ${{ matrix.args }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7.0.1
         with:
           name: wyrm-desktop-${{ matrix.platform }}
-          # The desktop crate has its own workspace now, so it no longer builds
-          # into the repo-root target dir.
           path: |
-            desktop/src-tauri/target/release/bundle/dmg/*.dmg
-            desktop/src-tauri/target/release/bundle/msi/*.msi
-            desktop/src-tauri/target/release/bundle/nsis/*.exe
-            desktop/src-tauri/target/release/bundle/deb/*.deb
-            desktop/src-tauri/target/release/bundle/rpm/*.rpm
-            desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+            ${{ matrix.bundle }}/dmg/*.dmg
+            ${{ matrix.bundle }}/msi/*.msi
+            ${{ matrix.bundle }}/nsis/*.exe
+            ${{ matrix.bundle }}/deb/*.deb
+            ${{ matrix.bundle }}/rpm/*.rpm
+            ${{ matrix.bundle }}/appimage/*.AppImage
           if-no-files-found: ignore
+
+  # Without this a tag produced artifacts that only lived on the Actions run
+  # and expired. Draft + prerelease so a tag never publishes anything until
+  # it has been looked at.
+  release:
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/desktop-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7.0.0
+        with:
+          path: artifacts
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          prerelease: true
+          name: ${{ github.ref_name }}
+          files: artifacts/**/*
+          fail_on_unmatched_files: true
