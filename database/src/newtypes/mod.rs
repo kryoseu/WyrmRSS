@@ -16,14 +16,17 @@ pub type FiltersSql = diesel::sql_types::Text;
 /// A feed's exclusion filters.
 ///
 /// A newtype only because the orphan rule blocks implementing diesel's
-/// `ToSql`/`FromSql` on a bare `Vec<Option<String>>`. `serde(transparent)` plus
-/// the `ts` override keep the JSON and generated TypeScript identical to the
-/// plain vector, and the `Deref`/`FromIterator` impls below mean the callers
-/// outside this crate read and build filters exactly as they did before.
-#[derive(Clone, Debug, Default, Serialize, Deserialize, AsExpression, FromSqlRow, ts_rs::TS)]
+/// `ToSql`/`FromSql` on a bare `Vec<Option<String>>`. `serde(transparent)`
+/// keeps the JSON identical to the plain vector, and the `Deref`/`FromIterator`
+/// impls below mean callers outside this crate read and build filters exactly
+/// as they did before.
+///
+/// Deliberately does not derive `ts_rs::TS`: that would emit a named `Filters`
+/// alias and make every struct holding one import it, changing the generated
+/// frontend types. The exporting structs override the field type instead.
+#[derive(Clone, Debug, Default, Serialize, Deserialize, AsExpression, FromSqlRow)]
 #[diesel(sql_type = FiltersSql)]
 #[serde(transparent)]
-#[ts(type = "(string | null)[]")]
 pub struct Filters(pub Vec<Option<String>>);
 
 /// Keeps `&feed.filters` coercing to `&[Option<String>]` for readers.

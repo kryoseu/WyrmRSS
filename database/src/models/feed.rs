@@ -29,6 +29,8 @@ pub struct Feed {
     /// elapsed since `last_fetched_at`.
     pub ttl: i32,
     /// Substrings that exclude a post when matched against its URL.
+    // Rendered as the bare array so the wrapper stays invisible to the frontend.
+    #[ts(type = "Array<string | null>")]
     pub filters: Filters,
     /// Timestamp of the last successful poll; `None` until the feed is first fetched.
     pub last_fetched_at: Option<DateTime<Utc>>,
@@ -164,7 +166,7 @@ pub struct FeedUpdateForm {
 /// here (with the `Feed` model) and is shared with the post tests via
 /// `#[macro_use]` on this module in `models/mod.rs`. Delete the feed to clean
 /// up (the cascade removes any posts attached to it).
-#[cfg(test)]
+#[cfg(all(test, feature = "postgres"))]
 macro_rules! test_feed {
     ($pool:expr) => {
         $crate::models::feed::Feed::create(
@@ -186,7 +188,7 @@ macro_rules! test_feed {
     };
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "postgres"))]
 mod tests {
     use super::*;
     use crate::{models::folder::Folder, setup_test_db};

@@ -75,7 +75,7 @@ pub struct FeedIconInsertForm {
     pub content_type: Option<String>,
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "postgres"))]
 mod tests {
     use super::*;
     use crate::setup_test_db;

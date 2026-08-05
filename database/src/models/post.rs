@@ -339,7 +339,7 @@ impl PostInsertForm {
 /// Test helper: inserts a post under `feed_id` and returns the created `Post`.
 /// Lives with the `Post` model and is shared with the archive tests via
 /// `#[macro_use]` on this module in `models/mod.rs`.
-#[cfg(test)]
+#[cfg(all(test, feature = "postgres"))]
 macro_rules! test_post {
     ($pool:expr, $feed_id:expr) => {{
         let url = format!(
@@ -387,9 +387,14 @@ macro_rules! test_post {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Everything below that touches the pool needs a live postgres server, so
+    // it is gated per-test rather than by module: the entry-mapping tests are
+    // pure logic and worth running under either backend.
+    #[cfg(feature = "postgres")]
     use crate::{models::feed::Feed, setup_test_db};
     use feed_rs::parser;
 
+    #[cfg(feature = "postgres")]
     macro_rules! unique {
         () => {
             Utc::now()
@@ -399,6 +404,7 @@ mod tests {
     }
 
     /// A minimal insertable post with the given url.
+    #[cfg(feature = "postgres")]
     macro_rules! post_form {
         ($feed_id:expr, $url:expr) => {
             PostInsertForm {
@@ -459,6 +465,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "postgres")]
     #[tokio::test]
     async fn get_returns_created_post() {
         let pool = setup_test_db().await;
@@ -511,6 +518,7 @@ mod tests {
         assert!(Post::get(&pool, id).await.is_err());
     }
 
+    #[cfg(feature = "postgres")]
     #[tokio::test]
     async fn create_inserts_and_skips_conflicts() {
         let pool = setup_test_db().await;
@@ -541,6 +549,7 @@ mod tests {
             .expect("should delete feed");
     }
 
+    #[cfg(feature = "postgres")]
     #[tokio::test]
     async fn create_many_inserts_batch_and_skips_conflicts() {
         let pool = setup_test_db().await;
@@ -575,6 +584,7 @@ mod tests {
             .expect("should delete feed");
     }
 
+    #[cfg(feature = "postgres")]
     #[tokio::test]
     async fn update_changes_flags() {
         let pool = setup_test_db().await;
@@ -600,6 +610,7 @@ mod tests {
             .expect("should delete feed");
     }
 
+    #[cfg(feature = "postgres")]
     #[tokio::test]
     async fn unread_count_ignores_read_posts_and_other_feeds() {
         let pool = setup_test_db().await;
@@ -636,6 +647,7 @@ mod tests {
             .expect("should delete feed");
     }
 
+    #[cfg(feature = "postgres")]
     #[tokio::test]
     async fn toggle_is_read_flips_value() {
         let pool = setup_test_db().await;
@@ -679,6 +691,7 @@ mod tests {
     /// One test covers both sweeps and the refetch: the sweeps scan the whole
     /// (shared) test database, so parallel tests with backdated posts would
     /// expire each other's fixtures.
+    #[cfg(feature = "postgres")]
     #[tokio::test]
     async fn expire_records_expired_posts_and_blocks_refetch() {
         let pool = setup_test_db().await;

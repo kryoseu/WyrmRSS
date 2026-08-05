@@ -133,7 +133,7 @@ pub struct FolderUpdateForm {
     pub name: String,
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "postgres"))]
 mod tests {
     use super::*;
     use crate::setup_test_db;

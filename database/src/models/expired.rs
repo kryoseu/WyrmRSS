@@ -79,7 +79,7 @@ pub struct ExpiredPostInsertForm {
     pub url: String,
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "postgres"))]
 mod tests {
     use super::*;
     use crate::{models::feed::Feed, setup_test_db};

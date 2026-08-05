@@ -99,7 +99,7 @@ pub struct SettingsUpdateForm {
     pub expire_unread_after_days: Option<i32>,
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "postgres"))]
 mod tests {
     use super::*;
     use crate::setup_test_db;
