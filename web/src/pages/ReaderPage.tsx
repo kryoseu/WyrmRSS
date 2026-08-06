@@ -25,7 +25,10 @@ export function ReaderPage() {
   const dragStart = useRef<{ x: number; width: number } | null>(null);
 
   function onResizeStart(e: React.PointerEvent) {
+    // Stops the drag from also selecting text underneath the cursor.
+    e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
+    document.body.classList.add("reader-resizing");
     dragStart.current = { x: e.clientX, width: readerWidth };
   }
 
@@ -38,6 +41,7 @@ export function ReaderPage() {
 
   function onResizeEnd() {
     dragStart.current = null;
+    document.body.classList.remove("reader-resizing");
   }
 
   return (

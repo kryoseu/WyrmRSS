@@ -72,7 +72,8 @@ export function PostReader({ postId, onClose, width }: Props) {
             {post.authors && <span>{post.authors}</span>}
             {date && <span>{date}</span>}
             {post.url && (
-              <a href={post.url} target="_blank" rel="noopener noreferrer">
+              // target="_blank" bypasses the desktop link handler; drop it there.
+              <a href={post.url} target={isTauri() ? undefined : "_blank"} rel="noopener noreferrer">
                 Open original ↗
               </a>
             )}

@@ -33,6 +33,8 @@ async function waitForServerInfo(timeoutMs = 30_000): Promise<ServerInfo> {
 }
 
 // No-op outside the desktop build (self-hosted keeps its same-origin default).
+// External links are handled by the Rust-side on_navigation hook (lib.rs),
+// not here -- a JS click listener can't catch a context-menu "Open Link".
 export async function initDesktopRuntime(): Promise<void> {
   if (!isTauri()) return;
   const info = await waitForServerInfo();
