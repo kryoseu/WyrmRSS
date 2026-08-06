@@ -15,21 +15,6 @@ Download the build for your platform from the [Releases](https://github.com/kryo
 Data (feeds, posts, folders) is stored locally in the app's data directory
 and isn't shared with any self-hosted instance.
 
-## Unsigned builds
-
-These builds aren't code-signed yet, so your OS will warn before opening them:
-
-- **macOS**: Gatekeeper reports the app as "damaged." It isn't — this is
-  the standard warning for an unsigned app downloaded from the internet.
-  Clear the quarantine attribute to open it:
-
-  ```bash
-  xattr -cr /Applications/WyrmRSS.app
-  ```
-
-- **Windows**: SmartScreen will warn about an unrecognized publisher. Click
-  "More info" → "Run anyway" to proceed.
-  
 > [!NOTE]
 > The `.AppImage` fails to start on wlroots-based Wayland compositors (Hyprland,
 > Sway, etc.) with `Could not create default EGL display: EGL_BAD_PARAMETER` —
@@ -48,6 +33,21 @@ These builds aren't code-signed yet, so your OS will warn before opening them:
 > sudo pacman -S gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-libav
 > ```
 
+## Unsigned builds
+
+These builds aren't code-signed yet, so your OS will warn before opening them:
+
+- **macOS**: Gatekeeper reports the app as "damaged." It isn't — this is
+  the standard warning for an unsigned app downloaded from the internet.
+  Clear the quarantine attribute to open it:
+
+  ```bash
+  xattr -cr /Applications/WyrmRSS.app
+  ```
+
+- **Windows**: SmartScreen will warn about an unrecognized publisher. Click
+  "More info" → "Run anyway" to proceed.
+  
 ## Build from source
 
 Prerequisites (no PostgreSQL needed — the desktop build uses SQLite):
