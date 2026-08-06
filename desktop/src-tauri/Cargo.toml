@@ -5,7 +5,7 @@
 
 [package]
 name = "desktop"
-version = "0.25.3"
+version = "0.26.0"
 edition = "2024"
 description = "Desktop build of WyrmRSS (Tauri)"
 license = "GPL-3.0-only"
