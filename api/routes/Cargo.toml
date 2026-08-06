@@ -9,5 +9,10 @@ rust-version.workspace = true
 
 [dependencies]
 actix-web = { workspace = true }
-api_api = { path = "../api" }
-api_crud = { path = "../crud" }
+api_api = { path = "../api", default-features = false }
+api_crud = { path = "../crud", default-features = false }
+
+[features]
+default = ["postgres"]
+postgres = ["api_api/postgres", "api_crud/postgres"]
+sqlite = ["api_api/sqlite", "api_crud/sqlite"]

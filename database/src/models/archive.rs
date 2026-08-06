@@ -16,7 +16,7 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::post_archive)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 #[derive(ts_rs::TS)]
 #[ts(optional_fields, export)]
 /// A snapshot of an archived post, kept independently of the `posts` table so
@@ -104,7 +104,7 @@ impl PostArchive {
 
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::post_archive)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 pub struct PostArchiveInsertForm {
     pub id: PostId,
     pub title: Option<String>,
@@ -129,7 +129,7 @@ impl From<Post> for PostArchiveInsertForm {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "postgres"))]
 mod tests {
     use super::*;
     use crate::{models::feed::Feed, setup_test_db};

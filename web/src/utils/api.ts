@@ -5,7 +5,19 @@ import type { PostId } from "../types/PostId";
 import type { WebhookId } from "../types/WebhookId";
 import type { FolderId } from "../types/FolderId";
 
-const BASE = "/api/v1";
+// Same-origin by default (self-hosted, reverse-proxied). The desktop build
+// points this at the embedded backend's dynamic local port at startup.
+let apiOrigin = "";
+
+export function setApiOrigin(origin: string): void {
+  apiOrigin = origin;
+}
+
+// Evaluated per-call (not captured at module load) so ENDPOINTS reflects an
+// origin set after startup, e.g. once the desktop runtime resolves it.
+function apiBase(): string {
+  return `${apiOrigin}/api/v1`;
+}
 
 // Drops undefined params before building the query string,
 // e.g. { page: "1", feed_id: undefined, search: "foo" } → "page=1&search=foo".
@@ -16,18 +28,21 @@ function buildUrl(base: string, params: Record<string, string | undefined>): str
 }
 
 export const ENDPOINTS = {
+  auth: {
+    verify: () => `${apiBase()}/auth/verify`,
+  },
   feeds: {
-    list: () => `${BASE}/feeds`,
-    create: () => `${BASE}/feeds`,
-    get: (id: FeedId) => `${BASE}/feeds/${id}`,
-    icon: (id: FeedId) => `${BASE}/feeds/${id}/icon`,
-    update: (id: FeedId) => `${BASE}/feeds/${id}`,
-    delete: (id: FeedId) => `${BASE}/feeds/${id}`,
-    poll: () => `${BASE}/feeds/poll`,
+    list: () => `${apiBase()}/feeds`,
+    create: () => `${apiBase()}/feeds`,
+    get: (id: FeedId) => `${apiBase()}/feeds/${id}`,
+    icon: (id: FeedId) => `${apiBase()}/feeds/${id}/icon`,
+    update: (id: FeedId) => `${apiBase()}/feeds/${id}`,
+    delete: (id: FeedId) => `${apiBase()}/feeds/${id}`,
+    poll: () => `${apiBase()}/feeds/poll`,
   },
   posts: {
     list: ({ page, feed_id, bookmarked, unread_only, search }: ListPosts) =>
-      buildUrl(`${BASE}/posts`, {
+      buildUrl(`${apiBase()}/posts`, {
         page,
         feed_id: feed_id !== undefined ? String(feed_id) : undefined,
         bookmarked: bookmarked ? "true" : undefined,
@@ -35,39 +50,44 @@ export const ENDPOINTS = {
         search,
       }),
 
-    get: (id: PostId) => `${BASE}/posts/${id}`,
-    markRead: () => `${BASE}/posts/mark-read`,
+    get: (id: PostId) => `${apiBase()}/posts/${id}`,
+    markRead: () => `${apiBase()}/posts/mark-read`,
 
     listArchived: ({ page, search }: ListPostArchive) =>
-      buildUrl(`${BASE}/posts/archive`, { page, search }),
+      buildUrl(`${apiBase()}/posts/archive`, { page, search }),
 
-    getArchivedPost: (id: PostId) => `${BASE}/posts/archive/${id}`,
-    update: (id: PostId) => `${BASE}/posts/${id}`,
-    archive: (id: PostId) => `${BASE}/posts/archive/${id}`,
-    unarchive: (id: PostId) => `${BASE}/posts/archive/${id}`,
+    getArchivedPost: (id: PostId) => `${apiBase()}/posts/archive/${id}`,
+    update: (id: PostId) => `${apiBase()}/posts/${id}`,
+    archive: (id: PostId) => `${apiBase()}/posts/archive/${id}`,
+    unarchive: (id: PostId) => `${apiBase()}/posts/archive/${id}`,
   },
   folders: {
-    list: () => `${BASE}/folders`,
-    create: () => `${BASE}/folders`,
-    update: (id: FolderId) => `${BASE}/folders/${id}`,
-    delete: (id: FolderId) => `${BASE}/folders/${id}`,
+    list: () => `${apiBase()}/folders`,
+    create: () => `${apiBase()}/folders`,
+    update: (id: FolderId) => `${apiBase()}/folders/${id}`,
+    delete: (id: FolderId) => `${apiBase()}/folders/${id}`,
   },
   settings: {
-    get: () => `${BASE}/settings`,
-    update: () => `${BASE}/settings`,
-    import: () => `${BASE}/settings/opml/import`,
-    export: () => `${BASE}/settings/opml/export`,
+    get: () => `${apiBase()}/settings`,
+    update: () => `${apiBase()}/settings`,
+    import: () => `${apiBase()}/settings/opml/import`,
+    export: () => `${apiBase()}/settings/opml/export`,
   },
   webhooks: {
-    list: () => `${BASE}/webhooks`,
-    create: () => `${BASE}/webhooks`,
-    get: (id: WebhookId) => `${BASE}/webhooks/${id}`,
-    update: (id: WebhookId) => `${BASE}/webhooks/${id}`,
-    delete: (id: WebhookId) => `${BASE}/webhooks/${id}`,
-    listForFeed: (id: FeedId) => `${BASE}/feeds/${id}/webhooks`,
+    list: () => `${apiBase()}/webhooks`,
+    create: () => `${apiBase()}/webhooks`,
+    get: (id: WebhookId) => `${apiBase()}/webhooks/${id}`,
+    update: (id: WebhookId) => `${apiBase()}/webhooks/${id}`,
+    delete: (id: WebhookId) => `${apiBase()}/webhooks/${id}`,
+    listForFeed: (id: FeedId) => `${apiBase()}/feeds/${id}/webhooks`,
     attach: (feedId: FeedId, webhookId: WebhookId) =>
-      `${BASE}/feeds/${feedId}/webhooks/${webhookId}`,
+      `${apiBase()}/feeds/${feedId}/webhooks/${webhookId}`,
     detach: (feedId: FeedId, webhookId: WebhookId) =>
-      `${BASE}/feeds/${feedId}/webhooks/${webhookId}`,
+      `${apiBase()}/feeds/${feedId}/webhooks/${webhookId}`,
+  },
+  // Desktop only, unauthenticated, and deliberately not under /api/v1 -- see
+  // the matching route in desktop/src-tauri/src/backend.rs.
+  desktop: {
+    youtubeEmbed: (videoId: string) => `${apiOrigin}/youtube-embed?v=${encodeURIComponent(videoId)}`,
   },
 } as const;

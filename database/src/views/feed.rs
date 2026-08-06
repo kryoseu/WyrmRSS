@@ -53,7 +53,7 @@ pub async fn list(pool: &DatabasePool) -> WyrmResult<Vec<FeedView>> {
         .collect())
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "postgres"))]
 mod tests {
     use super::*;
     use crate::{

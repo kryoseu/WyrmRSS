@@ -26,6 +26,9 @@ jobs:
               - '**/Cargo.toml'
               - 'Cargo.lock'
               - 'migrations/**'
+              - 'migrations_sqlite/**'
+              - 'database/src/schema_sqlite.patch'
+              - 'diesel.toml'
             frontend:
               - 'web/**'
 
@@ -49,6 +52,8 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v7.0.1
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2.9.1
       - name: Install nightly rustfmt
         run: rustup toolchain install nightly --component rustfmt --no-self-update
       - name: Format check
@@ -63,6 +68,11 @@ jobs:
         run: cargo test --verbose
         env:
           WYRM_DATABASE_CONNECTION: postgres://wyrm:wyrm@localhost:5432/wyrm
+      # Needs no service container -- the tests run against temp files.
+      - name: Test sqlite backend
+        run: cargo test -p database --no-default-features --features sqlite --verbose
+      - name: Check sqlite server build
+        run: cargo check -p server --no-default-features --features sqlite
 
   frontend:
     needs: [changes]
@@ -87,3 +97,38 @@ jobs:
       - name: Build
         run: pnpm run build
         working-directory: web
+
+  desktop:
+    needs: [changes]
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop/src-tauri
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libxdo-dev \
+            libssl-dev
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install nightly rustfmt
+        run: rustup toolchain install nightly --component rustfmt --no-self-update
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2.9.1
+        with:
+          workspaces: desktop/src-tauri
+      - name: Format check
+        run: cargo +nightly fmt --check
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --verbose

@@ -10,7 +10,14 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 /// - `Manually`: only marked read via the toggle button.
 /// - `Disabled`: read state is never updated; all posts appear as read.
 #[derive(Clone, Debug, DbEnum, Serialize, Deserialize, ts_rs::TS)]
-#[ExistingTypePath = "crate::schema::sql_types::ReadMode"]
+// Postgres has a real `read_mode` enum type declared in schema.rs. SQLite does
+// not, and diesel-derive-enum only emits its sqlite impls against a mapping type
+// it generates itself (`ReadModeMapping`) — supplying `ExistingTypePath` there
+// leaves those impls referring to a type that was never defined.
+#[cfg_attr(
+    feature = "postgres",
+    ExistingTypePath = "crate::schema::sql_types::ReadMode"
+)]
 #[serde(rename_all = "snake_case")]
 #[ts(rename_all = "snake_case", export)]
 pub enum ReadMode {
@@ -22,7 +29,7 @@ pub enum ReadMode {
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Queryable, Selectable)]
 #[diesel(table_name = crate::schema::settings)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 #[derive(ts_rs::TS)]
 #[ts(optional_fields, export)]
 pub struct Settings {
@@ -76,7 +83,7 @@ impl Settings {
 
 #[derive(AsChangeset)]
 #[diesel(table_name = crate::schema::settings)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[diesel(check_for_backend(crate::Backend))]
 pub struct SettingsUpdateForm {
     pub page_size: Option<i32>,
     pub feed_poll_interval_secs: Option<i32>,
@@ -92,7 +99,7 @@ pub struct SettingsUpdateForm {
     pub expire_unread_after_days: Option<i32>,
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "postgres"))]
 mod tests {
     use super::*;
     use crate::setup_test_db;

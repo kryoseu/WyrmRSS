@@ -41,9 +41,8 @@ impl PostQuery {
 
         if let Some(search) = self.search {
             query = query.filter(
-                posts::title
-                    .ilike(format!("%{search}%"))
-                    .or(posts::description.ilike(format!("%{search}%"))),
+                crate::ci_like!(posts::title, format!("%{search}%"))
+                    .or(crate::ci_like!(posts::description, format!("%{search}%"))),
             );
         }
 

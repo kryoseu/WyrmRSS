@@ -1,0 +1,52 @@
+# Its own workspace: this crate selects the `sqlite` backend while the root
+# workspace is `postgres`, and cargo would union those into one build of the
+# database crate. See `exclude` in the root Cargo.toml.
+[workspace]
+
+[package]
+name = "desktop"
+version = "0.25.3"
+edition = "2024"
+description = "Desktop build of WyrmRSS (Tauri)"
+license = "GPL-3.0-only"
+repository = "https://github.com/kryoseu/WyrmRSS"
+rust-version = "1.94.1"
+
+[lib]
+name = "desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+# Versions are spelled out rather than inherited: this crate is outside the root
+# workspace, so `workspace = true` has nothing to resolve against. Keep these in
+# step with the root [workspace.dependencies].
+serde = { version = "1.0.228", features = ["derive"] }
+tauri = { version = "2.11.3", features = [] }
+tauri-plugin-opener = "2.5.4"
+tokio = { version = "1.52.3", features = ["full"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+actix-web = "4.13.0"
+thiserror = "2.0.18"
+# The whole point of the desktop build: sqlite instead of an embedded postgres.
+api_routes = { path = "../../api/routes", default-features = false, features = [
+  "sqlite",
+] }
+api_utils = { path = "../../api/utils", default-features = false, features = [
+  "sqlite",
+] }
+database = { path = "../../database", default-features = false, features = [
+  "sqlite",
+] }
+wyrm_utils = { path = "../../utils" }
+wyrm-rss = { path = "../../rss", default-features = false, features = [
+  "sqlite",
+] }
+rand = "0.10.2"
+actix-cors = "0.7.1"
+
+[dev-dependencies]
+reqwest = { version = "0.13.4", features = ["gzip"] }

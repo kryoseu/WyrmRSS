@@ -20,6 +20,8 @@ web/dist
 web/dist-ssr
 web/*.local
 
+.pnpm-store/
+
 # Editor directories and files
 web/.vscode/*
 web/!.vscode/extensions.json

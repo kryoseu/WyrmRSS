@@ -12,7 +12,12 @@ tokio = { workspace = true }
 ts-rs = { workspace = true }
 actix-web = { workspace = true }
 serde = { workspace = true }
-api_utils = { path = "../utils" }
+api_utils = { path = "../utils", default-features = false }
 wyrm_utils = { path = "../../utils" }
-database = { path = "../../database" }
-wyrm-rss = { path = "../../rss" }
+database = { path = "../../database", default-features = false }
+wyrm-rss = { path = "../../rss", default-features = false }
+
+[features]
+default = ["postgres"]
+postgres = ["database/postgres", "api_utils/postgres", "wyrm-rss/postgres"]
+sqlite = ["database/sqlite", "api_utils/sqlite", "wyrm-rss/sqlite"]

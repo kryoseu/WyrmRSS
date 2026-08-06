@@ -47,9 +47,10 @@ impl PostArchiveQuery {
 
         if let Some(search) = self.search {
             query = query.filter(
-                post_archive::title
-                    .ilike(format!("%{search}%"))
-                    .or(post_archive::description.ilike(format!("%{search}%"))),
+                crate::ci_like!(post_archive::title, format!("%{search}%")).or(crate::ci_like!(
+                    post_archive::description,
+                    format!("%{search}%")
+                )),
             );
         }
 

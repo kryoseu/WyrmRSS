@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <i>A self-hosted RSS reader and aggregator</i>.
+  <i>A self-hosted RSS reader and aggregator, also available as a desktop app</i>.
 </p>
 
 <p align="center">
@@ -32,8 +32,13 @@
 
 ## Installation
 
-Docker compose and Kubernetes manifests are provided for an easy install.
-You may also build it from source.
+Docker compose and Kubernetes manifests are provided for an easy self-hosted
+install. A native desktop app is also available, with no server or database
+to set up. You may also build it from source.
+
+### Desktop app
+
+See [desktop.md](docs/installation/desktop.md) for macOS, Windows and Linux downloads.
 
 ### With Docker
 
@@ -117,8 +122,9 @@ URL contains `/shorts`.
 | Layer    | Technology                              |
 |----------|-----------------------------------------|
 | Backend  | Rust, Actix-web, Diesel, Tokio          |
-| Database | PostgreSQL                              |
+| Database | PostgreSQL (self-hosted) / SQLite (desktop app) |
 | Frontend | React, Vite, React Router v7, TanStack Query |
+| Desktop  | Tauri                                   |
 
 ## License
 

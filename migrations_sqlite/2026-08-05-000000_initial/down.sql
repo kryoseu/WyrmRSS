@@ -1,0 +1,9 @@
+DROP TABLE expired_posts;
+DROP TABLE feed_icons;
+DROP TABLE feed_webhooks;
+DROP TABLE webhooks;
+DROP TABLE settings;
+DROP TABLE post_archive;
+DROP TABLE posts;
+DROP TABLE feeds;
+DROP TABLE folders;

@@ -1,147 +1,107 @@
 name: Release
+
+# Single entry point for both kinds of release:
+#   - run from the `release` branch  -> stable release, tag vX.Y.Z, pushes
+#     docker :latest alongside the version tag, non-prerelease GitHub Release.
+#   - run from the `prerelease` branch -> soak-test release, tag
+#     vX.Y.Z-rcN (auto-incremented), docker images get only the rc-specific
+#     tag so self-hosted users on :latest or a pinned stable tag are
+#     unaffected, GitHub Release is marked prerelease.
+#
+# Either way, docker-release.yml and desktop-release.yml both have to finish
+# before the tag and GitHub Release are created, so the release is a single
+# atomic artifact rather than docker and desktop landing separately.
+
 on:
   workflow_dispatch:
 
 jobs:
   get-version:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     outputs:
-      version: ${{ steps.get.outputs.version }}
-      sha: ${{ steps.get.outputs.sha }}
+      mode: ${{ steps.branch.outputs.mode }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.tag.outputs.tag }}
+      docker_version: ${{ steps.tag.outputs.docker_version }}
+      is_prerelease: ${{ steps.branch.outputs.is_prerelease }}
+      sha: ${{ steps.version.outputs.sha }}
     steps:
       - name: Check branch
+        id: branch
         run: |
-          if [ "${{ github.ref_name }}" != "release" ]; then
-            echo "This workflow must be run from the 'release' branch (got '${{ github.ref_name }}')"
-            exit 1
-          fi
+          case "${{ github.ref_name }}" in
+            release)
+              echo "mode=stable" >> "$GITHUB_OUTPUT"
+              echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+              ;;
+            prerelease)
+              echo "mode=prerelease" >> "$GITHUB_OUTPUT"
+              echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "This workflow must be run from 'release' or 'prerelease' (got '${{ github.ref_name }}')"
+              exit 1
+              ;;
+          esac
       - uses: actions/checkout@v7.0.1
       - name: Get version
-        id: get
+        id: version
         run: |
-          VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-      - name: Check tag does not exist
-        run: |
-          if git ls-remote --tags origin | grep -q "refs/tags/v${{ steps.get.outputs.version }}$"; then
-            echo "Tag v${{ steps.get.outputs.version }} already exists. Bump the version in Cargo.toml on main and merge to release first."
+          version=$(grep '^version = "' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          desktop_version=$(grep '^version = "' desktop/src-tauri/Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          if [ "$version" != "$desktop_version" ]; then
+            echo "Cargo.toml is at $version but desktop/src-tauri/Cargo.toml is at $desktop_version."
+            echo "Run scripts/bump-version.sh to keep them in sync, then merge and retry."
             exit 1
           fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Compute tag
+        id: tag
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          if git ls-remote --tags origin | grep -q "refs/tags/v${version}$"; then
+            if [ "${{ steps.branch.outputs.mode }}" = "stable" ]; then
+              echo "Tag v${version} already exists. Bump the version in Cargo.toml on main and merge to release first."
+              exit 1
+            else
+              echo "v${version} was already released as stable. Bump the version before cutting another prerelease."
+              exit 1
+            fi
+          fi
 
-  build-backend:
+          if [ "${{ steps.branch.outputs.mode }}" = "stable" ]; then
+            echo "tag=v${version}" >> "$GITHUB_OUTPUT"
+            echo "docker_version=${version}" >> "$GITHUB_OUTPUT"
+          else
+            last_rc=$(git ls-remote --tags origin \
+              | grep -oE "refs/tags/v${version}-rc[0-9]+$" \
+              | grep -oE '[0-9]+$' \
+              | sort -n | tail -1)
+            next_rc=$(( ${last_rc:-0} + 1 ))
+            echo "tag=v${version}-rc${next_rc}" >> "$GITHUB_OUTPUT"
+            echo "docker_version=${version}-rc${next_rc}" >> "$GITHUB_OUTPUT"
+          fi
+
+  docker-release:
     needs: [get-version]
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:18
-        env:
-          POSTGRES_USER: wyrm
-          POSTGRES_PASSWORD: wyrm
-          POSTGRES_DB: wyrm
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U wyrm"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          ref: ${{ needs.get-version.outputs.sha }}
-      - name: Install nightly rustfmt
-        run: rustup toolchain install nightly --component rustfmt --no-self-update
-      - name: Format check
-        run: cargo +nightly fmt --check
-      - name: Clippy
-        run: cargo clippy -- -D warnings
-      - name: Machete
-        uses: bnjbvr/cargo-machete@v0.9.2
-      - name: Build
-        run: cargo build --verbose
-      - name: Test
-        run: cargo test --verbose
-        env:
-          WYRM_DATABASE_CONNECTION: postgres://wyrm:wyrm@localhost:5432/wyrm
-
-  build-frontend:
-    needs: [get-version]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          ref: ${{ needs.get-version.outputs.sha }}
-      - uses: pnpm/action-setup@v6.0.9
-        with:
-          version: 11.7.0
-      - uses: actions/setup-node@v7.0.0
-        with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: web/pnpm-lock.yaml
-      - name: Install
-        working-directory: web
-        run: pnpm install --frozen-lockfile
-      - name: Lint
-        working-directory: web
-        run: pnpm lint
-      - name: Build
-        working-directory: web
-        run: pnpm run build
-
-  push-backend:
-    needs: [build-backend, get-version]
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/docker-release.yml
     permissions:
       contents: read
       packages: write
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          ref: ${{ needs.get-version.outputs.sha }}
-      - uses: docker/login-action@v4.6.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v7.3.0
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/wyrm-server:latest
-            ghcr.io/${{ github.repository_owner }}/wyrm-server:${{ needs.get-version.outputs.version }}
+    with:
+      sha: ${{ needs.get-version.outputs.sha }}
+      version: ${{ needs.get-version.outputs.docker_version }}
+      is_prerelease: ${{ needs.get-version.outputs.is_prerelease == 'true' }}
 
-  push-frontend:
-    needs: [build-frontend, get-version]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          ref: ${{ needs.get-version.outputs.sha }}
-      - uses: docker/login-action@v4.6.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v7.3.0
-        with:
-          context: ./web
-          file: ./web/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/wyrm-ui:latest
-            ghcr.io/${{ github.repository_owner }}/wyrm-ui:${{ needs.get-version.outputs.version }}
+  desktop-release:
+    needs: [get-version]
+    uses: ./.github/workflows/desktop-release.yml
+    with:
+      sha: ${{ needs.get-version.outputs.sha }}
 
-  release:
-    needs: [push-backend, push-frontend, get-version]
+  publish-release:
+    needs: [get-version, docker-release, desktop-release]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -149,10 +109,18 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.get-version.outputs.sha }}
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@v8.0.1
+        with:
+          path: artifacts
       - name: Tag & Release
         uses: softprops/action-gh-release@v3.0.2
         with:
-          tag_name: v${{ needs.get-version.outputs.version }}
-          name: v${{ needs.get-version.outputs.version }}
+          tag_name: ${{ needs.get-version.outputs.tag }}
+          name: ${{ needs.get-version.outputs.tag }}
           target_commitish: ${{ needs.get-version.outputs.sha }}
+          prerelease: ${{ needs.get-version.outputs.is_prerelease == 'true' }}
+          draft: false
           generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: artifacts/**/*
