@@ -1,0 +1,147 @@
+name: Docker Release
+
+on:
+  workflow_call:
+    inputs:
+      sha:
+        description: Commit to build and release
+        required: true
+        type: string
+      version:
+        description: Docker tag, without a leading 'v' (e.g. 0.26.0 or 0.26.0-rc1)
+        required: true
+        type: string
+      is_prerelease:
+        description: When true, images are tagged with `version` only -- `:latest` is never touched
+        required: true
+        type: boolean
+
+jobs:
+  build-backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: wyrm
+          POSTGRES_PASSWORD: wyrm
+          POSTGRES_DB: wyrm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U wyrm"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+      - name: Install nightly rustfmt
+        run: rustup toolchain install nightly --component rustfmt --no-self-update
+      - name: Format check
+        run: cargo +nightly fmt --check
+      - name: Clippy
+        run: cargo clippy -- -D warnings
+      - name: Machete
+        uses: bnjbvr/cargo-machete@v0.9.2
+      - name: Build
+        run: cargo build --verbose
+      - name: Test
+        run: cargo test --verbose
+        env:
+          WYRM_DATABASE_CONNECTION: postgres://wyrm:wyrm@localhost:5432/wyrm
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+      - uses: pnpm/action-setup@v6.0.9
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        working-directory: web
+        run: pnpm lint
+      - name: Build
+        working-directory: web
+        run: pnpm run build
+
+  push-backend:
+    needs: [build-backend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+      - name: Compute tags
+        id: tags
+        run: |
+          tags="ghcr.io/${{ github.repository_owner }}/wyrm-server:${{ inputs.version }}"
+          if [ "${{ inputs.is_prerelease }}" = "false" ]; then
+            tags="$tags
+          ghcr.io/${{ github.repository_owner }}/wyrm-server:latest"
+          fi
+          {
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v7.3.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+
+  push-frontend:
+    needs: [build-frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.sha }}
+      - name: Compute tags
+        id: tags
+        run: |
+          tags="ghcr.io/${{ github.repository_owner }}/wyrm-ui:${{ inputs.version }}"
+          if [ "${{ inputs.is_prerelease }}" = "false" ]; then
+            tags="$tags
+          ghcr.io/${{ github.repository_owner }}/wyrm-ui:latest"
+          fi
+          {
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v7.3.0
+        with:
+          context: ./web
+          file: ./web/Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
