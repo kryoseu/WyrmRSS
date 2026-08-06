@@ -1,9 +1,11 @@
 import { useEffect, useRef } from "react";
+import { isTauri } from "@tauri-apps/api/core";
 import YouTube from "react-youtube";
 import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
 import { usePost } from "../hooks/usePosts";
 import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../hooks/usePostMutations";
 import { useSettings } from "../hooks/useSettings";
+import { ENDPOINTS } from "../utils/api";
 import { extractYouTubeId, formatDate } from "../utils/utils";
 import { ReaderPane } from "./ReaderPane";
 import { SanitizedHtml } from "./SanitizedHtml";
@@ -77,11 +79,25 @@ export function PostReader({ postId, onClose, width }: Props) {
           </div>
           {youtubeId && (
             <div className="post-reader-youtube">
-              {/* On the desktop build, the WebKit-based webviews (macOS, Linux)
-                  serve the app from a custom tauri:// scheme rather than a real
-                  http(s) origin, which fails YouTube's embed domain check
-                  ("Error 153") unless origin is pinned to a real https URL. */}
-              <YouTube videoId={youtubeId} opts={{ width: "100%", playerVars: { origin: "https://www.youtube.com" } }} />
+              {isTauri() ? (
+                // The WebKit-based webviews (macOS, Linux) serve the app from a
+                // custom tauri:// scheme with no valid HTTP referer, which fails
+                // YouTube's embed domain check ("Error 153") no matter what
+                // origin is passed to the player. Loading the iframe from a page
+                // served by our own embedded backend instead works around it.
+                //
+                // https://github.com/tauri-apps/tauri/issues/14422
+                <iframe
+                  src={ENDPOINTS.desktop.youtubeEmbed(youtubeId)}
+                  width="100%"
+                  height="390"
+                  style={{ border: "none" }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : (
+                <YouTube videoId={youtubeId} opts={{ width: "100%" }} />
+              )}
             </div>
           )}
           {body && !youtubeId && (

@@ -85,4 +85,9 @@ export const ENDPOINTS = {
     detach: (feedId: FeedId, webhookId: WebhookId) =>
       `${apiBase()}/feeds/${feedId}/webhooks/${webhookId}`,
   },
+  // Desktop only, unauthenticated, and deliberately not under /api/v1 -- see
+  // the matching route in desktop/src-tauri/src/backend.rs.
+  desktop: {
+    youtubeEmbed: (videoId: string) => `${apiOrigin}/youtube-embed?v=${encodeURIComponent(videoId)}`,
+  },
 } as const;

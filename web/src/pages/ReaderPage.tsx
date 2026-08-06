@@ -10,7 +10,6 @@ export type ReaderOutletContext = {
 };
 
 const MIN_WIDTH = 280;
-const MAX_WIDTH = Math.round(window.innerWidth * 0.65);
 
 export function ReaderPage() {
   const { pathname } = useLocation();
@@ -33,7 +32,8 @@ export function ReaderPage() {
   function onResizeMove(e: React.PointerEvent) {
     if (!dragStart.current) return;
     const delta = dragStart.current.x - e.clientX;
-    setReaderWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, dragStart.current.width + delta)));
+    const maxWidth = Math.round(window.innerWidth * 0.65);
+    setReaderWidth(Math.min(maxWidth, Math.max(MIN_WIDTH, dragStart.current.width + delta)));
   }
 
   function onResizeEnd() {

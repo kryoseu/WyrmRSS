@@ -1,4 +1,5 @@
 use crate::error::{WyrmDesktopError, WyrmDesktopResult};
+use crate::youtube::youtube_embed;
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, middleware::from_fn, web};
 use api_utils::context::WyrmContext;
@@ -124,13 +125,17 @@ pub async fn bootstrap(data_dir: PathBuf) -> WyrmDesktopResult<ServerInfo> {
         App::new()
             .app_data(ctx.clone())
             .app_data(web::Data::new(api_key_data.clone()))
-            .wrap(from_fn(api_key_middleware))
             // The webview's origin (tauri://localhost, http://tauri.localhost,
             // etc.) differs from this server's, so cross-origin fetches need
             // CORS. Permissive is acceptable here: the server only binds
             // 127.0.0.1 and every request still needs the per-launch api key.
             .wrap(Cors::permissive())
-            .configure(api_routes::config)
+            .route("/youtube-embed", web::get().to(youtube_embed))
+            .service(
+                web::scope("")
+                    .wrap(from_fn(api_key_middleware))
+                    .configure(api_routes::config),
+            )
     })
     .listen(listener)
     .map_err(HttpServerError::BindError)

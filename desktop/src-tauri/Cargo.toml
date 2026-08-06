@@ -24,7 +24,7 @@ tauri-build = { version = "2.6.3", features = [] }
 # workspace, so `workspace = true` has nothing to resolve against. Keep these in
 # step with the root [workspace.dependencies].
 serde = { version = "1.0.228", features = ["derive"] }
-tauri = { version = "2.11.3", features = [] }
+tauri = { version = "2.11.3" }
 tokio = { version = "1.52.3", features = ["full"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }

@@ -37,6 +37,17 @@ These builds aren't code-signed yet, so your OS will warn before opening them:
 > compositors. On Arch, or anywhere else none of the three packages fit, build
 > from source instead (below).
 
+> [!NOTE]
+> YouTube videos failing with "Your browser can't play this video" on Linux
+> usually means GStreamer has no codec plugins installed — WebKitGTK's media
+> playback runs entirely through GStreamer, and Arch in particular doesn't
+> pull these in as hard dependencies. Install them (adjust for your distro's
+> package manager):
+>
+> ```bash
+> sudo pacman -S gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly gst-libav
+> ```
+
 ## Build from source
 
 Prerequisites (no PostgreSQL needed — the desktop build uses SQLite):
