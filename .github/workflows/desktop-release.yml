@@ -18,14 +18,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # One fat binary covering Apple ARM and Intel.
           - platform: macos-latest
-            args: "--target universal-apple-darwin"
-            bundle: desktop/src-tauri/target/universal-apple-darwin/release/bundle
+            name: macos-aarch64
+            target: aarch64-apple-darwin
+            args: "--target aarch64-apple-darwin"
+            bundle: desktop/src-tauri/target/aarch64-apple-darwin/release/bundle
+          - platform: macos-latest
+            name: macos-x86_64
+            target: x86_64-apple-darwin
+            args: "--target x86_64-apple-darwin"
+            bundle: desktop/src-tauri/target/x86_64-apple-darwin/release/bundle
           - platform: windows-latest
+            name: windows
+            target: ""
             args: ""
             bundle: desktop/src-tauri/target/release/bundle
           - platform: ubuntu-22.04
+            name: linux
+            target: ""
             args: ""
             bundle: desktop/src-tauri/target/release/bundle
 
@@ -56,15 +66,15 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Add Intel target (macOS universal build)
-        if: matrix.platform == 'macos-latest'
-        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+      - name: Add macOS target
+        if: matrix.target != ''
+        run: rustup target add ${{ matrix.target }}
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2.9.1
         with:
           workspaces: desktop/src-tauri
-          key: ${{ matrix.platform }}
+          key: ${{ matrix.name }}
 
       - uses: pnpm/action-setup@v6.0.9
         with:
@@ -89,7 +99,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: wyrm-desktop-${{ matrix.platform }}
+          name: wyrm-desktop-${{ matrix.name }}
           path: |
             ${{ matrix.bundle }}/dmg/*.dmg
             ${{ matrix.bundle }}/nsis/*.exe
