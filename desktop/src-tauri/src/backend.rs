@@ -1,5 +1,7 @@
-use crate::error::{WyrmDesktopError, WyrmDesktopResult};
-use crate::youtube::youtube_embed;
+use crate::{
+    error::{WyrmDesktopError, WyrmDesktopResult},
+    youtube::youtube_embed,
+};
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, middleware::from_fn, web};
 use api_utils::context::WyrmContext;
