@@ -77,7 +77,11 @@ export function PostReader({ postId, onClose, width }: Props) {
           </div>
           {youtubeId && (
             <div className="post-reader-youtube">
-              <YouTube videoId={youtubeId} opts={{ width: "100%" }} />
+              {/* On the desktop build, the WebKit-based webviews (macOS, Linux)
+                  serve the app from a custom tauri:// scheme rather than a real
+                  http(s) origin, which fails YouTube's embed domain check
+                  ("Error 153") unless origin is pinned to a real https URL. */}
+              <YouTube videoId={youtubeId} opts={{ width: "100%", playerVars: { origin: "https://www.youtube.com" } }} />
             </div>
           )}
           {body && !youtubeId && (
