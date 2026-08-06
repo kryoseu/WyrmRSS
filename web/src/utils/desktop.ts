@@ -1,4 +1,5 @@
 import { isTauri, invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { setApiOrigin } from "./api";
 import { setApiKey } from "./auth";
 
@@ -7,17 +8,28 @@ interface ServerInfo {
   api_key: string;
 }
 
-// The embedded backend starts asynchronously after the window opens, so
-// `server_info` returns null until it's ready. Poll briefly rather than
-// requiring the Rust side to block window creation on Postgres/migrations.
-async function waitForServerInfo(timeoutMs = 30_000, intervalMs = 150): Promise<ServerInfo> {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    const info = await invoke<ServerInfo | null>("server_info");
-    if (info) return info;
-    if (Date.now() > deadline) throw new Error("timed out waiting for embedded backend");
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
-  }
+// The embedded backend starts asynchronously after the window opens and
+// emits `wyrm://backend-ready` once `server_info` is populated. Check once up
+// front in case it's already ready, then wait for that event instead of
+// polling.
+async function waitForServerInfo(timeoutMs = 30_000): Promise<ServerInfo> {
+  const existing = await invoke<ServerInfo | null>("server_info");
+  if (existing) return existing;
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      void unlisten.then((fn) => fn());
+      reject(new Error("timed out waiting for embedded backend"));
+    }, timeoutMs);
+
+    const unlisten = listen("wyrm://backend-ready", async () => {
+      clearTimeout(timer);
+      (await unlisten)();
+      const info = await invoke<ServerInfo | null>("server_info");
+      if (info) resolve(info);
+      else reject(new Error("backend-ready fired without server info"));
+    });
+  });
 }
 
 // No-op outside the desktop build (self-hosted keeps its same-origin default).

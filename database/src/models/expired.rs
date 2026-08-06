@@ -26,30 +26,43 @@ impl ExpiredPost {
         forms: Vec<ExpiredPostInsertForm>,
     ) -> WyrmResult<usize> {
         #[cfg(feature = "postgres")]
-        {
-            diesel::insert_into(expired_posts::table)
-                .values(&forms)
-                .on_conflict_do_nothing()
-                .execute(&mut *conn)
-                .await
-                .map_err(WyrmError::from)
-        }
-        // diesel's SQLite backend has no `BatchInsert` support for a values list
-        // combined with ON CONFLICT, so insert row by row. Callers already run
-        // this inside a transaction, which is what keeps the batch atomic.
+        return Self::insert_many_batch(conn, &forms).await;
         #[cfg(feature = "sqlite")]
-        {
-            let mut inserted = 0;
-            for form in &forms {
-                inserted += diesel::insert_into(expired_posts::table)
-                    .values(form)
-                    .on_conflict_do_nothing()
-                    .execute(&mut *conn)
-                    .await
-                    .map_err(WyrmError::from)?;
-            }
-            Ok(inserted)
+        return Self::insert_many_row_by_row(conn, &forms).await;
+    }
+
+    /// One multi-row `INSERT ... ON CONFLICT DO NOTHING` statement.
+    #[cfg(feature = "postgres")]
+    async fn insert_many_batch(
+        conn: &mut DatabaseConn,
+        forms: &[ExpiredPostInsertForm],
+    ) -> WyrmResult<usize> {
+        diesel::insert_into(expired_posts::table)
+            .values(forms)
+            .on_conflict_do_nothing()
+            .execute(conn)
+            .await
+            .map_err(WyrmError::from)
+    }
+
+    /// diesel's SQLite backend has no `BatchInsert` support for a values list
+    /// combined with ON CONFLICT, so insert row by row. Callers already run
+    /// this inside a transaction, which is what keeps the batch atomic.
+    #[cfg(feature = "sqlite")]
+    async fn insert_many_row_by_row(
+        conn: &mut DatabaseConn,
+        forms: &[ExpiredPostInsertForm],
+    ) -> WyrmResult<usize> {
+        let mut inserted = 0;
+        for form in forms {
+            inserted += diesel::insert_into(expired_posts::table)
+                .values(form)
+                .on_conflict_do_nothing()
+                .execute(conn)
+                .await
+                .map_err(WyrmError::from)?;
         }
+        Ok(inserted)
     }
 
     /// Which of the candidate `(feed_id, url)` pairs are recorded as expired.

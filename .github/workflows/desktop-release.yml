@@ -18,20 +18,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # One fat binary covering Apple Silicon and Intel. Building only on
-          # macos-latest would ship arm64 alone and leave Intel Macs with
-          # nothing. Note the bundle lands under the target triple, not
-          # target/release.
+          # One fat binary covering Apple ARM and Intel.
           - platform: macos-latest
             args: "--target universal-apple-darwin"
             bundle: desktop/src-tauri/target/universal-apple-darwin/release/bundle
           - platform: windows-latest
             args: ""
             bundle: desktop/src-tauri/target/release/bundle
-          # Pinned, NOT ubuntu-latest: the .deb and AppImage link against the
-          # builder's glibc, so building on a newer runner silently produces
-          # packages that refuse to start on older distros. This pin is the
-          # oldest release we intend to support.
           - platform: ubuntu-22.04
             args: ""
             bundle: desktop/src-tauri/target/release/bundle
@@ -39,10 +32,8 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
 
-      # Tauri links against the system webview. No database libraries: sqlite
-      # is compiled in via libsqlite3-sys/bundled.
       - name: Install Linux dependencies
         if: startsWith(matrix.platform, 'ubuntu')
         run: |
@@ -69,10 +60,8 @@ jobs:
         if: matrix.platform == 'macos-latest'
         run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
 
-      # The tauri dependency tree is large and is otherwise rebuilt from
-      # scratch on every run, which is where timeouts come from.
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@v2.9.1
         with:
           workspaces: desktop/src-tauri
           key: ${{ matrix.platform }}
@@ -103,16 +92,12 @@ jobs:
           name: wyrm-desktop-${{ matrix.platform }}
           path: |
             ${{ matrix.bundle }}/dmg/*.dmg
-            ${{ matrix.bundle }}/msi/*.msi
             ${{ matrix.bundle }}/nsis/*.exe
             ${{ matrix.bundle }}/deb/*.deb
             ${{ matrix.bundle }}/rpm/*.rpm
             ${{ matrix.bundle }}/appimage/*.AppImage
           if-no-files-found: ignore
 
-  # Without this a tag produced artifacts that only lived on the Actions run
-  # and expired. Draft + prerelease so a tag never publishes anything until
-  # it has been looked at.
   release:
     needs: [build]
     if: startsWith(github.ref, 'refs/tags/desktop-v')
@@ -121,12 +106,12 @@ jobs:
       contents: write
     steps:
       - name: Download build artifacts
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v8.0.1
         with:
           path: artifacts
 
       - name: Create draft release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.2
         with:
           draft: true
           prerelease: true

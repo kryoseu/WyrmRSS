@@ -1,5 +1,5 @@
 use crate::{
-    DatabasePool,
+    DatabaseConn, DatabasePool,
     models::expired::{ExpiredPost, ExpiredPostInsertForm},
     newtypes::{FeedId, FolderId, PostId},
     schema::{
@@ -118,45 +118,56 @@ impl Post {
         });
 
         #[cfg(feature = "postgres")]
-        {
-            diesel::insert_into(posts::table)
-                .values(&forms)
-                .on_conflict((posts::feed_id, posts::url))
-                .do_nothing()
-                .returning(Post::as_select())
-                .get_results(&mut conn)
-                .await
-                .map_err(WyrmError::from)
-        }
-        // SQLite cannot take a multi-row VALUES list here: `PostInsertForm`'s
-        // `Option` fields make the values defaultable, and SQLite rejects the
-        // `DEFAULT` keyword inside a multi-row insert. One statement per row
-        // keeps `None` meaning "use the column default" exactly as on postgres.
-        // Wrapped in a transaction so a mid-batch failure inserts nothing.
+        return Self::insert_many_batch(&mut conn, &forms).await;
         #[cfg(feature = "sqlite")]
-        {
-            use diesel_async::AsyncConnection;
-            let conn = &mut *conn;
-            conn.transaction(async |conn| {
-                let mut inserted = Vec::with_capacity(forms.len());
-                for form in &forms {
-                    // `do_nothing` means a conflicting row yields no row back,
-                    // so an absent result is expected rather than an error.
-                    let row = diesel::insert_into(posts::table)
-                        .values(form)
-                        .on_conflict((posts::feed_id, posts::url))
-                        .do_nothing()
-                        .returning(Post::as_select())
-                        .get_result(conn)
-                        .await
-                        .optional()
-                        .map_err(WyrmError::from)?;
-                    inserted.extend(row);
-                }
-                Ok::<Vec<Post>, WyrmError>(inserted)
-            })
+        return Self::insert_many_row_by_row(&mut conn, &forms).await;
+    }
+
+    /// One multi-row `INSERT ... ON CONFLICT DO NOTHING RETURNING` statement.
+    #[cfg(feature = "postgres")]
+    async fn insert_many_batch(
+        conn: &mut DatabaseConn,
+        forms: &[PostInsertForm],
+    ) -> WyrmResult<Vec<Post>> {
+        diesel::insert_into(posts::table)
+            .values(forms)
+            .on_conflict((posts::feed_id, posts::url))
+            .do_nothing()
+            .returning(Post::as_select())
+            .get_results(conn)
             .await
-        }
+            .map_err(WyrmError::from)
+    }
+
+    /// SQLite cannot take a multi-row VALUES list here: `PostInsertForm`'s
+    /// `Option` fields make the values defaultable, and SQLite rejects the
+    /// `DEFAULT` keyword inside a multi-row insert. One statement per row
+    /// keeps `None` meaning "use the column default" exactly as on postgres.
+    /// Wrapped in a transaction so a mid-batch failure inserts nothing.
+    #[cfg(feature = "sqlite")]
+    async fn insert_many_row_by_row(
+        conn: &mut DatabaseConn,
+        forms: &[PostInsertForm],
+    ) -> WyrmResult<Vec<Post>> {
+        conn.transaction(async |conn| {
+            let mut inserted = Vec::with_capacity(forms.len());
+            for form in forms {
+                // `do_nothing` means a conflicting row yields no row back, so
+                // an absent result is expected rather than an error.
+                let row = diesel::insert_into(posts::table)
+                    .values(form)
+                    .on_conflict((posts::feed_id, posts::url))
+                    .do_nothing()
+                    .returning(Post::as_select())
+                    .get_result(conn)
+                    .await
+                    .optional()
+                    .map_err(WyrmError::from)?;
+                inserted.extend(row);
+            }
+            Ok::<Vec<Post>, WyrmError>(inserted)
+        })
+        .await
     }
 
     pub async fn update(pool: &DatabasePool, form: PostUpdateForm) -> WyrmResult<Self> {
@@ -387,39 +398,7 @@ macro_rules! test_post {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // Everything below that touches the pool needs a live postgres server, so
-    // it is gated per-test rather than by module: the entry-mapping tests are
-    // pure logic and worth running under either backend.
-    #[cfg(feature = "postgres")]
-    use crate::{models::feed::Feed, setup_test_db};
     use feed_rs::parser;
-
-    #[cfg(feature = "postgres")]
-    macro_rules! unique {
-        () => {
-            Utc::now()
-                .timestamp_nanos_opt()
-                .expect("timestamp in range")
-        };
-    }
-
-    /// A minimal insertable post with the given url.
-    #[cfg(feature = "postgres")]
-    macro_rules! post_form {
-        ($feed_id:expr, $url:expr) => {
-            PostInsertForm {
-                feed_id: $feed_id,
-                title: Some("test post".to_string()),
-                url: Some($url.to_string()),
-                authors: None,
-                published_at: Some(Utc::now()),
-                updated_at: None,
-                description: None,
-                content: None,
-                created_at: None,
-            }
-        };
-    }
 
     fn atom_entry(entry_body: &str) -> Entry {
         let xml = format!(
@@ -465,204 +444,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "postgres")]
-    #[tokio::test]
-    async fn get_returns_created_post() {
-        let pool = setup_test_db().await;
-        let feed = test_feed!(&pool);
-        let url = format!("https://example.com/post/{}", unique!());
-
-        Post::create(
-            &pool,
-            PostInsertForm {
-                feed_id: feed.id,
-                title: Some("Get Me".to_string()),
-                url: Some(url.clone()),
-                authors: None,
-                published_at: Some("2026-01-02T03:04:05Z".parse::<DateTime<Utc>>().unwrap()),
-                updated_at: None,
-                description: Some("A description.".to_string()),
-                content: Some("Body.".to_string()),
-                created_at: None,
-            },
-        )
-        .await
-        .expect("should create post");
-
-        let id: PostId = {
-            let mut conn = pool.get().await.expect("should get conn");
-            posts::table
-                .filter(posts::feed_id.eq(feed.id))
-                .filter(posts::url.eq(&url))
-                .select(posts::id)
-                .first(&mut conn)
-                .await
-                .expect("post should exist")
-        };
-        let got = Post::get(&pool, id).await.expect("get should succeed");
-
-        assert_eq!(got.id, id);
-        assert_eq!(got.feed_id, feed.id);
-        assert_eq!(got.title.as_deref(), Some("Get Me"));
-        assert_eq!(got.url.as_deref(), Some(url.as_str()));
-        assert_eq!(got.description.as_deref(), Some("A description."));
-        assert_eq!(got.content.as_deref(), Some("Body."));
-        assert!(!got.is_read);
-        assert!(!got.bookmarked);
-        assert!(!got.is_archived);
-
-        // Deleting the feed cascades to the post, so a follow-up get fails.
-        Feed::delete(&pool, feed.id)
-            .await
-            .expect("should delete feed");
-        assert!(Post::get(&pool, id).await.is_err());
-    }
-
-    #[cfg(feature = "postgres")]
-    #[tokio::test]
-    async fn create_inserts_and_skips_conflicts() {
-        let pool = setup_test_db().await;
-        let feed = test_feed!(&pool);
-        let url = format!("https://example.com/post/{}", unique!());
-
-        Post::create(&pool, post_form!(feed.id, &url))
-            .await
-            .expect("first insert should succeed");
-        // Same (feed_id, url) hits ON CONFLICT DO NOTHING: no error, no dup.
-        Post::create(&pool, post_form!(feed.id, &url))
-            .await
-            .expect("conflicting insert should be a no-op");
-
-        let count: i64 = {
-            let mut conn = pool.get().await.expect("should get conn");
-            posts::table
-                .filter(posts::feed_id.eq(feed.id))
-                .count()
-                .get_result(&mut conn)
-                .await
-                .expect("should count posts")
-        };
-        assert_eq!(count, 1);
-
-        Feed::delete(&pool, feed.id)
-            .await
-            .expect("should delete feed");
-    }
-
-    #[cfg(feature = "postgres")]
-    #[tokio::test]
-    async fn create_many_inserts_batch_and_skips_conflicts() {
-        let pool = setup_test_db().await;
-        let feed = test_feed!(&pool);
-
-        // Empty input is a no-op.
-        assert_eq!(Post::create_many(&pool, vec![]).await.unwrap().len(), 0);
-
-        let urls: Vec<String> = (0..3)
-            .map(|i| format!("https://example.com/post/{}-{i}", unique!()))
-            .collect();
-        let forms: Vec<PostInsertForm> = urls.iter().map(|u| post_form!(feed.id, u)).collect();
-        assert_eq!(Post::create_many(&pool, forms).await.unwrap().len(), 3);
-
-        // Re-inserting the same urls all conflict, so nothing new is inserted.
-        let dups: Vec<PostInsertForm> = urls.iter().map(|u| post_form!(feed.id, u)).collect();
-        assert_eq!(Post::create_many(&pool, dups).await.unwrap().len(), 0);
-
-        let count: i64 = {
-            let mut conn = pool.get().await.expect("should get conn");
-            posts::table
-                .filter(posts::feed_id.eq(feed.id))
-                .count()
-                .get_result(&mut conn)
-                .await
-                .expect("should count posts")
-        };
-        assert_eq!(count, 3);
-
-        Feed::delete(&pool, feed.id)
-            .await
-            .expect("should delete feed");
-    }
-
-    #[cfg(feature = "postgres")]
-    #[tokio::test]
-    async fn update_changes_flags() {
-        let pool = setup_test_db().await;
-        let feed = test_feed!(&pool);
-        let id = test_post!(&pool, feed.id).id;
-
-        let updated = Post::update(
-            &pool,
-            PostUpdateForm {
-                id,
-                bookmarked: Some(true),
-                is_read: Some(true),
-            },
-        )
-        .await
-        .expect("update should succeed");
-
-        assert!(updated.bookmarked);
-        assert!(updated.is_read);
-
-        Feed::delete(&pool, feed.id)
-            .await
-            .expect("should delete feed");
-    }
-
-    #[cfg(feature = "postgres")]
-    #[tokio::test]
-    async fn unread_count_ignores_read_posts_and_other_feeds() {
-        let pool = setup_test_db().await;
-        let feed = test_feed!(&pool);
-        let other_feed = test_feed!(&pool);
-
-        let _ = test_post!(&pool, feed.id);
-        let _ = test_post!(&pool, feed.id);
-        let read_id = test_post!(&pool, feed.id).id;
-        test_post!(&pool, other_feed.id);
-
-        Post::update(
-            &pool,
-            PostUpdateForm {
-                id: read_id,
-                bookmarked: None,
-                is_read: Some(true),
-            },
-        )
-        .await
-        .expect("should mark post read");
-
-        assert_eq!(Post::unread_count(&pool, feed.id).await.unwrap(), 2);
-        assert_eq!(Post::unread_count(&pool, other_feed.id).await.unwrap(), 1);
-
-        // Deleting cascades the posts away; a postless feed counts 0.
-        Feed::delete(&pool, other_feed.id)
-            .await
-            .expect("should delete feed");
-        assert_eq!(Post::unread_count(&pool, other_feed.id).await.unwrap(), 0);
-
-        Feed::delete(&pool, feed.id)
-            .await
-            .expect("should delete feed");
-    }
-
-    #[cfg(feature = "postgres")]
-    #[tokio::test]
-    async fn toggle_is_read_flips_value() {
-        let pool = setup_test_db().await;
-        let feed = test_feed!(&pool);
-        let id = test_post!(&pool, feed.id).id;
-
-        // Defaults to false: first toggle -> true, second -> false.
-        assert!(Post::toggle_is_read(&pool, id).await.unwrap().is_read);
-        assert!(!Post::toggle_is_read(&pool, id).await.unwrap().is_read);
-
-        Feed::delete(&pool, feed.id)
-            .await
-            .expect("should delete feed");
-    }
-
     #[test]
     fn media_feed_entry_uses_media_description() {
         let entry = atom_entry(concat!(
@@ -688,81 +469,304 @@ mod tests {
         assert_eq!(form.content, None);
     }
 
-    /// One test covers both sweeps and the refetch: the sweeps scan the whole
-    /// (shared) test database, so parallel tests with backdated posts would
-    /// expire each other's fixtures.
+    // Everything in here needs a live postgres server (see `setup_test_db`).
     #[cfg(feature = "postgres")]
-    #[tokio::test]
-    async fn expire_records_expired_posts_and_blocks_refetch() {
-        let pool = setup_test_db().await;
-        let feed = test_feed!(&pool);
+    mod postgres {
+        use super::*;
+        use crate::{models::feed::Feed, setup_test_db};
 
-        // Look up the id a url got on insert.
-        macro_rules! post_id {
-            ($url:expr) => {{
+        macro_rules! unique {
+            () => {
+                Utc::now()
+                    .timestamp_nanos_opt()
+                    .expect("timestamp in range")
+            };
+        }
+
+        /// A minimal insertable post with the given url.
+        macro_rules! post_form {
+            ($feed_id:expr, $url:expr) => {
+                PostInsertForm {
+                    feed_id: $feed_id,
+                    title: Some("test post".to_string()),
+                    url: Some($url.to_string()),
+                    authors: None,
+                    published_at: Some(Utc::now()),
+                    updated_at: None,
+                    description: None,
+                    content: None,
+                    created_at: None,
+                }
+            };
+        }
+
+        #[tokio::test]
+        async fn get_returns_created_post() {
+            let pool = setup_test_db().await;
+            let feed = test_feed!(&pool);
+            let url = format!("https://example.com/post/{}", unique!());
+
+            Post::create(
+                &pool,
+                PostInsertForm {
+                    feed_id: feed.id,
+                    title: Some("Get Me".to_string()),
+                    url: Some(url.clone()),
+                    authors: None,
+                    published_at: Some("2026-01-02T03:04:05Z".parse::<DateTime<Utc>>().unwrap()),
+                    updated_at: None,
+                    description: Some("A description.".to_string()),
+                    content: Some("Body.".to_string()),
+                    created_at: None,
+                },
+            )
+            .await
+            .expect("should create post");
+
+            let id: PostId = {
                 let mut conn = pool.get().await.expect("should get conn");
                 posts::table
                     .filter(posts::feed_id.eq(feed.id))
-                    .filter(posts::url.eq($url))
+                    .filter(posts::url.eq(&url))
                     .select(posts::id)
-                    .first::<PostId>(&mut conn)
+                    .first(&mut conn)
                     .await
                     .expect("post should exist")
-            }};
+            };
+            let got = Post::get(&pool, id).await.expect("get should succeed");
+
+            assert_eq!(got.id, id);
+            assert_eq!(got.feed_id, feed.id);
+            assert_eq!(got.title.as_deref(), Some("Get Me"));
+            assert_eq!(got.url.as_deref(), Some(url.as_str()));
+            assert_eq!(got.description.as_deref(), Some("A description."));
+            assert_eq!(got.content.as_deref(), Some("Body."));
+            assert!(!got.is_read);
+            assert!(!got.bookmarked);
+            assert!(!got.is_archived);
+
+            // Deleting the feed cascades to the post, so a follow-up get fails.
+            Feed::delete(&pool, feed.id)
+                .await
+                .expect("should delete feed");
+            assert!(Post::get(&pool, id).await.is_err());
         }
 
-        // Three posts old enough to expire: one read, one unread, and one
-        // read + bookmarked that must survive the sweep.
-        let read_url = format!("https://example.com/post/{}", unique!());
-        let unread_url = format!("https://example.com/post/{}", unique!());
-        let kept_url = format!("https://example.com/post/{}", unique!());
-        for url in [&read_url, &unread_url, &kept_url] {
-            let mut form = post_form!(feed.id, url);
-            form.created_at = Some(Utc::now() - Duration::days(10));
-            Post::create(&pool, form).await.expect("should create post");
+        #[tokio::test]
+        async fn create_inserts_and_skips_conflicts() {
+            let pool = setup_test_db().await;
+            let feed = test_feed!(&pool);
+            let url = format!("https://example.com/post/{}", unique!());
+
+            Post::create(&pool, post_form!(feed.id, &url))
+                .await
+                .expect("first insert should succeed");
+            // Same (feed_id, url) hits ON CONFLICT DO NOTHING: no error, no dup.
+            Post::create(&pool, post_form!(feed.id, &url))
+                .await
+                .expect("conflicting insert should be a no-op");
+
+            let count: i64 = {
+                let mut conn = pool.get().await.expect("should get conn");
+                posts::table
+                    .filter(posts::feed_id.eq(feed.id))
+                    .count()
+                    .get_result(&mut conn)
+                    .await
+                    .expect("should count posts")
+            };
+            assert_eq!(count, 1);
+
+            Feed::delete(&pool, feed.id)
+                .await
+                .expect("should delete feed");
         }
-        let read_id = post_id!(&read_url);
-        let kept_id = post_id!(&kept_url);
-        for (id, bookmarked) in [(read_id, None), (kept_id, Some(true))] {
-            Post::update(
+
+        #[tokio::test]
+        async fn create_many_inserts_batch_and_skips_conflicts() {
+            let pool = setup_test_db().await;
+            let feed = test_feed!(&pool);
+
+            // Empty input is a no-op.
+            assert_eq!(Post::create_many(&pool, vec![]).await.unwrap().len(), 0);
+
+            let urls: Vec<String> = (0..3)
+                .map(|i| format!("https://example.com/post/{}-{i}", unique!()))
+                .collect();
+            let forms: Vec<PostInsertForm> = urls.iter().map(|u| post_form!(feed.id, u)).collect();
+            assert_eq!(Post::create_many(&pool, forms).await.unwrap().len(), 3);
+
+            // Re-inserting the same urls all conflict, so nothing new is inserted.
+            let dups: Vec<PostInsertForm> = urls.iter().map(|u| post_form!(feed.id, u)).collect();
+            assert_eq!(Post::create_many(&pool, dups).await.unwrap().len(), 0);
+
+            let count: i64 = {
+                let mut conn = pool.get().await.expect("should get conn");
+                posts::table
+                    .filter(posts::feed_id.eq(feed.id))
+                    .count()
+                    .get_result(&mut conn)
+                    .await
+                    .expect("should count posts")
+            };
+            assert_eq!(count, 3);
+
+            Feed::delete(&pool, feed.id)
+                .await
+                .expect("should delete feed");
+        }
+
+        #[tokio::test]
+        async fn update_changes_flags() {
+            let pool = setup_test_db().await;
+            let feed = test_feed!(&pool);
+            let id = test_post!(&pool, feed.id).id;
+
+            let updated = Post::update(
                 &pool,
                 PostUpdateForm {
                     id,
-                    bookmarked,
+                    bookmarked: Some(true),
+                    is_read: Some(true),
+                },
+            )
+            .await
+            .expect("update should succeed");
+
+            assert!(updated.bookmarked);
+            assert!(updated.is_read);
+
+            Feed::delete(&pool, feed.id)
+                .await
+                .expect("should delete feed");
+        }
+
+        #[tokio::test]
+        async fn unread_count_ignores_read_posts_and_other_feeds() {
+            let pool = setup_test_db().await;
+            let feed = test_feed!(&pool);
+            let other_feed = test_feed!(&pool);
+
+            let _ = test_post!(&pool, feed.id);
+            let _ = test_post!(&pool, feed.id);
+            let read_id = test_post!(&pool, feed.id).id;
+            test_post!(&pool, other_feed.id);
+
+            Post::update(
+                &pool,
+                PostUpdateForm {
+                    id: read_id,
+                    bookmarked: None,
                     is_read: Some(true),
                 },
             )
             .await
             .expect("should mark post read");
+
+            assert_eq!(Post::unread_count(&pool, feed.id).await.unwrap(), 2);
+            assert_eq!(Post::unread_count(&pool, other_feed.id).await.unwrap(), 1);
+
+            // Deleting cascades the posts away; a postless feed counts 0.
+            Feed::delete(&pool, other_feed.id)
+                .await
+                .expect("should delete feed");
+            assert_eq!(Post::unread_count(&pool, other_feed.id).await.unwrap(), 0);
+
+            Feed::delete(&pool, feed.id)
+                .await
+                .expect("should delete feed");
         }
 
-        // Other tests share the database, so rows besides ours may expire:
-        // assert on our posts, not exact counts.
-        assert!(Post::expire_read(&pool, 5).await.unwrap() >= 1);
-        assert!(Post::expire_unread(&pool, 5).await.unwrap() >= 1);
-        assert!(Post::get(&pool, read_id).await.is_err());
-        assert!(Post::get(&pool, kept_id).await.is_ok());
-        assert_eq!(Post::unread_count(&pool, feed.id).await.unwrap(), 0);
+        #[tokio::test]
+        async fn toggle_is_read_flips_value() {
+            let pool = setup_test_db().await;
+            let feed = test_feed!(&pool);
+            let id = test_post!(&pool, feed.id).id;
 
-        // Re-fetch: the expired urls must stay gone — their rows are deleted,
-        // so only the expired_posts filter can block them — while a fresh url
-        // in the same batch inserts normally.
-        let fresh_url = format!("https://example.com/post/{}", unique!());
-        let inserted = Post::create_many(
-            &pool,
-            vec![
-                post_form!(feed.id, &read_url),
-                post_form!(feed.id, &unread_url),
-                post_form!(feed.id, &fresh_url),
-            ],
-        )
-        .await
-        .expect("create_many should succeed");
-        assert_eq!(inserted.len(), 1);
-        assert_eq!(inserted[0].url.as_deref(), Some(fresh_url.as_str()));
+            // Defaults to false: first toggle -> true, second -> false.
+            assert!(Post::toggle_is_read(&pool, id).await.unwrap().is_read);
+            assert!(!Post::toggle_is_read(&pool, id).await.unwrap().is_read);
 
-        Feed::delete(&pool, feed.id)
+            Feed::delete(&pool, feed.id)
+                .await
+                .expect("should delete feed");
+        }
+
+        /// One test covers both sweeps and the refetch: the sweeps scan the whole
+        /// (shared) test database, so parallel tests with backdated posts would
+        /// expire each other's fixtures.
+        #[tokio::test]
+        async fn expire_records_expired_posts_and_blocks_refetch() {
+            let pool = setup_test_db().await;
+            let feed = test_feed!(&pool);
+
+            // Look up the id a url got on insert.
+            macro_rules! post_id {
+                ($url:expr) => {{
+                    let mut conn = pool.get().await.expect("should get conn");
+                    posts::table
+                        .filter(posts::feed_id.eq(feed.id))
+                        .filter(posts::url.eq($url))
+                        .select(posts::id)
+                        .first::<PostId>(&mut conn)
+                        .await
+                        .expect("post should exist")
+                }};
+            }
+
+            // Three posts old enough to expire: one read, one unread, and one
+            // read + bookmarked that must survive the sweep.
+            let read_url = format!("https://example.com/post/{}", unique!());
+            let unread_url = format!("https://example.com/post/{}", unique!());
+            let kept_url = format!("https://example.com/post/{}", unique!());
+            for url in [&read_url, &unread_url, &kept_url] {
+                let mut form = post_form!(feed.id, url);
+                form.created_at = Some(Utc::now() - Duration::days(10));
+                Post::create(&pool, form).await.expect("should create post");
+            }
+            let read_id = post_id!(&read_url);
+            let kept_id = post_id!(&kept_url);
+            for (id, bookmarked) in [(read_id, None), (kept_id, Some(true))] {
+                Post::update(
+                    &pool,
+                    PostUpdateForm {
+                        id,
+                        bookmarked,
+                        is_read: Some(true),
+                    },
+                )
+                .await
+                .expect("should mark post read");
+            }
+
+            // Other tests share the database, so rows besides ours may expire:
+            // assert on our posts, not exact counts.
+            assert!(Post::expire_read(&pool, 5).await.unwrap() >= 1);
+            assert!(Post::expire_unread(&pool, 5).await.unwrap() >= 1);
+            assert!(Post::get(&pool, read_id).await.is_err());
+            assert!(Post::get(&pool, kept_id).await.is_ok());
+            assert_eq!(Post::unread_count(&pool, feed.id).await.unwrap(), 0);
+
+            // Re-fetch: the expired urls must stay gone — their rows are deleted,
+            // so only the expired_posts filter can block them — while a fresh url
+            // in the same batch inserts normally.
+            let fresh_url = format!("https://example.com/post/{}", unique!());
+            let inserted = Post::create_many(
+                &pool,
+                vec![
+                    post_form!(feed.id, &read_url),
+                    post_form!(feed.id, &unread_url),
+                    post_form!(feed.id, &fresh_url),
+                ],
+            )
             .await
-            .expect("should delete feed");
+            .expect("create_many should succeed");
+            assert_eq!(inserted.len(), 1);
+            assert_eq!(inserted[0].url.as_deref(), Some(fresh_url.as_str()));
+
+            Feed::delete(&pool, feed.id)
+                .await
+                .expect("should delete feed");
+        }
     }
 }

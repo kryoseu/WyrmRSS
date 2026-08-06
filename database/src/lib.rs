@@ -138,18 +138,12 @@ pub async fn create_pool(conf: &WyrmStartupConfig) -> WyrmResult<DatabasePool> {
         .map_err(|e| WyrmError::Database(DatabaseError::PoolBuildError(e)))
 }
 
-/// Builds a connection pool against the configured test database, ensuring the
-/// schema is migrated first.
+/// Builds a connection pool against the configured test database, migrating it
+/// first. Migrations run at most once per test process (via [`Once`]), so
+/// every database test can call this cheaply.
 ///
-/// Migrations are applied at most once per test process (via [`Once`]), so it's
-/// cheap for every database test to call this — the first call sets up the
-/// schema, later calls just hand back a fresh pool. Applying the embedded
-/// migrations mirrors what the server does on startup, so a blank database
-/// (e.g. CI's Postgres service) gets set up the same way `diesel migration run`
-/// would, without needing the diesel CLI installed.
-/// Postgres only: `WyrmStartupConfig` points at a server, and the tests that
-/// use this expect CI's service container. The sqlite backend is covered by
-/// `tests/sqlite_smoke.rs`, which builds its own temp-file database instead.
+/// Postgres only: the sqlite backend is covered by `tests/sqlite_smoke.rs`,
+/// which builds its own temp-file database instead.
 #[cfg(all(test, feature = "postgres"))]
 pub(crate) async fn setup_test_db() -> DatabasePool {
     static INIT: std::sync::Once = std::sync::Once::new();

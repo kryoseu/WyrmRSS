@@ -37,11 +37,11 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
 # `database` crate's own `postgres`/`sqlite` features turn them on, so the
 # server and the desktop build can pick different backends. Enabling one here
 # would force it on every member via feature unification.
-diesel = { version = "2.3.9", features = ["chrono"] }
+diesel = { version = "2.3.11", features = ["chrono"] }
 diesel-async = { version = "0.9.0", features = ["deadpool"] }
 diesel-derive-enum = { version = "2.1.0" }
 diesel-derive-newtype = { version = "2.1.2" }
-libsqlite3-sys = { version = "0.36", features = ["bundled"] }
+libsqlite3-sys = { version = "0.37.0", features = ["bundled"] }
 deadpool = "0.13.0"
 diesel_migrations = "2.3.2"
 thiserror = "2.0.18"

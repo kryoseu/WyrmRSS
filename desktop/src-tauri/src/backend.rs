@@ -3,7 +3,7 @@ use actix_cors::Cors;
 use actix_web::{App, HttpServer, middleware::from_fn, web};
 use api_utils::context::WyrmContext;
 use database::{models::settings::Settings, utils::settings::RuntimeSettings};
-use rand::{Rng, distr::Alphanumeric};
+use rand::{RngExt, distr::Alphanumeric};
 use std::{
     net::{IpAddr, Ipv4Addr, TcpListener},
     path::PathBuf,

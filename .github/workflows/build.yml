@@ -27,8 +27,6 @@ jobs:
               - 'Cargo.lock'
               - 'migrations/**'
               - 'migrations_sqlite/**'
-              # generated schemas are covered by '**/*.rs', but the patch that
-              # diesel applies on top of the sqlite one is not
               - 'database/src/schema_sqlite.patch'
               - 'diesel.toml'
             frontend:
@@ -55,7 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@v2.9.1
       - name: Install nightly rustfmt
         run: rustup toolchain install nightly --component rustfmt --no-self-update
       - name: Format check
@@ -70,8 +68,6 @@ jobs:
         run: cargo test --verbose
         env:
           WYRM_DATABASE_CONNECTION: postgres://wyrm:wyrm@localhost:5432/wyrm
-      # The sqlite backend (desktop) is never exercised by the steps above,
-      # and it fails silently: the postgres build stays green while it rots.
       # Needs no service container -- the tests run against temp files.
       - name: Test sqlite backend
         run: cargo test -p database --no-default-features --features sqlite --verbose
@@ -102,11 +98,6 @@ jobs:
         run: pnpm run build
         working-directory: web
 
-  # The desktop crate sits outside the root workspace, so nothing above builds
-  # it, and desktop-release.yml only fires on tags. Without this a change here
-  # (or in any backend crate it depends on) stays broken until a release is cut.
-  # The existing `backend` filter already covers it: '**/*.rs' and
-  # '**/Cargo.toml' match desktop/src-tauri too.
   desktop:
     needs: [changes]
     if: needs.changes.outputs.backend == 'true'
@@ -116,8 +107,6 @@ jobs:
         working-directory: desktop/src-tauri
     steps:
       - uses: actions/checkout@v7.0.1
-      # Tauri links against the system webview; no database libraries are
-      # needed since sqlite is compiled in.
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
@@ -131,20 +120,15 @@ jobs:
             libssl-dev
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      # `cargo fmt` only walks workspace members, and this crate is no longer
-      # one, so the root format check in the backend job does not reach it.
       - name: Install nightly rustfmt
         run: rustup toolchain install nightly --component rustfmt --no-self-update
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@v2.9.1
         with:
           workspaces: desktop/src-tauri
       - name: Format check
         run: cargo +nightly fmt --check
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
-      # The frontend dist is only needed to bundle, not to compile, so this
-      # skips the pnpm build. bootstrap_serves_api_requests runs the whole
-      # backend against a temp sqlite file -- no service container required.
       - name: Test
         run: cargo test --verbose
