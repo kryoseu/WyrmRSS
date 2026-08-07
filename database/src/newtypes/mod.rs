@@ -1,25 +1,29 @@
+#[cfg(feature = "sqlite")]
+use diesel::{backend::Backend, sqlite::Sqlite};
 use diesel::{
     deserialize::{self, FromSql, FromSqlRow},
     expression::AsExpression,
     serialize::{self, Output, ToSql},
+    sql_types::Text,
+};
+#[cfg(feature = "postgres")]
+use diesel::{
+    pg::{Pg, PgValue},
+    sql_types::{Array, Nullable},
 };
 use diesel_derive_newtype::DieselNewType;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 /// `text[]` on postgres; a JSON string on sqlite, which has no array type.
 #[cfg(feature = "postgres")]
-pub type FiltersSql =
-    diesel::sql_types::Array<diesel::sql_types::Nullable<diesel::sql_types::Text>>;
+pub type FiltersSql = Array<Nullable<Text>>;
 #[cfg(feature = "sqlite")]
-pub type FiltersSql = diesel::sql_types::Text;
+pub type FiltersSql = Text;
 
-/// A feed's exclusion filters.
-///
-/// A newtype only because the orphan rule blocks implementing diesel's
-/// `ToSql`/`FromSql` on a bare `Vec<Option<String>>`. `serde(transparent)`
-/// keeps the JSON identical to the plain vector, and the `Deref`/`FromIterator`
-/// impls below mean callers outside this crate read and build filters exactly
-/// as they did before.
+/// A feed's exclusion filters. Newtype because sqlite has no array type, so
+/// storage differs by backend (see `FiltersSql`). `serde(transparent)` keeps
+/// the JSON shape identical to a plain `Vec<Option<String>>`.
 ///
 /// Deliberately does not derive `ts_rs::TS`: that would emit a named `Filters`
 /// alias and make every struct holding one import it, changing the generated
@@ -53,61 +57,47 @@ impl From<Vec<Option<String>>> for Filters {
 }
 
 #[cfg(feature = "postgres")]
-impl ToSql<FiltersSql, diesel::pg::Pg> for Filters {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, diesel::pg::Pg>) -> serialize::Result {
-        <Vec<Option<String>> as ToSql<FiltersSql, diesel::pg::Pg>>::to_sql(&self.0, out)
+impl ToSql<FiltersSql, Pg> for Filters {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        <Vec<Option<String>> as ToSql<FiltersSql, Pg>>::to_sql(&self.0, out)
     }
 }
 
 #[cfg(feature = "postgres")]
-impl FromSql<FiltersSql, diesel::pg::Pg> for Filters {
-    fn from_sql(value: diesel::pg::PgValue) -> deserialize::Result<Self> {
-        <Vec<Option<String>> as FromSql<FiltersSql, diesel::pg::Pg>>::from_sql(value).map(Self)
+impl FromSql<FiltersSql, Pg> for Filters {
+    fn from_sql(value: PgValue) -> deserialize::Result<Self> {
+        <Vec<Option<String>> as FromSql<FiltersSql, Pg>>::from_sql(value).map(Self)
     }
 }
 
 #[cfg(feature = "sqlite")]
-impl ToSql<FiltersSql, diesel::sqlite::Sqlite> for Filters {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, diesel::sqlite::Sqlite>) -> serialize::Result {
+impl ToSql<FiltersSql, Sqlite> for Filters {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {
         out.set_value(serde_json::to_string(&self.0)?);
         Ok(serialize::IsNull::No)
     }
 }
 
 #[cfg(feature = "sqlite")]
-impl FromSql<FiltersSql, diesel::sqlite::Sqlite> for Filters {
-    fn from_sql(
-        value: <diesel::sqlite::Sqlite as diesel::backend::Backend>::RawValue<'_>,
-    ) -> deserialize::Result<Self> {
-        let raw = <String as FromSql<FiltersSql, diesel::sqlite::Sqlite>>::from_sql(value)?;
+impl FromSql<FiltersSql, Sqlite> for Filters {
+    fn from_sql(value: <Sqlite as Backend>::RawValue<'_>) -> deserialize::Result<Self> {
+        let raw = <String as FromSql<FiltersSql, Sqlite>>::from_sql(value)?;
         Ok(Self(serde_json::from_str(&raw)?))
     }
 }
 
-#[derive(
-    DieselNewType, Clone, Copy, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, ts_rs::TS,
-)]
-#[ts(export)]
-/// The Post ID
-pub struct PostId(pub i32);
+macro_rules! id_newtype {
+    ($name:ident, $doc:literal) => {
+        #[derive(
+            DieselNewType, Clone, Copy, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, TS,
+        )]
+        #[ts(export)]
+        #[doc = $doc]
+        pub struct $name(pub i32);
+    };
+}
 
-#[derive(
-    DieselNewType, Clone, Copy, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, ts_rs::TS,
-)]
-#[ts(export)]
-/// The Feed ID
-pub struct FeedId(pub i32);
-
-#[derive(
-    DieselNewType, Clone, Copy, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, ts_rs::TS,
-)]
-#[ts(export)]
-/// The Webhook ID
-pub struct WebhookId(pub i32);
-
-#[derive(
-    DieselNewType, Clone, Copy, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, ts_rs::TS,
-)]
-#[ts(export)]
-/// The Folder ID
-pub struct FolderId(pub i32);
+id_newtype!(PostId, "The Post ID");
+id_newtype!(FeedId, "The Feed ID");
+id_newtype!(WebhookId, "The Webhook ID");
+id_newtype!(FolderId, "The Folder ID");
