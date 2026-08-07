@@ -16,6 +16,10 @@ on:
         required: true
         type: boolean
 
+env:
+  # Skip buildx's per-build .dockerbuild summary artifact.
+  DOCKER_BUILD_SUMMARY: false
+
 jobs:
   build-backend:
     runs-on: ubuntu-latest
