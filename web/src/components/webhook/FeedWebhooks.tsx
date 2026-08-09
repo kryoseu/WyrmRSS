@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { useWebhooks } from "../../hooks/useWebhooks";
+import type { FeedWebhookView } from "../../types/FeedWebhookView";
 import type { WebhookId } from "../../types/WebhookId";
 
 interface Props {
+  /** All webhooks available to attach (attachment state lives in `selected`, not here). */
+  all: FeedWebhookView[] | undefined;
   /** Currently-selected webhook ids (staged; committed by the parent (EditFeedForm) on save). */
   selected: Set<WebhookId>;
   onToggle: (id: WebhookId, checked: boolean) => void;
@@ -12,8 +14,7 @@ interface Props {
 const FILTER_THRESHOLD = 8;
 
 /** Controlled checklist of all webhooks; the parent (EditFeedForm) owns the selection state. */
-export function FeedWebhooks({ selected, onToggle }: Props) {
-  const { data: all } = useWebhooks();
+export function FeedWebhooks({ all, selected, onToggle }: Props) {
   const [filter, setFilter] = useState("");
 
   if (!all?.length) {
