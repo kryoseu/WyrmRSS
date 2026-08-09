@@ -12,7 +12,7 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[derive(Clone, Debug, DbEnum, Serialize, Deserialize, ts_rs::TS)]
 // Postgres has a real `read_mode` enum type declared in schema.rs. SQLite does
 // not, and diesel-derive-enum only emits its sqlite impls against a mapping type
-// it generates itself (`ReadModeMapping`) — supplying `ExistingTypePath` there
+// it generates itself (`ReadModeMapping`). Supplying `ExistingTypePath` there
 // leaves those impls referring to a type that was never defined.
 #[cfg_attr(
     feature = "postgres",

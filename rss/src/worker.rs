@@ -223,6 +223,7 @@ async fn process_feed(pool: &DatabasePool, http: &HttpClient, task: &FeedTask) -
             ttl: None,
             folder: None,
             filters: None,
+            display_mode: None,
             is_paused: None,
             last_fetched_at: Some(Utc::now()),
         },

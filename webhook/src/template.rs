@@ -130,7 +130,10 @@ fn resolve<'a>(ctx: &'a Value, path: &str) -> Option<&'a Value> {
 mod tests {
     use super::*;
     use chrono::Utc;
-    use database::newtypes::{FeedId, Filters, PostId};
+    use database::{
+        models::feed::DisplayMode,
+        newtypes::{FeedId, Filters, PostId},
+    };
 
     fn feed() -> Feed {
         Feed {
@@ -143,6 +146,7 @@ mod tests {
             last_fetched_at: None,
             created_at: Utc::now(),
             folder_id: None,
+            display_mode: DisplayMode::River,
         }
     }
 

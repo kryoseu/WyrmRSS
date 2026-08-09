@@ -25,6 +25,9 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use crate::models::feed::DisplayModeMapping;
+
     feeds (id) {
         id -> Integer,
         title -> Text,
@@ -35,6 +38,7 @@ diesel::table! {
         created_at -> TimestamptzSqlite,
         folder_id -> Nullable<Integer>,
         is_paused -> Bool,
+        display_mode -> DisplayModeMapping,
     }
 }
 

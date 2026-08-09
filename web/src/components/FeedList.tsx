@@ -47,8 +47,9 @@ export function FeedList() {
     .map((folder) => ({
       folder,
       members: filtered.filter((f) => f.folder_id === folder.id),
+      // Radar feeds don't surface an unread count anywhere in the sidebar.
       unread: (feeds ?? [])
-        .filter((f) => f.folder_id === folder.id)
+        .filter((f) => f.folder_id === folder.id && f.display_mode !== "radar")
         .reduce((sum, f) => sum + f.unread_count, 0),
     }))
     .filter((g) => g.members.length > 0)

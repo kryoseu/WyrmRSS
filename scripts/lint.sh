@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Runs fmt + clippy + machete for both the root workspace and desktop/src-tauri.
+# Runs fmt + clippy + machete for both the root workspace and desktop/src-tauri,
+# plus eslint for the frontend.
 #
 # desktop/src-tauri is its own separate cargo workspace (see the comment in
 # its Cargo.toml), so `cargo fmt`/`cargo clippy` run from the repo root never
@@ -33,6 +34,12 @@ echo "-- checking fmt for desktop/src-tauri --"
 cargo +nightly fmt
 echo "-- checking clippy for desktop/src-tauri --"
 cargo clippy --all-targets -- -D warnings
+
+echo
+echo "== frontend =="
+cd "$repo_root/web"
+echo "-- checking eslint for web --"
+pnpm lint
 
 after="$(snapshot_rs_files)"
 

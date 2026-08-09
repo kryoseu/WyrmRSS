@@ -10,7 +10,6 @@ rust-version.workspace = true
 [dependencies]
 tokio = { workspace = true }
 actix-web = { workspace = true }
-serde = { workspace = true }
 database = { path = "../../database", default-features = false }
 wyrm-rss = { path = "../../rss", default-features = false }
 

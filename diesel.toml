@@ -8,16 +8,9 @@ custom_type_derives = ["diesel::query_builder::QueryId"]
 [migrations_directory]
 dir = "migrations"
 
-# SQLite (desktop) backend. `migrations_directory` takes no keyed variants, so
-# the migration dir is passed on the command line. Regenerate with:
-#   diesel migration run   --database-url <db> --migration-dir migrations_sqlite
-#   diesel print-schema --schema-key sqlite --database-url <db>
-#
-# The patch file supplies what sqlite introspection cannot: diesel's sqlite
-# print-schema has no `TimestamptzSqlite` mapping (it only ever emits
-# `Timestamp`, i.e. NaiveDateTime, whereas the models use DateTime<Utc>), and it
-# cannot know about the enum mapping types that diesel-derive-enum generates.
-[print_schema.sqlite]
-file = "database/src/schema_sqlite.rs"
-patch_file = "database/src/schema_sqlite.patch"
-custom_type_derives = ["diesel::query_builder::QueryId"]
+# SQLite (desktop) backend config lives in its own diesel-sqlite.toml, not a
+# keyed [print_schema.sqlite] section here. diesel_cli 2.3's `migration run`
+# re-applies *every* keyed section's patch_file on every invocation, not just
+# the one matching --schema-key -- and schema_sqlite.rs is committed already
+# patched, so that patch can never re-apply cleanly on a second pass. See
+# diesel-sqlite.toml and scripts/gen-sqlite-schema.sh.

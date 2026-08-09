@@ -5,6 +5,7 @@ import { ApiKeyGate } from "./components/ApiKeyGate";
 import { ArchiveList } from "./components/ArchiveList";
 import { BookmarkedPostList } from "./components/BookmarkedPostList";
 import { PostList } from "./components/PostList";
+import { RadarBoard } from "./components/RadarBoard";
 import { ThemeProvider } from "./context/ThemeProvider";
 import { AppLayout } from "./pages/AppLayout";
 import { ReaderPage } from "./pages/ReaderPage";
@@ -31,6 +32,7 @@ export default function App() {
                 <Route path="/archive" element={<ArchiveList />} />
                 <Route path="/archive/:postId" element={<ArchiveList />} />
               </Route>
+              <Route path="/radar" element={<RadarBoard />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Routes>

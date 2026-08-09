@@ -2,6 +2,10 @@
 
 pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "display_mode"))]
+    pub struct DisplayMode;
+
+    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "read_mode"))]
     pub struct ReadMode;
 
@@ -35,6 +39,9 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::DisplayMode;
+
     feeds (id) {
         id -> Int4,
         title -> Text,
@@ -45,6 +52,7 @@ diesel::table! {
         created_at -> Timestamptz,
         folder_id -> Nullable<Int4>,
         is_paused -> Bool,
+        display_mode -> DisplayMode,
     }
 }
 

@@ -2,7 +2,7 @@ use actix_web::web::{Data, Json, Path};
 use api_utils::context::WyrmContext;
 use database::{
     models::{
-        feed::{Feed, FeedInsertForm, FeedUpdateForm},
+        feed::{DisplayMode, Feed, FeedInsertForm, FeedUpdateForm},
         feed_icon::FeedIcon,
     },
     newtypes::FeedId,
@@ -22,6 +22,7 @@ pub struct CreateFeed {
     ttl: i32,
     folder: Option<String>,
     filters: Option<Vec<String>>,
+    display_mode: DisplayMode,
 }
 
 #[derive(Deserialize, ts_rs::TS)]
@@ -38,6 +39,7 @@ pub struct UpdateFeed {
     folder: Option<Option<String>>,
     filters: Option<Vec<String>>,
     is_paused: Option<bool>,
+    display_mode: Option<DisplayMode>,
 }
 
 pub async fn create(
@@ -57,6 +59,7 @@ pub async fn create(
             ttl: data.ttl,
             folder: data.folder,
             filters: data.filters.map(|v| v.into_iter().map(Some).collect()),
+            display_mode: data.display_mode,
         },
     )
     .await?;
@@ -101,6 +104,7 @@ pub async fn update(
             folder: data.folder,
             filters: data.filters.map(|v| v.into_iter().map(Some).collect()),
             is_paused: data.is_paused,
+            display_mode: data.display_mode,
             last_fetched_at: None,
         },
     )

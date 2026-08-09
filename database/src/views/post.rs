@@ -1,8 +1,8 @@
 use crate::{
     DatabasePool,
-    models::post::Post,
+    models::{feed::DisplayMode, post::Post},
     newtypes::FeedId,
-    schema::posts,
+    schema::{feeds, posts},
     utils::pagination::{PagedResponse, PaginationCursor},
 };
 use diesel::prelude::*;
@@ -15,7 +15,6 @@ pub struct PostQuery {
     pub bookmarked: Option<bool>,
     pub unread_only: Option<bool>,
     pub search: Option<String>,
-    pub exclude: Option<Vec<FeedId>>,
     pub cursor: Option<PaginationCursor>,
 }
 
@@ -39,15 +38,21 @@ impl PostQuery {
             query = query.filter(posts::feed_id.eq(feed_id));
         }
 
+        if self.feed_id.is_none() {
+            query = query.filter(
+                posts::feed_id.eq_any(
+                    feeds::table
+                        .filter(feeds::display_mode.eq(DisplayMode::River))
+                        .select(feeds::id),
+                ),
+            );
+        }
+
         if let Some(search) = self.search {
             query = query.filter(
                 crate::ci_like!(posts::title, format!("%{search}%"))
                     .or(crate::ci_like!(posts::description, format!("%{search}%"))),
             );
-        }
-
-        if let Some(exclude) = self.exclude {
-            query = query.filter(posts::feed_id.ne_all(exclude))
         }
 
         if self.bookmarked == Some(true) {

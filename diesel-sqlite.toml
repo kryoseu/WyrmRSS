@@ -1,0 +1,15 @@
+# SQLite (desktop) backend config, kept separate from diesel.toml -- see the
+# note there. Used via `diesel <command> --config-file diesel-sqlite.toml`;
+# scripts/gen-sqlite-schema.sh wraps this to regenerate schema_sqlite.rs.
+#
+# The patch file supplies what sqlite introspection cannot: diesel's sqlite
+# print-schema has no `TimestamptzSqlite` mapping (it only ever emits
+# `Timestamp`, i.e. NaiveDateTime, whereas the models use DateTime<Utc>), and it
+# cannot know about the enum mapping types that diesel-derive-enum generates.
+[print_schema]
+file = "database/src/schema_sqlite.rs"
+patch_file = "database/src/schema_sqlite.patch"
+custom_type_derives = ["diesel::query_builder::QueryId"]
+
+[migrations_directory]
+dir = "migrations_sqlite"

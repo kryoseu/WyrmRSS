@@ -16,7 +16,16 @@
      }
  }
  
-@@ -31,8 +31,8 @@
+@@ -25,17 +25,20 @@
+ }
+ 
+ diesel::table! {
++    use diesel::sql_types::*;
++    use crate::models::feed::DisplayModeMapping;
++
+     feeds (id) {
+         id -> Integer,
+         title -> Text,
          url -> Text,
          ttl -> Integer,
          filters -> Text,
@@ -26,8 +35,12 @@
 +        created_at -> TimestamptzSqlite,
          folder_id -> Nullable<Integer>,
          is_paused -> Bool,
+-        display_mode -> Text,
++        display_mode -> DisplayModeMapping,
      }
-@@ -51,10 +51,10 @@
+ }
+ 
+@@ -52,10 +55,10 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -40,7 +53,7 @@
      }
  }
  
-@@ -65,18 +65,21 @@
+@@ -66,18 +69,21 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -65,7 +78,7 @@
      settings (is_singleton) {
          is_singleton -> Bool,
          page_size -> Integer,
-@@ -85,20 +88,23 @@
+@@ -86,20 +92,23 @@
          http_connect_timeout -> Integer,
          http_retries -> Integer,
          http_user_agent -> Nullable<Text>,

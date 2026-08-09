@@ -10,8 +10,31 @@ use diesel::{
     prelude::{Queryable, *},
 };
 use diesel_async::{AsyncConnection, RunQueryDsl};
-use serde::Serialize;
+use diesel_derive_enum::DbEnum;
+use serde::{Deserialize, Serialize};
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
+
+/// Controls how a feed's posts are displayed.
+/// - `River`: posts show on the river (home view). Read/unread status is tracked.
+/// - `FeedOnly`: posts don't show on the river. Only visible by navigating to the feed directly.
+///   Read/unread status is tracked.
+/// - `Radar`: posts don't show on the river. Visible by navigating to the feed directly, and on the
+///   Radar section. Read/unread status is not tracked.
+#[derive(Default, Clone, Debug, DbEnum, Serialize, Deserialize, ts_rs::TS)]
+// See the note on `ReadMode` in models/settings.rs: sqlite needs the derive to
+// generate its own `DisplayModeMapping` rather than reuse a schema type.
+#[cfg_attr(
+    feature = "postgres",
+    ExistingTypePath = "crate::schema::sql_types::DisplayMode"
+)]
+#[serde(rename_all = "snake_case")]
+#[ts(rename_all = "snake_case", export)]
+pub enum DisplayMode {
+    #[default]
+    River,
+    FeedOnly,
+    Radar,
+}
 
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Serialize, Queryable, Selectable)]
@@ -40,6 +63,9 @@ pub struct Feed {
     pub folder_id: Option<FolderId>,
     /// Whether the feed is paused (not polled by the worker).
     pub is_paused: bool,
+    /// Dictates how posts from a feed are displayed.
+    /// See the enum above.
+    pub display_mode: DisplayMode,
 }
 
 impl Feed {
@@ -138,6 +164,7 @@ pub struct FeedInsertForm {
     #[diesel(skip_insertion)]
     pub folder: Option<String>,
     pub filters: Option<Filters>,
+    pub display_mode: DisplayMode,
 }
 
 #[derive(Identifiable, AsChangeset)]
@@ -160,6 +187,7 @@ pub struct FeedUpdateForm {
     pub filters: Option<Filters>,
     pub is_paused: Option<bool>,
     pub last_fetched_at: Option<DateTime<Utc>>,
+    pub display_mode: Option<DisplayMode>,
 }
 
 /// Test helper: inserts a feed with a unique url and returns the `Feed`. Lives
@@ -167,17 +195,25 @@ pub struct FeedUpdateForm {
 /// `#[macro_use]` on this module in `models/mod.rs`. Delete the feed to clean
 /// up (the cascade removes any posts attached to it).
 #[cfg(all(test, feature = "postgres"))]
+pub(crate) static TEST_FEED_URL_COUNTER: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(0);
+
+#[cfg(all(test, feature = "postgres"))]
 macro_rules! test_feed {
     ($pool:expr) => {
         $crate::models::feed::Feed::create(
             $pool,
             $crate::models::feed::FeedInsertForm {
                 title: "test feed".to_string(),
+                // Counter avoids collision (feeds created with the same nanoseconds) by concurrent
+                // tests.
                 url: format!(
-                    "https://example.com/feed/{}",
+                    "https://example.com/feed/{}-{}",
                     chrono::Utc::now()
                         .timestamp_nanos_opt()
-                        .expect("timestamp in range")
+                        .expect("timestamp in range"),
+                    $crate::models::feed::TEST_FEED_URL_COUNTER
+                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
                 ),
                 ttl: 60,
                 ..Default::default()
@@ -229,6 +265,7 @@ mod tests {
                 ttl: Some(120),
                 folder: Some(Some(folder.name.clone())),
                 filters: None,
+                display_mode: None,
                 is_paused: Some(true),
                 last_fetched_at: None,
             },
