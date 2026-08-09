@@ -76,7 +76,6 @@ export const ENDPOINTS = {
   webhooks: {
     list: () => `${apiBase()}/webhooks`,
     create: () => `${apiBase()}/webhooks`,
-    get: (id: WebhookId) => `${apiBase()}/webhooks/${id}`,
     update: (id: WebhookId) => `${apiBase()}/webhooks/${id}`,
     delete: (id: WebhookId) => `${apiBase()}/webhooks/${id}`,
     listForFeed: (id: FeedId) => `${apiBase()}/feeds/${id}/webhooks`,

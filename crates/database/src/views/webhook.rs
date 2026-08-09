@@ -6,8 +6,17 @@ use crate::{
 };
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
+use serde::Serialize;
 use std::collections::HashMap;
 use wyrm_utils::result::WyrmResult;
+
+#[derive(Serialize, ts_rs::TS)]
+#[ts(export)]
+pub struct FeedWebhookView {
+    #[serde(flatten)]
+    webhook: Webhook,
+    attached: bool,
+}
 
 /// Returns a hashmap containing all webhooks by feedId
 pub async fn all_by_feed(pool: &DatabasePool) -> WyrmResult<HashMap<FeedId, Vec<Webhook>>> {
@@ -25,14 +34,32 @@ pub async fn all_by_feed(pool: &DatabasePool) -> WyrmResult<HashMap<FeedId, Vec<
     Ok(map)
 }
 
-/// All webhooks attached to a single feed.
-pub async fn for_feed(pool: &DatabasePool, feed_id: FeedId) -> WyrmResult<Vec<Webhook>> {
+/// All webhooks, with an attached flag indicating which webhooks are
+/// attached to the given feed.
+///
+/// When editting a feed, we need to display the list of all webhooks
+/// available that can be attached, but also show which ones already are.
+/// This call allows everything to be returned in one call.
+pub async fn list_for_feed(
+    pool: &DatabasePool,
+    feed_id: FeedId,
+) -> WyrmResult<Vec<FeedWebhookView>> {
     let mut conn = pool.get().await?;
-    let webhooks = feed_webhooks::table
-        .inner_join(webhooks::table)
-        .filter(feed_webhooks::feed_id.eq(feed_id))
-        .select(Webhook::as_select())
+    let rows: Vec<(Webhook, bool)> = webhooks::table
+        .left_join(
+            feed_webhooks::table.on(feed_webhooks::webhook_id
+                .eq(webhooks::id)
+                .and(feed_webhooks::feed_id.nullable().eq(feed_id))),
+        )
+        .select((
+            Webhook::as_select(),
+            feed_webhooks::feed_id.nullable().is_not_null(),
+        ))
         .load(&mut conn)
         .await?;
-    Ok(webhooks)
+
+    Ok(rows
+        .into_iter()
+        .map(|(webhook, attached)| FeedWebhookView { webhook, attached })
+        .collect())
 }

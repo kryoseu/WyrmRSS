@@ -48,7 +48,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
   const [seeded, setSeeded] = useState(false);
   if (attachedWebhooks && !seeded) {
     setSeeded(true);
-    setSelectedWebhooks(new Set(attachedWebhooks.map((w) => w.id)));
+    setSelectedWebhooks(new Set(attachedWebhooks.filter((w) => w.attached).map((w) => w.id)));
   }
 
   const [saving, setSaving] = useState(false);
@@ -90,7 +90,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
       });
 
       // Commit only the webhook changes: attach the added, detach the removed.
-      const original = new Set((attachedWebhooks ?? []).map((w) => w.id));
+      const original = new Set((attachedWebhooks ?? []).filter((w) => w.attached).map((w) => w.id));
       const toAttach = [...selectedWebhooks].filter((id) => !original.has(id));
       const toDetach = [...original].filter((id) => !selectedWebhooks.has(id));
       await Promise.all([
@@ -166,7 +166,11 @@ export function EditFeedForm({ feed, onClose }: Props) {
       </div>
       <div className="feed-webhooks-section">
         <span className="feed-webhooks-label">Webhooks</span>
-        <FeedWebhooks selected={selectedWebhooks} onToggle={toggleWebhook} />
+        <FeedWebhooks
+          all={attachedWebhooks}
+          selected={selectedWebhooks}
+          onToggle={toggleWebhook}
+        />
       </div>
       {update.isError && <div className="form-error">{update.error.message}</div>}
       <div className="entity-form-actions">

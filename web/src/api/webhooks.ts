@@ -1,4 +1,5 @@
 import type { Webhook } from "../types/Webhook";
+import type { FeedWebhookView } from "../types/FeedWebhookView";
 import type { FeedId } from "../types/FeedId";
 import type { WebhookId } from "../types/WebhookId";
 import type { CreateWebhook } from "../types/CreateWebhook";
@@ -10,11 +11,8 @@ import { json, noContent } from "../utils/response";
 export const getWebhooks = (): Promise<Webhook[]> =>
   fetchWithAuth(ENDPOINTS.webhooks.list()).then<Webhook[]>(json);
 
-export const getWebhook = (id: WebhookId): Promise<Webhook> =>
-  fetchWithAuth(ENDPOINTS.webhooks.get(id)).then<Webhook>(json);
-
-export const getFeedWebhooks = (id: FeedId): Promise<Webhook[]> =>
-  fetchWithAuth(ENDPOINTS.webhooks.listForFeed(id)).then<Webhook[]>(json);
+export const getFeedWebhooks = (id: FeedId): Promise<FeedWebhookView[]> =>
+  fetchWithAuth(ENDPOINTS.webhooks.listForFeed(id)).then<FeedWebhookView[]>(json);
 
 export const createWebhook = (body: CreateWebhook): Promise<Webhook> =>
   fetchWithAuth(ENDPOINTS.webhooks.create(), {
