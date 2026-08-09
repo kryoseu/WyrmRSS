@@ -19,6 +19,7 @@
 - Feed discovery — paste a blog homepage or YouTube channel URL and Wyrm finds the feed for you
 - YouTube channel support — subscribe to any channel and watch videos inline without leaving the reader
 - Browse posts per feed or across all feeds
+- Per-feed display modes — River (home feed), Feed only (posts only shown on Feed directly), or Radar (quiet, visit when nothing else going on)
 - Group feeds into folders — collapsible sidebar sections with unread counts, preserved across OPML import/export
 - Filters per feed — exclude entries matching a pattern, scoped to URL, title or content
 - Save posts to Read Later
@@ -59,7 +60,7 @@ See [source.md](docs/installation/source.md) to build from the source code.
 Startup settings can be configured via environment variables (prefixed `WYRM_`) or `config/wyrm.toml`.
 
 | Variable | Default | Description |
-|---|---|---|
+| --- | --- | --- |
 | `WYRM_BIND` | `0.0.0.0` | IP address to bind to |
 | `WYRM_PORT` | `3001` | Port to listen on |
 | `WYRM_DATABASE_CONNECTION` | `postgres://wyrm:wyrm@localhost/wyrm` | PostgreSQL connection URI |
@@ -74,7 +75,7 @@ Startup settings can be configured via environment variables (prefixed `WYRM_`) 
 The following settings are stored in the database and can be changed at runtime via the Settings page without restarting the server.
 
 | Setting | Default | Description |
-|---|---|---|
+| --- | --- | --- |
 | Page size | `100` | Feed entries returned per page |
 | Feed poll interval | `900` | Seconds between automatic feed polls |
 | HTTP timeout | `30` | Response timeout in seconds |
@@ -85,7 +86,7 @@ The following settings are stored in the database and can be changed at runtime 
 ### Frontend
 
 | Variable | Default | Description |
-|---|---|---|
+| --- | --- | --- |
 | `WYRM_BACKEND_URL` | `http://localhost:3001` | Backend URL, must match where the backend is running |
 | `WYRM_API_KEY` | _(none)_ | Bake an API key into the frontend build, skipping the key prompt entirely |
 
@@ -109,7 +110,7 @@ them. `content:` matches both the entry's summary and body.
 Example, for YouTube you may want to exclude:
 
 | Filter | Excludes |
-|--------|----------|
+| -------- | ---------- |
 | `url:/shorts` | YouTube Shorts |
 | `url:/live` | Live streams |
 | `title:trailer` | Entries with "trailer" in the title |
