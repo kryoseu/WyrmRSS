@@ -974,10 +974,10 @@ body.reader-resizing {
   padding: 8px 14px;
 }
 
-/* Feed columns: title · url · ttl · folder · fetched · actions */
+/* Feed columns: title · url · ttl · folder · display mode · fetched · actions */
 .feeds-table .settings-table-header,
 .feeds-table .settings-table-row {
-  grid-template-columns: 180px 1fr 52px 90px 110px 84px;
+  grid-template-columns: 180px 1fr 52px 90px 100px 110px 84px;
 }
 
 .settings-table-header {
@@ -989,6 +989,13 @@ body.reader-resizing {
   opacity: 0.6;
   border-bottom: 1px solid var(--border);
   background: var(--code-bg);
+
+  /* .settings-table-url/-meta set their own (smaller) size for body rows;
+     keep header labels at this row's size regardless of column type. */
+  .settings-table-url,
+  .settings-table-meta {
+    font-size: inherit;
+  }
 }
 
 .settings-table-row {
@@ -1136,6 +1143,18 @@ body.reader-resizing {
   margin: 0;
   font-size: 12px;
   color: #ef4444;
+}
+
+.display-mode-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text);
 }
 
 .feed-webhooks-section {
@@ -1661,4 +1680,197 @@ body.reader-resizing {
       border-color: transparent;
     }
   }
+}
+
+/* ── Radar ──────────────────────────────────────────────────── */
+
+.pane-radar {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.radar-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-h);
+  flex-shrink: 0;
+}
+
+.radar-section-label {
+  padding: 0 16px;
+  margin: 14px 0 6px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text);
+  opacity: 0.7;
+
+  & + .radar-grid {
+    padding-top: 0;
+  }
+
+  & + .radar-list {
+    margin-top: 0;
+  }
+}
+
+.radar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  padding: 16px;
+}
+
+.radar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text-h);
+  background: var(--code-bg);
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+}
+
+.radar-card-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.radar-card-icon,
+.radar-card-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.radar-card-icon {
+  object-fit: cover;
+}
+
+.radar-card-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.radar-card-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.radar-card-count {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  letter-spacing: 0.2px;
+}
+
+.radar-card-snippet {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  & strong {
+    color: var(--text-h);
+    font-weight: 600;
+  }
+}
+
+.radar-list {
+  display: flex;
+  flex-direction: column;
+  margin: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.radar-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border-top: 1px solid var(--border);
+  transition: background 0.12s ease;
+
+  &:first-child {
+    border-top: none;
+  }
+
+  &:hover {
+    background: var(--accent-bg);
+  }
+}
+
+.radar-row-icon,
+.radar-row-avatar {
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.radar-row-icon {
+  object-fit: cover;
+}
+
+.radar-row-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.radar-row-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.76rem;
+  font-weight: 550;
+}
+
+.radar-row-count {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 0.85;
+  min-width: 1.6em;
+  text-align: right;
 }

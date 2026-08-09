@@ -44,6 +44,13 @@ export function SideMenu() {
         >
           Archive
         </NavLink>
+        <NavLink
+          to="/radar"
+          end
+          className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+        >
+          Radar
+        </NavLink>
       </nav>
 
       <FeedList />

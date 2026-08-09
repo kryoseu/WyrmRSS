@@ -55,7 +55,7 @@ export function FeedItem({ feed, active }: Props) {
           },
         ]}
       />
-      {feed.unread_count > 0 && (
+      {feed.display_mode !== "radar" && feed.unread_count > 0 && (
         <span className="feed-item-unread" title={`${feed.unread_count} unread`}>
           {feed.unread_count > 999 ? "999+" : feed.unread_count}
         </span>

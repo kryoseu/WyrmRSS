@@ -9,6 +9,8 @@ import type { Feed } from "../types/Feed";
 import type { WebhookId } from "../types/WebhookId";
 import { FeedWebhooks } from "./webhook/FeedWebhooks";
 import { FolderCombobox } from "./FolderCombobox";
+import { DisplayModeSelect } from "./DisplayModeSelect";
+import type { DisplayMode } from "../types/DisplayMode";
 
 interface Props {
   feed: Feed;
@@ -23,6 +25,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
     feed.filters.filter((f): f is string => f !== null)
   );
   const [paused, setPaused] = useState(feed.is_paused);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(feed.display_mode);
   const update = useUpdateFeed();
   const qc = useQueryClient();
 
@@ -82,6 +85,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
           folder: folderSeeded ? folder.trim() || null : undefined,
           filters: urlFilters.map((f) => f.trim()).filter(Boolean),
           is_paused: paused,
+          display_mode: displayMode,
         },
       });
 
@@ -127,6 +131,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
         required
       />
       <FolderCombobox value={folder} onChange={setFolder} />
+      <DisplayModeSelect value={displayMode} onChange={setDisplayMode} />
       <label
         className="feed-paused-option"
         title="Paused feeds are not polled; existing posts stay"

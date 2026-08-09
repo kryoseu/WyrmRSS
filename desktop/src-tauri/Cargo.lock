@@ -289,7 +289,6 @@ version = "0.26.0"
 dependencies = [
  "actix-web",
  "database",
- "serde",
  "tokio",
  "wyrm-rss",
 ]

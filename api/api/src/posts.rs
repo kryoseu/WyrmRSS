@@ -20,8 +20,6 @@ pub struct ListPosts {
     pub bookmarked: Option<bool>,
     pub unread_only: Option<bool>,
     pub search: Option<String>,
-    #[serde(default, deserialize_with = "api_utils::posts::de_comma_sep_feed_ids")]
-    pub exclude: Option<Vec<FeedId>>,
 }
 
 #[derive(Deserialize, ts_rs::TS)]
@@ -70,7 +68,6 @@ pub async fn list(
         bookmarked: query.bookmarked,
         unread_only: query.unread_only.or(Some(true)),
         search: query.search,
-        exclude: query.exclude,
     }
     .list(&ctx.db_pool, page_size)
     .await?;
@@ -90,44 +87,8 @@ mod tests {
     }
 
     #[test]
-    fn exclude_parses_comma_separated_feed_ids() {
-        let q = parse("exclude=3,7,12");
-        assert_eq!(q.exclude, Some(vec![FeedId(3), FeedId(7), FeedId(12)]));
-    }
-
-    #[test]
-    fn exclude_single_id() {
-        assert_eq!(parse("exclude=5").exclude, Some(vec![FeedId(5)]));
-    }
-
-    #[test]
-    fn exclude_absent_is_none() {
-        assert_eq!(parse("unread_only=true").exclude, None);
-    }
-
-    #[test]
-    fn exclude_empty_string_is_none() {
-        assert_eq!(parse("exclude=").exclude, None);
-    }
-
-    #[test]
-    fn exclude_tolerates_surrounding_whitespace() {
-        // `%20` decodes to a space around the middle id.
-        assert_eq!(
-            parse("exclude=3,%207%20,12").exclude,
-            Some(vec![FeedId(3), FeedId(7), FeedId(12)])
-        );
-    }
-
-    #[test]
-    fn exclude_rejects_non_numeric() {
-        assert!(Query::<ListPosts>::from_query("exclude=3,abc").is_err());
-    }
-
-    #[test]
     fn parses_scalar_fields() {
         let q = parse("search=rust");
         assert_eq!(q.search.as_deref(), Some("rust"));
-        assert_eq!(q.exclude, None);
     }
 }

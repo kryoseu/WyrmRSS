@@ -1,6 +1,8 @@
 import { type SubmitEvent, useState } from "react";
 import { useCreateFeed } from "../hooks/useFeeds";
 import { FolderCombobox } from "./FolderCombobox";
+import { DisplayModeSelect } from "./DisplayModeSelect";
+import type { DisplayMode } from "../types/DisplayMode";
 
 interface Props {
   onClose: () => void;
@@ -12,6 +14,7 @@ export function AddFeedForm({ onClose }: Props) {
   const [ttl, setTtl] = useState("");
   const [folder, setFolder] = useState("");
   const [filters, setFilters] = useState<string[]>([]);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>("river");
   const create = useCreateFeed();
 
   function updateFilter(index: number, value: string) {
@@ -31,6 +34,7 @@ export function AddFeedForm({ onClose }: Props) {
         ttl: ttl === "" ? 60 : Number(ttl),
         folder: folder.trim() || null,
         filters: filters.map((f) => f.trim()).filter(Boolean),
+        display_mode: displayMode,
       },
       { onSuccess: onClose }
     );
@@ -60,6 +64,7 @@ export function AddFeedForm({ onClose }: Props) {
         min={1}
       />
       <FolderCombobox value={folder} onChange={setFolder} />
+      <DisplayModeSelect value={displayMode} onChange={setDisplayMode} />
       <div className="url-filters">
         {filters.map((filter, i) => (
           <div key={i} className="url-filter-row">

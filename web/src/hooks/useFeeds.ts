@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFeed, deleteFeed, getFeedIcon, getFeeds, pollFeeds, updateFeed } from "../api/feeds";
-import { feedKeys, setFeedPauseState } from "../cache/feeds";
+import { evictFeedIconIfUrlChanged, feedIconKey, feedKeys, setFeedPauseState } from "../cache/feeds";
 import { postKeys } from "../cache/posts";
 import { folderKeys } from "./useFolders";
 import type { CreateFeed } from "../types/CreateFeed";
@@ -24,11 +24,13 @@ export function useFeeds() {
  * Object URL for a feed's icon, or `undefined` while it loads / when the
  * feed has none (render the initials fallback then). The blob is fetched
  * with auth once per feed and shared by every post row via the query cache;
- * the key sits outside `feedKeys.all` so feed mutations don't refetch icons.
+ * the key sits outside `feedKeys.all` so feed mutations don't refetch icons,
+ * except a URL edit, which evicts it explicitly — see
+ * `evictFeedIconIfUrlChanged`.
  */
 export function useFeedIcon(feed?: FeedMeta): string | undefined {
   const { data } = useQuery({
-    queryKey: ["feed-icon", feed?.id],
+    queryKey: feedIconKey(feed?.id),
     queryFn: () => getFeedIcon(feed!.id).then(URL.createObjectURL),
     enabled: !!feed?.hasIcon,
     // Object URLs stay valid for the whole session; never refetch or evict
@@ -63,7 +65,8 @@ export function useUpdateFeed() {
   return useMutation({
     mutationFn: ({ id, body }: { id: FeedId; body: UpdateFeed }) =>
       updateFeed(id, body),
-    onSuccess: (_feed, { body }) => {
+    onSuccess: (_feed, { id, body }) => {
+      evictFeedIconIfUrlChanged(qc, id, body.url);
       qc.invalidateQueries({ queryKey: feedKeys.all });
       // Only assigning a folder name can create one; clearing (null/blank)
       // or leaving it untouched never changes the folder list.
@@ -78,7 +81,7 @@ export function useSetFeedPaused() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, paused }: { id: FeedId; paused: boolean }) =>
-      updateFeed(id, { title: null, url: null, ttl: null, filters: null, is_paused: paused }),
+      updateFeed(id, { title: null, url: null, ttl: null, filters: null, display_mode: null, is_paused: paused }),
     onSuccess: (feed) => setFeedPauseState(qc, feed.id, feed.is_paused),
   });
 }

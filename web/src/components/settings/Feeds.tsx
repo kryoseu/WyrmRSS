@@ -5,6 +5,7 @@ import { useFolders } from "../../hooks/useFolders";
 import { AddFeedForm } from "../AddFeedForm";
 import { EditFeedForm } from "../EditFeedForm";
 import type { Feed } from "../../types/Feed";
+import { DISPLAY_MODE_LABELS } from "../../utils/displayMode";
 import { formatLastFetched } from "../../utils/utils";
 
 function FeedRow({ feed, folderName }: { feed: Feed; folderName?: string }) {
@@ -21,6 +22,7 @@ function FeedRow({ feed, folderName }: { feed: Feed; folderName?: string }) {
         <span className="settings-table-badge">
           {folderName && <span className="feed-item-folder">{folderName}</span>}
         </span>
+        <span className="settings-table-meta">{DISPLAY_MODE_LABELS[feed.display_mode]}</span>
         <span className="settings-table-meta">{formatLastFetched(feed.last_fetched_at)}</span>
         <div className="settings-table-actions">
           <button
@@ -104,6 +106,7 @@ export function Feeds() {
             <span className="settings-table-url">URL</span>
             <span className="settings-table-meta">TTL</span>
             <span className="settings-table-badge">Folder</span>
+            <span className="settings-table-meta">Display Mode</span>
             <span className="settings-table-meta">Last fetched</span>
             <span className="settings-table-actions" />
           </div>
