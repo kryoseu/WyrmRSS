@@ -19,7 +19,7 @@ members = [
 exclude = ["desktop/src-tauri"]
 
 [workspace.package]
-version = "0.27.1"
+version = "0.27.2"
 edition = "2024"
 description = "A self-hosted RSS reader and aggregator"
 license = "GPL-3.0-only"
