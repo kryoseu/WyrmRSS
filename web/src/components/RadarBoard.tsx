@@ -69,7 +69,7 @@ export function RadarBoard() {
   const { data: feeds, isLoading } = useFeeds();
 
   const cards = (feeds ?? [])
-    .filter((f) => f.display_mode === "radar" && f.unread_count > 0)
+    .filter((f) => f.display_mode === "radar")
     .sort((a, b) => b.unread_count - a.unread_count || a.title.localeCompare(b.title));
 
   // cards is sorted by unread desc, and the threshold is monotone over that
