@@ -32,17 +32,17 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
 actix-web = "4.13.0"
 thiserror = "2.0.18"
 # The whole point of the desktop build: sqlite instead of an embedded postgres.
-api_routes = { path = "../../api/routes", default-features = false, features = [
+api_routes = { path = "../../crates/api/routes", default-features = false, features = [
   "sqlite",
 ] }
-api_utils = { path = "../../api/utils", default-features = false, features = [
+api_utils = { path = "../../crates/api/utils", default-features = false, features = [
   "sqlite",
 ] }
-database = { path = "../../database", default-features = false, features = [
+database = { path = "../../crates/database", default-features = false, features = [
   "sqlite",
 ] }
-wyrm_utils = { path = "../../utils" }
-wyrm-rss = { path = "../../rss", default-features = false, features = [
+wyrm_utils = { path = "../../crates/utils" }
+wyrm-rss = { path = "../../crates/rss", default-features = false, features = [
   "sqlite",
 ] }
 rand = "0.10.2"

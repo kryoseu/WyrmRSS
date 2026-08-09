@@ -82,9 +82,9 @@ pub type DatabaseConn =
 pub type DatabasePool = Pool<DatabaseConn>;
 
 #[cfg(feature = "postgres")]
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../migrations/");
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../../migrations/");
 #[cfg(feature = "sqlite")]
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../migrations_sqlite/");
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../../migrations_sqlite/");
 
 pub fn run_migrations(
     connection: &mut SyncConnection,
@@ -152,7 +152,7 @@ pub(crate) async fn setup_test_db() -> DatabasePool {
         // `load()` resolves config/wyrm.toml relative to the cwd, but tests run
         // from the crate dir — point at the workspace root so we read the same
         // config the server uses. Done once, before any `load()` below.
-        std::env::set_current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."))
+        std::env::set_current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."))
             .expect("should cd to workspace root");
 
         let conf = WyrmStartupConfig::load().expect("should load test config");

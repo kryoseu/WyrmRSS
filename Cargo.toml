@@ -1,15 +1,15 @@
 [workspace]
 resolver = "3"
 members = [
-  "api/api",
-  "api/crud",
-  "api/routes",
-  "api/utils",
-  "database",
-  "rss",
-  "webhook",
-  "server",
-  "utils",
+  "crates/api/api",
+  "crates/api/crud",
+  "crates/api/routes",
+  "crates/api/utils",
+  "crates/database",
+  "crates/rss",
+  "crates/webhook",
+  "crates/server",
+  "crates/utils",
 ]
 
 # `desktop/src-tauri` is deliberately NOT a member: it builds the database crate

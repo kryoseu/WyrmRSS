@@ -27,7 +27,7 @@ jobs:
               - 'Cargo.lock'
               - 'migrations/**'
               - 'migrations_sqlite/**'
-              - 'database/src/schema_sqlite.patch'
+              - 'crates/database/src/schema_sqlite.patch'
               - 'diesel.toml'
             frontend:
               - 'web/**'

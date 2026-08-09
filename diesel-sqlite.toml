@@ -7,8 +7,8 @@
 # `Timestamp`, i.e. NaiveDateTime, whereas the models use DateTime<Utc>), and it
 # cannot know about the enum mapping types that diesel-derive-enum generates.
 [print_schema]
-file = "database/src/schema_sqlite.rs"
-patch_file = "database/src/schema_sqlite.patch"
+file = "crates/database/src/schema_sqlite.rs"
+patch_file = "crates/database/src/schema_sqlite.patch"
 custom_type_derives = ["diesel::query_builder::QueryId"]
 
 [migrations_directory]
