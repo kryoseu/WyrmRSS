@@ -127,6 +127,16 @@ URL contains `/shorts`.
 | Frontend | React, Vite, React Router v7, TanStack Query |
 | Desktop  | Tauri                                   |
 
+## Star History
+
+<a href="https://www.star-history.com/?repos=kryoseu%2FWyrmRSS&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=kryoseu/WyrmRSS&type=date&theme=dark&legend=top-left&sealed_token=HFZ6f_QY-lCQIXL3wU7i9RhU_PAy8mbPXIQSh1Oigg-XyYosIvbOstQHU69deVQbPPUWzEp_v779rvHomnLzCQqo2nN7plx0aCJKIgEHqagjA9dnAUkP6nPIkn5cLlhCanOTylZMIXZ2-H-Wyyfk3FEQ_FMwG4ZjCwUUrqAIXqwRQmwd4keJjb8j6bu1" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=kryoseu/WyrmRSS&type=date&legend=top-left&sealed_token=HFZ6f_QY-lCQIXL3wU7i9RhU_PAy8mbPXIQSh1Oigg-XyYosIvbOstQHU69deVQbPPUWzEp_v779rvHomnLzCQqo2nN7plx0aCJKIgEHqagjA9dnAUkP6nPIkn5cLlhCanOTylZMIXZ2-H-Wyyfk3FEQ_FMwG4ZjCwUUrqAIXqwRQmwd4keJjb8j6bu1" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=kryoseu/WyrmRSS&type=date&legend=top-left&sealed_token=HFZ6f_QY-lCQIXL3wU7i9RhU_PAy8mbPXIQSh1Oigg-XyYosIvbOstQHU69deVQbPPUWzEp_v779rvHomnLzCQqo2nN7plx0aCJKIgEHqagjA9dnAUkP6nPIkn5cLlhCanOTylZMIXZ2-H-Wyyfk3FEQ_FMwG4ZjCwUUrqAIXqwRQmwd4keJjb8j6bu1" />
+ </picture>
+</a>
+
 ## License
 
 GPL v3 — see [LICENSE](LICENSE).
