@@ -120,7 +120,7 @@ jobs:
           workspaces: desktop/src-tauri
           key: ${{ matrix.name }}
 
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
         with:
           version: 11.7.0
 
