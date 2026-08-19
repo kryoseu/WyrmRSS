@@ -42,7 +42,7 @@ jobs:
       - name: Install nightly rustfmt
         run: rustup toolchain install nightly --component rustfmt --no-self-update
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2.9.1
+        uses: Swatinem/rust-cache@v2.9.2
         with:
           workspaces: desktop/src-tauri
       - name: Format check
@@ -115,7 +115,7 @@ jobs:
         run: rustup target add ${{ matrix.target }}
 
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2.9.1
+        uses: Swatinem/rust-cache@v2.9.2
         with:
           workspaces: desktop/src-tauri
           key: ${{ matrix.name }}
