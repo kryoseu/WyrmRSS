@@ -57,5 +57,5 @@ futures = "0.3.32"
 feed-rs = "2.3.1"
 ts-rs = { version = "12.0.1", features = ["chrono-impl", "no-serde-warnings"] }
 serde_with = "3.20.0"
-quick-xml = { version = "0.41.0", features = ["serialize"] }
+quick-xml = { version = "0.42.0", features = ["serialize"] }
 scraper = "0.27.0"
