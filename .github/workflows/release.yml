@@ -114,7 +114,7 @@ jobs:
         with:
           path: artifacts
       - name: Tag & Release
-        uses: softprops/action-gh-release@v3.0.2
+        uses: softprops/action-gh-release@v3.0.3
         with:
           tag_name: ${{ needs.get-version.outputs.tag }}
           name: ${{ needs.get-version.outputs.tag }}
