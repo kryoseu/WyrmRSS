@@ -13,7 +13,7 @@ importers:
         version: 5.102.8(react@19.3.0)
       '@tanstack/react-virtual':
         specifier: ^3.14.12
-        version: 3.14.12(react-dom@19.2.8(react@19.3.0))(react@19.3.0)
+        version: 3.14.12(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tauri-apps/api':
         specifier: ^2.11.1
         version: 2.11.1
@@ -24,14 +24,14 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0
       react-dom:
-        specifier: ^19.2.8
-        version: 19.2.8(react@19.3.0)
+        specifier: ^19.3.0
+        version: 19.3.0(react@19.3.0)
       react-icons:
         specifier: ^5.7.0
         version: 5.7.0(react@19.3.0)
       react-router:
         specifier: ^8.3.1
-        version: 8.3.1(react-dom@19.2.8(react@19.3.0))(react@19.3.0)
+        version: 8.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-youtube:
         specifier: ^10.1.0
         version: 10.1.0(react@19.3.0)
@@ -46,8 +46,8 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0
       '@types/react-dom':
-        specifier: ^19.2.5
-        version: 19.2.5(@types/react@19.3.0)
+        specifier: ^19.3.0
+        version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
         specifier: ^6.1.1
         version: 6.1.1(vite@8.2.2(@types/node@26.5.1))
@@ -383,10 +383,10 @@ packages:
   '@types/node@26.5.1':
     resolution: {integrity: sha512-CzNm2FezW4VR/LjG6yUdiEgLE/rAQ9Slj5gCu/C2VrdcW7I0ahNZ8DRbHT7zOZ6r3ONgd/bsQIeSaoDGrd1C6g==}
 
-  '@types/react-dom@19.2.5':
-    resolution: {integrity: sha512-fMPwH9v7r/pp43yUd2/Mbiex5KouJwwR3dzHkhLREUC6764VyDsqxhAxv6OFEYR1RhjOyD1naqba8ECDBe7ZQg==}
+  '@types/react-dom@19.3.0':
+    resolution: {integrity: sha512-ZI7bU42mZXXKHn/qNLEw2IrbiINU7X5+vfgdixBHkCNpYWXjKgfQ/P+uyGb5CjOLB9UcnTeg3rylQtV2hym44Q==}
     peerDependencies:
-      '@types/react': ^19.2.0
+      '@types/react': ^19.3.0
 
   '@types/react@19.3.0':
     resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
@@ -883,10 +883,10 @@ packages:
     resolution: {integrity: sha512-+Owyggi9IxT1ePKGafcI87ubSmxol6smwJ+RAHDQlx9+9cPwFWDiKFFCPuWhr9ignlGpZ9vDQLw67N4dcTVFEA==}
     engines: {node: '>=20'}
 
-  react-dom@19.2.8:
-    resolution: {integrity: sha512-rVprimfGBG3DR+Tq0IQG2DT5PxKth1WIGDmj5yPmlzr4YBe7uyE+Du4oVqTDXZSHGGGXRtTJEGSSePyQCMBglQ==}
+  react-dom@19.3.0:
+    resolution: {integrity: sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==}
     peerDependencies:
-      react: ^19.2.8
+      react: ^19.3.0
 
   react-icons@5.7.0:
     resolution: {integrity: sha512-LBLy340Rzqy6+/yVhZKT3B/QpP1BZaesGqasf09HPOBzRarcDIFH0WwXlXQfE7q7ipxK4MSiC5DIBWURCny6fw==}
@@ -921,8 +921,8 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
-  scheduler@0.27.0:
-    resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
+  scheduler@0.28.0:
+    resolution: {integrity: sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==}
 
   semver@6.3.1:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
@@ -1317,11 +1317,11 @@ snapshots:
       '@tanstack/query-core': 5.102.8
       react: 19.3.0
 
-  '@tanstack/react-virtual@3.14.12(react-dom@19.2.8(react@19.3.0))(react@19.3.0)':
+  '@tanstack/react-virtual@3.14.12(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@tanstack/virtual-core': 3.17.10
       react: 19.3.0
-      react-dom: 19.2.8(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
 
   '@tanstack/virtual-core@3.17.10': {}
 
@@ -1337,7 +1337,7 @@ snapshots:
     dependencies:
       undici-types: 8.9.0
 
-  '@types/react-dom@19.2.5(@types/react@19.3.0)':
+  '@types/react-dom@19.3.0(@types/react@19.3.0)':
     dependencies:
       '@types/react': 19.3.0
 
@@ -1805,10 +1805,10 @@ snapshots:
     dependencies:
       hookified: 2.2.0
 
-  react-dom@19.2.8(react@19.3.0):
+  react-dom@19.3.0(react@19.3.0):
     dependencies:
       react: 19.3.0
-      scheduler: 0.27.0
+      scheduler: 0.28.0
 
   react-icons@5.7.0(react@19.3.0):
     dependencies:
@@ -1816,12 +1816,12 @@ snapshots:
 
   react-is@16.13.1: {}
 
-  react-router@8.3.1(react-dom@19.2.8(react@19.3.0))(react@19.3.0):
+  react-router@8.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       cookie-es: 3.1.1
       react: 19.3.0
     optionalDependencies:
-      react-dom: 19.2.8(react@19.3.0)
+      react-dom: 19.3.0(react@19.3.0)
 
   react-youtube@10.1.0(react@19.3.0):
     dependencies:
@@ -1855,7 +1855,7 @@ snapshots:
       '@rolldown/binding-win32-arm64-msvc': 1.2.7
       '@rolldown/binding-win32-x64-msvc': 1.2.7
 
-  scheduler@0.27.0: {}
+  scheduler@0.28.0: {}
 
   semver@6.3.1: {}
 
