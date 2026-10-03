@@ -247,7 +247,7 @@ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
 name = "api_api"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "actix-web",
  "api_utils",
@@ -261,7 +261,7 @@ dependencies = [
 
 [[package]]
 name = "api_crud"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "actix-web",
  "api_utils",
@@ -276,7 +276,7 @@ dependencies = [
 
 [[package]]
 name = "api_routes"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "actix-web",
  "api_api",
@@ -285,7 +285,7 @@ dependencies = [
 
 [[package]]
 name = "api_utils"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "actix-web",
  "database",
@@ -1171,7 +1171,7 @@ dependencies = [
 
 [[package]]
 name = "database"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "chrono",
  "diesel",
@@ -1250,7 +1250,7 @@ dependencies = [
 
 [[package]]
 name = "desktop"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "actix-cors",
  "actix-web",
@@ -1676,7 +1676,7 @@ checksum = "369995dae0733f1fe5ab0e3f345f6503a5f384179df5d8da333702031a131cf9"
 dependencies = [
  "chrono",
  "mediatype",
- "quick-xml",
+ "quick-xml 0.41.0",
  "regex",
  "serde",
  "serde_json",
@@ -3573,7 +3573,7 @@ checksum = "7da1d65da6dd5d1e44199ac0f58712d241c0f439f80adea8924d832384087f85"
 dependencies = [
  "base64 0.22.1",
  "indexmap 2.14.0",
- "quick-xml",
+ "quick-xml 0.41.0",
  "serde",
  "time",
 ]
@@ -3708,6 +3708,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1"
 dependencies = [
  "encoding_rs",
+ "memchr",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41b1177fdf999d2321d3fb46ff47159d9c1fb9ad66a4879f8c50a0b504615e9b"
+dependencies = [
  "memchr",
  "serde",
 ]
@@ -6472,7 +6481,7 @@ dependencies = [
 
 [[package]]
 name = "wyrm-rss"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "async-trait",
  "bytes",
@@ -6481,7 +6490,7 @@ dependencies = [
  "feed-rs",
  "futures",
  "http 1.5.0",
- "quick-xml",
+ "quick-xml 0.42.0",
  "reqwest",
  "reqwest-middleware",
  "reqwest-retry",
@@ -6496,7 +6505,7 @@ dependencies = [
 
 [[package]]
 name = "wyrm_utils"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "actix-web",
  "config",
@@ -6504,7 +6513,7 @@ dependencies = [
  "diesel",
  "diesel-async",
  "feed-rs",
- "quick-xml",
+ "quick-xml 0.42.0",
  "reqwest",
  "reqwest-middleware",
  "serde",
@@ -6516,7 +6525,7 @@ dependencies = [
 
 [[package]]
 name = "wyrm_webhook"
-version = "0.26.0"
+version = "0.26.1"
 dependencies = [
  "database",
  "serde",
