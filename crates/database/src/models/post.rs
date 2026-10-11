@@ -324,20 +324,18 @@ impl PostInsertForm {
             feed_id,
             title: entry.title.map(|t| t.content),
             url: entry.links.into_iter().next().map(|l| l.href),
-            authors: if entry.authors.is_empty() {
-                None
-            } else {
-                Some(
-                    entry
-                        .authors
-                        .iter()
-                        .map(|a| match &a.email {
-                            Some(email) => format!("{} ({})", a.name, email),
-                            None => a.name.clone(),
-                        })
-                        .collect::<Vec<_>>()
-                        .join(", "),
-                )
+            authors: {
+                let authors = entry
+                    .authors
+                    .into_iter()
+                    .filter_map(|a| match (a.name, a.email) {
+                        (Some(name), Some(email)) => Some(format!("{name} ({email})")),
+                        (Some(name), None) => Some(name),
+                        (None, Some(email)) => Some(email),
+                        (None, None) => None,
+                    })
+                    .collect::<Vec<_>>();
+                (!authors.is_empty()).then(|| authors.join(", "))
             },
             published_at: entry.published,
             updated_at: entry.updated,
