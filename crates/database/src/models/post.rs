@@ -1,5 +1,6 @@
 use crate::{
-    DatabaseConn, DatabasePool,
+    DatabaseConn,
+    DatabasePool,
     models::expired::{ExpiredPost, ExpiredPostInsertForm},
     newtypes::{FeedId, FolderId, PostId},
     schema::{
