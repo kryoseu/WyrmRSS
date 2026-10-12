@@ -2147,6 +2147,121 @@ body.reader-resizing {
   max-width: none;
 }
 
+/* Settings: tabs become a scrolling row on top, fields stack label-over-input. */
+.layout--mobile {
+  .settings-page {
+    flex-direction: column;
+  }
+
+  .settings-tabs {
+    width: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 8px 12px;
+    gap: 4px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    scrollbar-width: none;
+  }
+
+  .settings-tab {
+    width: auto;
+    flex-shrink: 0;
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+
+  .settings-content {
+    padding: 16px;
+  }
+
+  .settings-section {
+    max-width: none;
+  }
+
+  /* The leading label takes its own line; a trailing unit label ("days")
+     stays next to the input. */
+  .settings-field {
+    flex-wrap: wrap;
+    gap: 6px 8px;
+
+    label {
+      width: auto;
+    }
+
+    label:first-child {
+      width: 100%;
+    }
+
+    input {
+      padding: 8px 10px;
+    }
+  }
+
+  .segmented-btn {
+    padding: 8px 16px;
+  }
+
+  .appearance-accents {
+    flex-wrap: wrap;
+  }
+
+  .settings-table-search {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+
+  /* Table rows become cards: title + actions, then the URL, then the details. */
+  .settings-table-header {
+    display: none;
+  }
+
+  .settings-table-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    padding: 10px 12px;
+  }
+
+  .settings-table-title {
+    flex: 1 1 0;
+    min-width: 0;
+    font-weight: 600;
+  }
+
+  .settings-table-actions {
+    order: 1;
+  }
+
+  .settings-table-url {
+    order: 2;
+    flex-basis: 100%;
+  }
+
+  .settings-table-meta,
+  .settings-table-badge {
+    order: 3;
+  }
+
+  /* Folder rows have no URL line to push the feed count down. */
+  .folders-table .settings-table-meta {
+    flex-basis: 100%;
+  }
+
+  /* No folder, nothing to show. */
+  .settings-table-badge:empty,
+  .settings-table-ttl {
+    display: none;
+  }
+
+  .settings-table-btn {
+    font-size: 18px;
+    padding: 6px;
+  }
+}
+
 /* ── Touch input ─────────────────────────────────────────────── */
 /* Hover-only controls would be invisible but still tappable on touch screens. */
 @media (hover: none) {

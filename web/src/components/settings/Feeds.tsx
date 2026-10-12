@@ -18,7 +18,7 @@ function FeedRow({ feed, folderName }: { feed: Feed; folderName?: string }) {
       <div className={`settings-table-row${editing ? " editing" : ""}${feed.is_paused ? " paused" : ""}`}>
         <span className="settings-table-title">{feed.title}</span>
         <span className="settings-table-url" title={feed.url}>{feed.url}</span>
-        <span className="settings-table-meta">{feed.ttl}m</span>
+        <span className="settings-table-meta settings-table-ttl">{feed.ttl}m</span>
         <span className="settings-table-badge">
           {folderName && <span className="feed-item-folder">{folderName}</span>}
         </span>
