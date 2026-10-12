@@ -7,7 +7,7 @@ import type { FeedId } from "../types/FeedId";
 import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../hooks/usePostMutations";
 import { useSettings } from "../hooks/useSettings";
 import { useFeedIcon } from "../hooks/useFeeds";
-import { useIsMobile } from "../hooks/useIsMobile";
+import { useTheme } from "../hooks/useTheme";
 import { initials } from "../utils/posts";
 import { plainTextSnippet } from "../utils/radar";
 import { formatLastFetched } from "../utils/utils";
@@ -32,11 +32,11 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
   const iconUrl = useFeedIcon(feed);
-  const isMobile = useIsMobile();
+  const card = useTheme().density === "card";
   const snippet = useMemo(() => {
     const html = post.description ?? post.content;
-    return isMobile && html ? plainTextSnippet(html, 160) : "";
-  }, [isMobile, post.description, post.content]);
+    return card && html ? plainTextSnippet(html, 160) : "";
+  }, [card, post.description, post.content]);
   const readMode = settings?.read_mode ?? "on_open";
   const isRead = readMode === "disabled" ? true : post.is_read;
 
@@ -74,7 +74,10 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   const title = <span className="post-item-title">{post.title ?? "Untitled"}</span>;
 
   return (
-    <Link to={to} className={`post-item${active ? " active" : ""}${isRead ? " read" : ""}`}>
+    <Link
+      to={to}
+      className={`post-item${card ? " post-item--card" : ""}${active ? " active" : ""}${isRead ? " read" : ""}`}
+    >
       {readMode !== "disabled" && (
         <button
           className={`post-item-read${!post.is_read ? " unread" : ""}`}
@@ -90,7 +93,7 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
         ) : (
           <span className="post-item-feed">{initials(feed.name)}</span>
         ))}
-      {isMobile ? (
+      {card ? (
         <span className="post-item-main">
           {title}
           {snippet && <span className="post-item-snippet">{snippet}</span>}

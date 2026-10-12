@@ -9,6 +9,7 @@ import { useOpenPostFromRoute } from "../hooks/useOpenPostFromRoute";
 import { useFeedMap } from "../hooks/useFeedMap";
 import { useFlattenedPages } from "../hooks/useFlattenedPages";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { DensityToggle } from "./DensityToggle";
 import { PostItem } from "./PostItem";
 import { PostsToolbar } from "./PostsToolbar";
 import { VirtualGroupedList } from "./VirtualGroupedList";
@@ -69,6 +70,7 @@ export function PostList() {
         >
           {unreadOnly ? <TbEyeOff /> : <TbEye />}
         </button>
+        <DensityToggle />
         <button
           className="posts-refresh-btn"
           onClick={() => markRead.mutate({ feed_id: feedIdNum ?? null, folder_id: null })}

@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ThemeContext, type ThemeContextValue } from "./ThemeContext";
 import { PALETTES } from "../hooks/useTheme";
-import type { AccentKey, FontSize, Theme } from "../hooks/useTheme";
+import type { AccentKey, Density, FontSize, Theme } from "../hooks/useTheme";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 const FONT_SIZE_MAP: Record<FontSize, string> = {
   small: "15px",
@@ -41,10 +42,19 @@ function getInitialFontSize(): FontSize {
   return "default";
 }
 
+function getSavedDensity(): Density | null {
+  const saved = localStorage.getItem("post-density");
+  if (saved === "title" || saved === "card") return saved;
+  return null;
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(getInitialTheme);
   const [accent, setAccentState] = useState<AccentKey>(getInitialAccent);
   const [fontSize, setFontSizeState] = useState<FontSize>(getInitialFontSize);
+  // Unset until the user picks one, so each device keeps its own default.
+  const [savedDensity, setSavedDensity] = useState<Density | null>(getSavedDensity);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -68,6 +78,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     },
     fontSize,
     setFontSize: (size) => setFontSizeState(size),
+    density: savedDensity ?? (isMobile ? "card" : "title"),
+    setDensity: (d) => {
+      setSavedDensity(d);
+      localStorage.setItem("post-density", d);
+    },
   };
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

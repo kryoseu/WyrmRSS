@@ -1,8 +1,13 @@
 import { useTheme, PALETTES } from "../../hooks/useTheme";
-import type { AccentKey, FontSize, Theme } from "../../hooks/useTheme";
+import type { AccentKey, Density, FontSize, Theme } from "../../hooks/useTheme";
+
+const DENSITY_OPTIONS: { value: Density; label: string }[] = [
+  { value: "title", label: "Title only" },
+  { value: "card", label: "Card" },
+];
 
 export function Appearance() {
-  const { theme, setTheme, accent, setAccent, fontSize, setFontSize } = useTheme();
+  const { theme, setTheme, accent, setAccent, fontSize, setFontSize, density, setDensity } = useTheme();
 
   return (
     <div className="settings-section">
@@ -53,7 +58,22 @@ export function Appearance() {
           ))}
         </div>
       </div>
-      <p className="settings-hint">Changes apply immediately.</p>
+      <h2 className="settings-section-title">Post list</h2>
+      <div className="settings-field">
+        <label>Rows</label>
+        <div className="segmented">
+          {DENSITY_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              className={`segmented-btn${density === value ? " active" : ""}`}
+              onClick={() => setDensity(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="settings-hint">Changes apply immediately and are saved on this device.</p>
     </div>
   );
 }
