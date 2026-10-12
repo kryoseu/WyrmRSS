@@ -1911,24 +1911,26 @@ body.reader-resizing {
   flex-shrink: 0;
 }
 
-.mobile-topbar-menu {
+.mobile-topbar-settings {
   width: 44px;
   height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: none;
-  border: none;
+  flex-shrink: 0;
   border-radius: 8px;
   color: var(--text-h);
   font-size: 1.22rem;
-  cursor: pointer;
+
+  &.active {
+    color: var(--accent);
+  }
 }
 
 .mobile-topbar-icon {
   width: 24px;
   height: 24px;
-  margin: 0 8px 0 4px;
+  margin-left: 8px;
   border-radius: 5px;
   object-fit: cover;
   flex-shrink: 0;
@@ -1949,7 +1951,7 @@ body.reader-resizing {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  margin-right: 8px;
+  margin: 0 8px;
 }
 
 .mobile-topbar-title {
@@ -1974,7 +1976,7 @@ body.reader-resizing {
 
 .mobile-tabbar {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 4px 8px;
   border-top: 1px solid var(--border);
   background: var(--bg);
@@ -2002,42 +2004,20 @@ body.reader-resizing {
   }
 }
 
-.drawer-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 29;
-  background: rgba(0, 0, 0, 0.55);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
+/* The Feeds tab: the sidebar's feed list, full screen. */
+.feeds-page {
+  flex: 1;
+  width: auto;
+  border-right: none;
 
-  &.open {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-
-.drawer {
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 30;
-  width: min(85vw, 320px);
-  display: flex;
-  background: var(--bg);
-  box-shadow: var(--shadow);
-  transform: translateX(-100%);
-  transition: transform 0.2s ease;
-
-  &.open {
-    transform: none;
+  /* The top bar already says "Feeds". */
+  .sidebar-feeds-header > span {
+    display: none;
   }
 
-  /* The sidebar is 250px wide on desktop; fill the drawer instead. */
-  .sidebar {
-    width: 100%;
-    border-right: none;
+  .sidebar-feeds-search {
+    flex: 1;
+    padding: 6px 10px;
   }
 }
 

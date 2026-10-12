@@ -6,6 +6,7 @@ const SECTION_TITLES: [prefix: string, title: string][] = [
   ["/read-later", "Read Later"],
   ["/archive", "Archive"],
   ["/radar", "Radar"],
+  ["/feeds", "Feeds"],
   ["/settings", "Settings"],
 ];
 

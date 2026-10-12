@@ -9,7 +9,7 @@ function subscribe(onChange: () => void) {
   return () => MOBILE_QUERY.removeEventListener("change", onChange);
 }
 
-/** Whether to render the phone layout (drawer, tab bar, full-screen reader). */
+/** Whether to render the phone layout (top bar, tab bar, full-screen reader). */
 export function useIsMobile(): boolean {
   return useSyncExternalStore(subscribe, () => MOBILE_QUERY.matches);
 }
