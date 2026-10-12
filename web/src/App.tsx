@@ -12,7 +12,13 @@ import { FeedsPage } from "./pages/FeedsPage";
 import { ReaderPage } from "./pages/ReaderPage";
 import { SettingsPage } from "./pages/SettingsPage";
 
-const qc = new QueryClient();
+// Always send requests instead of pausing them.
+const qc = new QueryClient({
+  defaultOptions: {
+    queries: { networkMode: "always" },
+    mutations: { networkMode: "always" },
+  },
+});
 
 export default function App() {
   return (

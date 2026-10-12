@@ -1889,6 +1889,63 @@ body.reader-resizing {
   text-align: right;
 }
 
+/* ── Server status banner ────────────────────────────────────── */
+/* A floating pill on desktop; a bar under the top bar on phones. */
+
+.server-banner {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 12px;
+  font-size: 0.72rem;
+  color: #ef4444;
+  background: var(--bg);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+
+  svg {
+    flex-shrink: 0;
+    font-size: 1rem;
+  }
+
+  span {
+    flex: 1;
+  }
+}
+
+.server-banner-retry {
+  padding: 4px 10px;
+  font-size: inherit;
+  font-family: var(--sans);
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.layout--mobile .server-banner {
+  position: static;
+  transform: none;
+  flex-shrink: 0;
+  padding: 6px 8px 6px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: none;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0;
+  box-shadow: none;
+
+  .server-banner-retry {
+    padding: 8px 12px;
+  }
+}
+
 /* ── Mobile layout ───────────────────────────────────────────── */
 /* Applied when AppLayout renders the phone layout (useIsMobile). */
 
@@ -1911,16 +1968,20 @@ body.reader-resizing {
   flex-shrink: 0;
 }
 
-.mobile-topbar-settings {
+.mobile-topbar-btn {
   width: 44px;
   height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  padding: 0;
+  background: none;
+  border: none;
   border-radius: 8px;
   color: var(--text-h);
   font-size: 1.22rem;
+  cursor: pointer;
 
   &.active {
     color: var(--accent);
@@ -1934,6 +1995,11 @@ body.reader-resizing {
   border-radius: 5px;
   object-fit: cover;
   flex-shrink: 0;
+}
+
+/* The back button already spaces the icon from the edge. */
+.mobile-topbar-btn + .mobile-topbar-icon {
+  margin-left: 0;
 }
 
 .mobile-topbar-initials {
