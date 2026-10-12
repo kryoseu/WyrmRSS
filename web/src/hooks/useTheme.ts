@@ -12,6 +12,7 @@ export const PALETTES = {
 export type AccentKey = keyof typeof PALETTES;
 export type Theme = "light" | "dark";
 export type FontSize = "small" | "default" | "large";
+export type Density = "title" | "card";
 
 export function useTheme() {
   const ctx = useContext(ThemeContext);

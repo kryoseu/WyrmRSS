@@ -11,6 +11,7 @@ import { FeedWebhooks } from "./webhook/FeedWebhooks";
 import { FolderCombobox } from "./FolderCombobox";
 import { DisplayModeSelect } from "./DisplayModeSelect";
 import type { DisplayMode } from "../types/DisplayMode";
+import { IS_TOUCH } from "../utils/utils";
 
 interface Props {
   feed: Feed;
@@ -113,7 +114,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title"
         required
-        autoFocus
+        autoFocus={!IS_TOUCH}
       />
       <input
         value={url}
