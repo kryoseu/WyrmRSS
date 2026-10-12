@@ -15,7 +15,7 @@ const MIN_WIDTH = 280;
 // The list a post route was opened from: "/feeds/3/posts/9" → "/feeds/3",
 // "/read-later/9" → "/read-later".
 function listPath(pathname: string): string {
-  return pathname.replace(/\/(posts\/)?\d+$/, "") || "/feeds";
+  return pathname.replace(/\/(posts\/)?\d+$/, "") || "/";
 }
 
 export function ReaderPage() {

@@ -18,7 +18,7 @@ export function SideMenu() {
 
       <nav className="sidebar-nav">
         <NavLink
-          to="/feeds"
+          to="/"
           end
           className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
         >
