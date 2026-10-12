@@ -239,13 +239,17 @@ body.reader-resizing {
   &:hover {
     background: var(--accent-bg);
     color: var(--text-h);
+  }
 
-    .row-menu-trigger {
-      display: flex;
-    }
+  @media (hover: hover) {
+    &:hover {
+      .row-menu-trigger {
+        display: flex;
+      }
 
-    .feed-item-unread {
-      display: none;
+      .feed-item-unread {
+        display: none;
+      }
     }
   }
 
@@ -302,14 +306,18 @@ body.reader-resizing {
     .folder-group-toggle {
       color: var(--text-h);
     }
+  }
 
-    /* Swap the unread badge for the menu trigger, like feed rows do. */
-    .row-menu-trigger {
-      display: flex;
-    }
+  @media (hover: hover) {
+    &:hover {
+      /* Swap the unread badge for the menu trigger, like feed rows do. */
+      .row-menu-trigger {
+        display: flex;
+      }
 
-    .folder-group-unread {
-      display: none;
+      .folder-group-unread {
+        display: none;
+      }
     }
   }
 
@@ -1339,11 +1347,17 @@ body.reader-resizing {
 
   &:hover {
     background: var(--accent-bg);
+  }
 
-    .post-item-bookmark,
-    .post-item-archive,
-    .post-item-read {
-      opacity: 1;
+  /* Touch screens have no hover: revealing buttons there makes iOS spend the
+     first tap on hover instead of opening the post. */
+  @media (hover: hover) {
+    &:hover {
+      .post-item-bookmark,
+      .post-item-archive,
+      .post-item-read {
+        opacity: 1;
+      }
     }
   }
 
@@ -1947,5 +1961,91 @@ body.reader-resizing {
   .sidebar {
     width: 100%;
     border-right: none;
+  }
+}
+
+/* Reader covers the list, which stays mounted underneath and keeps its scroll
+   position for when the reader closes. */
+.layout--mobile .pane-reader {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: var(--bg);
+}
+
+.pane-reader-topbar {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px 4px 4px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.pane-reader-back {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0 12px 0 4px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: 0.83rem;
+  cursor: pointer;
+
+  svg {
+    font-size: 1.22rem;
+  }
+}
+
+.pane-reader-actions {
+  display: flex;
+  justify-content: space-around;
+  padding: 4px 8px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+
+  .pane-reader-bookmark,
+  .pane-reader-archive {
+    min-width: 48px;
+    min-height: 48px;
+    margin: 0;
+    font-size: 1.33rem;
+  }
+}
+
+.layout--mobile .post-reader {
+  padding: 20px 18px 32px;
+  max-width: none;
+}
+
+/* ── Touch input ─────────────────────────────────────────────── */
+/* Hover-only controls would be invisible but still tappable on touch screens. */
+@media (hover: none) {
+  /* Read toggle keeps its slot so titles stay aligned. */
+  .post-item-read:not(.unread) {
+    visibility: hidden;
+  }
+
+  .post-item-bookmark:not(.bookmarked),
+  .post-item-archive:not(.archived) {
+    display: none;
+  }
+
+  /* No hover to reveal the ⋮ menu, so show it at the right edge of every row,
+     after the unread count, in one column for feeds and folders alike. */
+  .row-menu-trigger {
+    display: flex;
+  }
+
+  .feed-item .row-menu {
+    order: 1;
+  }
+
+  /* Feed rows already have 12px right padding; folder headers have none and
+     use the trigger's own 12px, so both triggers end 12px from the edge. */
+  .feed-item .row-menu-trigger {
+    padding: 0 0 0 4px;
   }
 }

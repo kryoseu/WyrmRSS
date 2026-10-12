@@ -1,0 +1,12 @@
+{
+  "name": "WyrmRSS",
+  "short_name": "WyrmRSS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#16171d",
+  "theme_color": "#16171d",
+  "icons": [
+    { "src": "/apple-touch-icon.png", "sizes": "256x256", "type": "image/png" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
