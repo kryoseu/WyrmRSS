@@ -8,6 +8,7 @@ import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { useOpenPostFromRoute } from "../hooks/useOpenPostFromRoute";
 import { useFeedMap } from "../hooks/useFeedMap";
 import { useFlattenedPages } from "../hooks/useFlattenedPages";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { PostItem } from "./PostItem";
 import { PostsToolbar } from "./PostsToolbar";
 import { VirtualGroupedList } from "./VirtualGroupedList";
@@ -28,6 +29,8 @@ export function PostList() {
   const { data: feeds } = useFeeds();
 
   const pollFeeds = usePollFeeds();
+
+  const isMobile = useIsMobile();
 
   const markRead = useMarkRead();
 
@@ -91,6 +94,8 @@ export function PostList() {
         isFetchingNextPage={isFetchingNextPage}
         groupDate={groupDate}
         emptyMessage={unreadOnly && !debouncedSearch ? "All caught up" : "No posts"}
+        onRefresh={isMobile ? () => pollFeeds.mutate() : undefined}
+        refreshing={pollFeeds.isPending}
         renderItem={(post) => (
           <PostItem
             post={post}

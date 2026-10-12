@@ -2073,6 +2073,35 @@ body.reader-resizing {
   }
 }
 
+/* Pull-to-refresh indicator: pinned at the top of the list, revealed as
+   usePullToRefresh slides the content down. */
+.pull-refresh {
+  position: sticky;
+  top: 0;
+  height: 0;
+  display: flex;
+  justify-content: center;
+  opacity: 0;
+  color: var(--accent);
+  font-size: 1.22rem;
+  transition: opacity 0.15s;
+
+  svg {
+    margin-top: 16px;
+    transition: transform 0.2s;
+  }
+
+  &[data-state="pulling"],
+  &[data-state="ready"],
+  &.refreshing {
+    opacity: 1;
+  }
+
+  &[data-state="ready"] svg {
+    transform: rotate(180deg);
+  }
+}
+
 /* Reader covers the list, which stays mounted underneath and keeps its scroll
    position for when the reader closes. */
 .layout--mobile .pane-reader {

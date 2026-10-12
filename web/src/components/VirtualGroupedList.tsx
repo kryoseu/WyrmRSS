@@ -1,5 +1,7 @@
 import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { TbArrowDown, TbRefresh } from "react-icons/tb";
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import { groupByDate } from "../utils/posts";
 
 type VRow<T> =
@@ -17,6 +19,9 @@ interface Props<T> {
   // Date used for group headers; must be the field the list is sorted by.
   groupDate: (item: T) => string;
   emptyMessage: string;
+  /** Enables pull-to-refresh. */
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }
 
 export function VirtualGroupedList<T>({
@@ -28,6 +33,8 @@ export function VirtualGroupedList<T>({
   renderItem,
   groupDate,
   emptyMessage,
+  onRefresh,
+  refreshing = false,
 }: Props<T>) {
   const rows = useMemo<VRow<T>[]>(() => {
     const result: VRow<T>[] = [];
@@ -50,53 +57,65 @@ export function VirtualGroupedList<T>({
     overscan: 10,
   });
 
+  const contentRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLDivElement>(null);
+  usePullToRefresh(scrollRef, contentRef, indicatorRef, onRefresh, refreshing);
+
   const isEmpty = !isLoading && rows.length === 0;
 
   return (
     <div className="pane-scroll" ref={scrollRef}>
-      {isLoading && <div className="pane-empty">Loading…</div>}
-      {isEmpty && <div className="pane-empty">{emptyMessage}</div>}
-      {!isLoading && rows.length > 0 && (
-        <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
-          {virtualizer.getVirtualItems().map((vItem) => {
-            const row = rows[vItem.index];
-            return (
-              <div
-                key={vItem.key}
-                data-index={vItem.index}
-                ref={virtualizer.measureElement}
-                className={
-                  row.kind === "item"
-                    ? `post-card-item${row.isGroupFirst ? " post-card-item--first" : ""}${row.isGroupLast ? " post-card-item--last" : ""}`
-                    : undefined
-                }
-                style={{ position: "absolute", top: vItem.start, left: 0, right: 0 }}
-              >
-                {row.kind === "header" && (
-                  <div className="posts-group">
-                    <div className="posts-group-label">
-                      <span>{row.label}</span>
-                      <span className="posts-group-count">{row.count}</span>
-                    </div>
-                  </div>
-                )}
-                {row.kind === "item" && renderItem(row.item)}
-                {row.kind === "load-more" && (
-                  <div className="load-more">
-                    <button
-                      className="load-more-btn"
-                      onClick={() => fetchNextPage()}
-                      disabled={isFetchingNextPage}
-                    >
-                      {isFetchingNextPage ? "Loading…" : "Load more"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+      {onRefresh && (
+        // Revealed as the content below slides down; the hook sets data-state.
+        <div className={`pull-refresh${refreshing ? " refreshing" : ""}`} ref={indicatorRef}>
+          {refreshing ? <TbRefresh className="spinning" /> : <TbArrowDown />}
         </div>
       )}
+      <div ref={contentRef}>
+        {isLoading && <div className="pane-empty">Loading…</div>}
+        {isEmpty && <div className="pane-empty">{emptyMessage}</div>}
+        {!isLoading && rows.length > 0 && (
+          <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
+            {virtualizer.getVirtualItems().map((vItem) => {
+              const row = rows[vItem.index];
+              return (
+                <div
+                  key={vItem.key}
+                  data-index={vItem.index}
+                  ref={virtualizer.measureElement}
+                  className={
+                    row.kind === "item"
+                      ? `post-card-item${row.isGroupFirst ? " post-card-item--first" : ""}${row.isGroupLast ? " post-card-item--last" : ""}`
+                      : undefined
+                  }
+                  style={{ position: "absolute", top: vItem.start, left: 0, right: 0 }}
+                >
+                  {row.kind === "header" && (
+                    <div className="posts-group">
+                      <div className="posts-group-label">
+                        <span>{row.label}</span>
+                        <span className="posts-group-count">{row.count}</span>
+                      </div>
+                    </div>
+                  )}
+                  {row.kind === "item" && renderItem(row.item)}
+                  {row.kind === "load-more" && (
+                    <div className="load-more">
+                      <button
+                        className="load-more-btn"
+                        onClick={() => fetchNextPage()}
+                        disabled={isFetchingNextPage}
+                      >
+                        {isFetchingNextPage ? "Loading…" : "Load more"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
