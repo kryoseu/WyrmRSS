@@ -48,3 +48,6 @@ export function extractYouTubeId(url: string | null): string | null {
   }
   return null;
 }
+
+// Touch screens: no hover, and focusing a field pops up the on-screen keyboard.
+export const IS_TOUCH = window.matchMedia("(hover: none)").matches;

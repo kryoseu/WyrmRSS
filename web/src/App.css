@@ -2048,4 +2048,11 @@ body.reader-resizing {
   .feed-item .row-menu-trigger {
     padding: 0 0 0 4px;
   }
+
+  /* iOS zooms into fields under 16px; !important beats component rules. */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
