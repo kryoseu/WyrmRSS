@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Link } from "react-router";
 import { HiMail, HiMailOpen } from "react-icons/hi";
 import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
@@ -9,6 +9,7 @@ import { useSettings } from "../hooks/useSettings";
 import { useFeedIcon } from "../hooks/useFeeds";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { initials } from "../utils/posts";
+import { plainTextSnippet } from "../utils/radar";
 import { formatLastFetched } from "../utils/utils";
 
 export interface FeedMeta {
@@ -32,6 +33,10 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   const { data: settings } = useSettings();
   const iconUrl = useFeedIcon(feed);
   const isMobile = useIsMobile();
+  const snippet = useMemo(() => {
+    const html = post.description ?? post.content;
+    return isMobile && html ? plainTextSnippet(html, 160) : "";
+  }, [isMobile, post.description, post.content]);
   const readMode = settings?.read_mode ?? "on_open";
   const isRead = readMode === "disabled" ? true : post.is_read;
 
@@ -88,6 +93,7 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
       {isMobile ? (
         <span className="post-item-main">
           {title}
+          {snippet && <span className="post-item-snippet">{snippet}</span>}
           <span className="post-item-meta">
             {feed && `${feed.name} · `}
             {formatLastFetched(post.published_at)}
