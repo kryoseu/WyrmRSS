@@ -2041,6 +2041,38 @@ body.reader-resizing {
   }
 }
 
+/* Post rows: bigger, two-line titles with a feed · time line underneath. */
+.layout--mobile {
+  .post-item {
+    padding: 12px;
+    gap: 9px;
+    font-size: 0.86rem;
+  }
+
+  .post-item-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .post-item-title {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .post-item-meta {
+    font-size: 0.67rem;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 /* Reader covers the list, which stays mounted underneath and keeps its scroll
    position for when the reader closes. */
 .layout--mobile .pane-reader {

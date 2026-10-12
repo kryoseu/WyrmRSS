@@ -7,7 +7,9 @@ import type { FeedId } from "../types/FeedId";
 import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../hooks/usePostMutations";
 import { useSettings } from "../hooks/useSettings";
 import { useFeedIcon } from "../hooks/useFeeds";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { initials } from "../utils/posts";
+import { formatLastFetched } from "../utils/utils";
 
 export interface FeedMeta {
   id: FeedId;
@@ -29,6 +31,7 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
   const iconUrl = useFeedIcon(feed);
+  const isMobile = useIsMobile();
   const readMode = settings?.read_mode ?? "on_open";
   const isRead = readMode === "disabled" ? true : post.is_read;
 
@@ -63,6 +66,8 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   const bookmarkIcon = post.bookmarked ? <TbBookmarkFilled /> : <TbBookmark />;
   const bookmarkLabel = post.bookmarked ? "Remove from read later" : "Read later";
 
+  const title = <span className="post-item-title">{post.title ?? "Untitled"}</span>;
+
   return (
     <Link to={to} className={`post-item${active ? " active" : ""}${isRead ? " read" : ""}`}>
       {readMode !== "disabled" && (
@@ -80,7 +85,17 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
         ) : (
           <span className="post-item-feed">{initials(feed.name)}</span>
         ))}
-      <span className="post-item-title">{post.title ?? "Untitled"}</span>
+      {isMobile ? (
+        <span className="post-item-main">
+          {title}
+          <span className="post-item-meta">
+            {feed && `${feed.name} · `}
+            {formatLastFetched(post.published_at)}
+          </span>
+        </span>
+      ) : (
+        title
+      )}
       <button
         className={`post-item-archive${post.is_archived ? " archived" : ""}`}
         onClick={handleArchiveToggle}
