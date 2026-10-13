@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Feeds for the public demo instance (run_as_demo = true).
+
+  OPML import only carries the URL, name and folder. After importing, and
+  before enabling demo mode, set by hand in the UI:
+    - Radar:  Hacker News, The Verge
+    - Folder: everything in Releases
+    - a filter on one feed, so the feature is visible
+-->
+<opml version="2.0">
+  <head>
+    <title>Wyrm demo feeds</title>
+  </head>
+  <body>
+    <outline text="Tech News" title="Tech News">
+      <outline type="rss" text="Ars Technica" title="Ars Technica" xmlUrl="https://feeds.arstechnica.com/arstechnica/index"/>
+      <outline type="rss" text="Lobsters" title="Lobsters" xmlUrl="https://lobste.rs/rss"/>
+      <outline type="rss" text="Hacker News" title="Hacker News" xmlUrl="https://news.ycombinator.com/rss"/>
+      <outline type="rss" text="The Verge" title="The Verge" xmlUrl="https://www.theverge.com/rss/index.xml"/>
+    </outline>
+    <outline text="Programming" title="Programming">
+      <outline type="rss" text="Rust Blog" title="Rust Blog" xmlUrl="https://blog.rust-lang.org/feed.xml"/>
+      <outline type="rss" text="This Week in Rust" title="This Week in Rust" xmlUrl="https://this-week-in-rust.org/atom.xml"/>
+      <outline type="rss" text="Julia Evans" title="Julia Evans" xmlUrl="https://jvns.ca/atom.xml"/>
+      <outline type="rss" text="Simon Willison" title="Simon Willison" xmlUrl="https://simonwillison.net/atom/everything/"/>
+      <outline type="rss" text="The Cloudflare Blog" title="The Cloudflare Blog" xmlUrl="https://blog.cloudflare.com/rss/"/>
+    </outline>
+    <outline text="Science" title="Science">
+      <outline type="rss" text="Quanta Magazine" title="Quanta Magazine" xmlUrl="https://www.quantamagazine.org/feed/"/>
+      <outline type="rss" text="NASA News Releases" title="NASA News Releases" xmlUrl="https://www.nasa.gov/news-release/feed/"/>
+    </outline>
+    <outline text="Video" title="Video">
+      <outline type="rss" text="Veritasium" title="Veritasium" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=UCHnyfMqiRRG1u-2MsSQLbXA"/>
+      <outline type="rss" text="Kurzgesagt" title="Kurzgesagt" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=UCsXVk37bltHxD1rDPwtNM8Q"/>
+      <outline type="rss" text="3Blue1Brown" title="3Blue1Brown" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=UCYO_jab_esuFRV4b17AJtAw"/>
+      <outline type="rss" text="Computerphile" title="Computerphile" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=UC9-y-6csu5WGm29I7JiwpnA"/>
+    </outline>
+    <outline text="Releases" title="Releases">
+      <outline type="rss" text="Wyrm" title="Wyrm" xmlUrl="https://github.com/kryoseu/WyrmRSS/releases.atom"/>
+      <outline type="rss" text="Rust" title="Rust" xmlUrl="https://github.com/rust-lang/rust/releases.atom"/>
+      <outline type="rss" text="Neovim" title="Neovim" xmlUrl="https://github.com/neovim/neovim/releases.atom"/>
+    </outline>
+    <outline type="rss" text="xkcd" title="xkcd" xmlUrl="https://xkcd.com/atom.xml"/>
+  </body>
+</opml>

@@ -1992,6 +1992,93 @@ body.reader-resizing {
   }
 }
 
+/* Demo-only "try it on your phone" hint (DemoInstallHint). Desktop: a card
+   stacked above the demo banner pill. Mobile: a strip under the banner. */
+.demo-install {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.72rem;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.demo-install--desktop {
+  position: fixed;
+  right: 16px;
+  bottom: 72px;
+  z-index: 40;
+  width: 260px;
+  padding: 12px 28px 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.demo-install-qr {
+  flex-shrink: 0;
+  width: 84px;
+  height: 84px;
+  border-radius: 4px;
+  /* The QR is black on white in both themes so phone cameras can read it. */
+  background: #fff;
+}
+
+.demo-install-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  line-height: 1.4;
+
+  strong {
+    color: var(--text-h);
+  }
+}
+
+.demo-install--mobile {
+  flex-shrink: 0;
+  padding: 6px 4px 6px 12px;
+  border-bottom: 1px solid var(--border);
+
+  > svg {
+    flex-shrink: 0;
+    font-size: 1rem;
+    color: var(--accent);
+  }
+}
+
+.demo-install-btn {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: inherit;
+  font-family: var(--sans);
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.demo-install-close {
+  display: flex;
+  flex-shrink: 0;
+  padding: 8px;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  .demo-install--desktop & {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    padding: 6px;
+  }
+}
+
 /* ── Mobile layout ───────────────────────────────────────────── */
 /* Applied when AppLayout renders the phone layout (useIsMobile). */
 

@@ -1,5 +1,6 @@
 import { Outlet } from "react-router";
 import { DemoBanner } from "../components/DemoBanner";
+import { DemoInstallHint } from "../components/DemoInstallHint";
 import { ServerStatusBanner } from "../components/ServerStatusBanner";
 import { SideMenu } from "../components/SideMenu";
 import { useIsMobile } from "../hooks/useIsMobile";
@@ -15,6 +16,7 @@ export function AppLayout() {
       <SideMenu />
       <Outlet />
       <DemoBanner />
+      <DemoInstallHint mobile={false} />
       <ServerStatusBanner />
     </div>
   );

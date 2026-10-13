@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import { TbChevronLeft, TbSettings } from "react-icons/tb";
 import { MobileTabBar } from "../components/MobileTabBar";
 import { DemoBanner } from "../components/DemoBanner";
+import { DemoInstallHint } from "../components/DemoInstallHint";
 import { ServerStatusBanner } from "../components/ServerStatusBanner";
 import { useFeedIcon } from "../hooks/useFeeds";
 import { useScreenTitle } from "../hooks/useScreenTitle";
@@ -49,6 +50,7 @@ export function MobileLayout() {
         </Link>
       </header>
       <DemoBanner />
+      <DemoInstallHint mobile />
       <ServerStatusBanner />
       <div className="layout-mobile-content">
         <Outlet />
