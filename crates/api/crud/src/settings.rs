@@ -1,5 +1,5 @@
 use actix_web::web::{Data, Json};
-use api_utils::context::WyrmContext;
+use api_utils::{context::WyrmContext, response::SettingsResponse};
 use database::{
     models::settings::{ReadMode, Settings, SettingsUpdateForm},
     utils::settings::RuntimeSettings,
@@ -25,7 +25,9 @@ pub struct UpdateSettings {
 pub async fn update(
     Json(data): Json<UpdateSettings>,
     ctx: Data<WyrmContext>,
-) -> WyrmResult<Json<Settings>> {
+) -> WyrmResult<Json<SettingsResponse>> {
+    ctx.deny_in_demo()?;
+
     let settings = Settings::update(
         &ctx.db_pool,
         SettingsUpdateForm {
@@ -47,5 +49,9 @@ pub async fn update(
     // since runtime_settings is already updated and the worker reads it on its
     // next iteration.
     let _ = ctx.worker_tx.try_send(WorkerCommand::Reconfigure);
-    Ok(Json(settings))
+
+    Ok(Json(SettingsResponse {
+        settings,
+        run_as_demo: ctx.run_as_demo,
+    }))
 }

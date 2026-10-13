@@ -291,6 +291,7 @@ dependencies = [
  "database",
  "tokio",
  "wyrm-rss",
+ "wyrm_utils",
 ]
 
 [[package]]

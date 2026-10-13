@@ -33,6 +33,8 @@ pub async fn create(
     Json(data): Json<CreateWebhook>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<Webhook>> {
+    ctx.deny_in_demo()?;
+
     webhook::validate(&data.kind, data.payload_template.as_deref())
         .map_err(|e| WyrmError::WebhookTemplate(e.to_string()))?;
 
@@ -54,6 +56,8 @@ pub async fn update(
     Json(data): Json<UpdateWebhook>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<Webhook>> {
+    ctx.deny_in_demo()?;
+
     // An unchanged template was already validated when the webhook was created,
     // so only re-validate when the caller supplies a new one.
     if let Some(template) = &data.payload_template {
@@ -76,6 +80,8 @@ pub async fn update(
 }
 
 pub async fn delete(path: Path<WebhookId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Webhook>> {
+    ctx.deny_in_demo()?;
+
     let webhook = Webhook::delete(&ctx.db_pool, path.into_inner()).await?;
     Ok(Json(webhook))
 }
@@ -84,6 +90,8 @@ pub async fn attach(
     path: Path<(FeedId, WebhookId)>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<HttpResponse> {
+    ctx.deny_in_demo()?;
+
     let (feed_id, webhook_id) = path.into_inner();
     FeedWebhook::create(&ctx.db_pool, feed_id, webhook_id).await?;
     Ok(HttpResponse::NoContent().finish())
@@ -93,6 +101,8 @@ pub async fn detach(
     path: Path<(FeedId, WebhookId)>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<HttpResponse> {
+    ctx.deny_in_demo()?;
+
     let (feed_id, webhook_id) = path.into_inner();
     FeedWebhook::delete(&ctx.db_pool, feed_id, webhook_id).await?;
     Ok(HttpResponse::NoContent().finish())

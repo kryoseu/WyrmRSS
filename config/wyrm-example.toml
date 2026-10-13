@@ -1,4 +1,5 @@
 port = 3002                                                     # default 3001
 # api_key = "secret123!"                                         # optional, protects the API
+# run_as_demo = true                                            # optional, blocks risky writes (public demo)
 database_connection = "postgres://wyrm:wyrm@localhost/wyrm"
 database_pool_size = 25                                         # default 30

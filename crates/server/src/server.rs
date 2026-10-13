@@ -43,6 +43,7 @@ pub async fn start_server() -> WyrmResult<()> {
         runtime_settings: runtime_settings.clone(),
         http: http.clone(),
         worker_tx: tx,
+        run_as_demo: startup_conf.run_as_demo,
     });
 
     tokio::spawn(async move {

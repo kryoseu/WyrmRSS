@@ -2,7 +2,10 @@ use actix_web::{
     HttpResponse,
     web::{self, Data, Json},
 };
-use api_utils::{context::WyrmContext, response::XmlResponse};
+use api_utils::{
+    context::WyrmContext,
+    response::{SettingsResponse, XmlResponse},
+};
 use database::{
     models::{
         feed::{Feed, FeedInsertForm},
@@ -21,15 +24,20 @@ use wyrm_utils::{
     result::WyrmResult,
 };
 
-pub async fn get(ctx: Data<WyrmContext>) -> WyrmResult<Json<Settings>> {
+pub async fn get(ctx: Data<WyrmContext>) -> WyrmResult<Json<SettingsResponse>> {
     let settings = Settings::get(&ctx.db_pool).await?;
-    Ok(Json(settings))
+    Ok(Json(SettingsResponse {
+        settings,
+        run_as_demo: ctx.run_as_demo,
+    }))
 }
 
 /// Imports feeds from a raw OPML request body. Duplicate URLs are skipped;
 /// all other errors propagate. Triggers a best-effort poll after import and
 /// waits for it (bounded by one http timeout) before responding.
 pub async fn import(body: web::Bytes, ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
+    ctx.deny_in_demo()?;
+
     let opml = Opml::from_xml(body.as_ref())?;
 
     for outline in &opml.body.outlines {

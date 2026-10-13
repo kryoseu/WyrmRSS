@@ -1,4 +1,5 @@
 import { Outlet } from "react-router";
+import { DemoBanner } from "../components/DemoBanner";
 import { ServerStatusBanner } from "../components/ServerStatusBanner";
 import { SideMenu } from "../components/SideMenu";
 import { useIsMobile } from "../hooks/useIsMobile";
@@ -13,6 +14,7 @@ export function AppLayout() {
     <div className="layout">
       <SideMenu />
       <Outlet />
+      <DemoBanner />
       <ServerStatusBanner />
     </div>
   );

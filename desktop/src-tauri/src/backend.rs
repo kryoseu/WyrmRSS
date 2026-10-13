@@ -111,6 +111,7 @@ pub async fn bootstrap(data_dir: PathBuf) -> WyrmDesktopResult<ServerInfo> {
         runtime_settings: runtime_settings.clone(),
         http: http.clone(),
         worker_tx: tx,
+        run_as_demo: false,
     });
 
     tokio::spawn(async move {
