@@ -274,8 +274,11 @@ version = "0.27.0"
 dependencies = [
  "actix-web",
  "database",
+ "serde",
  "tokio",
+ "ts-rs",
  "wyrm-rss",
+ "wyrm_utils",
 ]
 
 [[package]]

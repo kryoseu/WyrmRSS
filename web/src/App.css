@@ -1946,6 +1946,52 @@ body.reader-resizing {
   }
 }
 
+/* Public demo notice (run_as_demo). Desktop: corner pill, clear of the
+   centered server banner. Mobile: a strip under the top bar. */
+.demo-banner {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: var(--bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  transition: background 0.15s, color 0.15s;
+
+  svg {
+    flex-shrink: 0;
+    font-size: 1rem;
+  }
+
+  /* Briefly filled after a blocked write, so the message gets noticed. */
+  &.restricted {
+    color: #fff;
+    background: var(--accent);
+  }
+}
+
+.layout--mobile .demo-banner {
+  position: static;
+  flex-shrink: 0;
+  background: var(--accent-bg);
+  border: none;
+  border-bottom: 1px solid var(--accent-border);
+  border-radius: 0;
+  box-shadow: none;
+
+  &.restricted {
+    background: var(--accent);
+  }
+}
+
 /* ── Mobile layout ───────────────────────────────────────────── */
 /* Applied when AppLayout renders the phone layout (useIsMobile). */
 

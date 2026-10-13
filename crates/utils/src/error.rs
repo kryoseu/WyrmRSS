@@ -47,6 +47,8 @@ pub enum DatabaseError {
 pub enum WyrmError {
     #[error(transparent)]
     Database(#[from] DatabaseError),
+    #[error("api restricted in demo mode")]
+    DemoRestricted,
     #[error(transparent)]
     HttpServer(#[from] HttpServerError),
     #[error(transparent)]
@@ -121,6 +123,7 @@ impl WyrmError {
             WyrmError::Database(DatabaseError::NotFound) => "not found",
             WyrmError::Database(DatabaseError::Conflict(msg)) => msg,
             WyrmError::Database(DatabaseError::UniqueViolation(_)) => "conflict",
+            WyrmError::DemoRestricted => "api restricted in demo mode",
             WyrmError::XmlDeserializeError(_) => "invalid request body",
             WyrmError::WebhookTemplate(msg) => msg,
             WyrmError::EmptyFolderName => "folder name cannot be empty",
@@ -151,6 +154,7 @@ impl error::ResponseError for WyrmError {
             WyrmError::Database(DatabaseError::NotFound) => StatusCode::NOT_FOUND,
             WyrmError::Database(DatabaseError::UniqueViolation(_)) => StatusCode::CONFLICT,
             WyrmError::Database(DatabaseError::Conflict(_)) => StatusCode::CONFLICT,
+            WyrmError::DemoRestricted => StatusCode::FORBIDDEN,
             WyrmError::XmlDeserializeError(_) => StatusCode::BAD_REQUEST,
             WyrmError::WebhookTemplate(_) => StatusCode::BAD_REQUEST,
             WyrmError::EmptyFolderName => StatusCode::BAD_REQUEST,

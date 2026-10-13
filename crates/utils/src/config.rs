@@ -22,6 +22,10 @@ pub struct WyrmStartupConfig {
     pub port: u16,
     /// API key
     pub api_key: Option<String>,
+    /// Whether or not this server is running in demo mode.
+    /// Demo mode means certain APIs are restricted.
+    /// Used for https://demo.wyrmrss.com
+    pub run_as_demo: bool,
 }
 
 impl WyrmStartupConfig {

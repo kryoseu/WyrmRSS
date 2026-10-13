@@ -10,8 +10,11 @@ rust-version.workspace = true
 [dependencies]
 tokio = { workspace = true }
 actix-web = { workspace = true }
+serde = { workspace = true }
+ts-rs = { workspace = true }
 database = { path = "../../database", default-features = false }
 wyrm-rss = { path = "../../rss", default-features = false }
+wyrm_utils = { path = "../../utils" }
 
 [features]
 default = ["postgres"]

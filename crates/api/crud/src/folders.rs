@@ -23,6 +23,8 @@ pub async fn create(
     Json(data): Json<CreateFolder>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<Folder>> {
+    ctx.deny_in_demo()?;
+
     let folder = Folder::resolve_or_create(&ctx.db_pool, &data.name).await?;
     Ok(Json(folder))
 }
@@ -32,6 +34,8 @@ pub async fn update(
     Json(data): Json<UpdateFolder>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<Folder>> {
+    ctx.deny_in_demo()?;
+
     let folder = Folder::update(
         &ctx.db_pool,
         FolderUpdateForm {
@@ -44,6 +48,8 @@ pub async fn update(
 }
 
 pub async fn delete(path: Path<FolderId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Folder>> {
+    ctx.deny_in_demo()?;
+
     let folder = Folder::delete(&ctx.db_pool, path.into_inner()).await?;
     Ok(Json(folder))
 }
