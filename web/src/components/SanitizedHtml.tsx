@@ -7,13 +7,22 @@ interface Props {
   className?: string;
 }
 
+// Some feeds (e.g. WordPress sites like nasa.gov) ship their page chrome:
+// icon SVGs, breadcrumbs, menu buttons. Drop those along with their contents.
+const PAGE_CHROME = ["svg", "nav", "button", "form", "input"];
+
 // Feed content is untrusted, so sanitize it before injecting. This is the only
 // place in the app allowed to use dangerouslySetInnerHTML.
 export function SanitizedHtml({ html, className }: Props) {
   const clean = useMemo(
-    // target="_blank" (feed content may already carry it) bypasses the
-    // desktop link handler; strip it there.
-    () => DOMPurify.sanitize(html, isTauri() ? { FORBID_ATTR: ["target"] } : undefined),
+    () =>
+      DOMPurify.sanitize(html, {
+        FORBID_TAGS: PAGE_CHROME,
+        ADD_FORBID_CONTENTS: PAGE_CHROME,
+        // Inline styles assume the source site's layout. target="_blank"
+        // bypasses the desktop link handler.
+        FORBID_ATTR: isTauri() ? ["style", "target"] : ["style"],
+      }),
     [html],
   );
   return <div className={className} dangerouslySetInnerHTML={{ __html: clean }} />;
