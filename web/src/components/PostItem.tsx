@@ -10,6 +10,7 @@ import { useFeedIcon } from "../hooks/useFeeds";
 import { useTheme } from "../hooks/useTheme";
 import { initials } from "../utils/posts";
 import { plainTextSnippet } from "../utils/radar";
+import { CONTENT } from "../utils/constants";
 import { formatLastFetched } from "../utils/utils";
 
 export interface FeedMeta {
@@ -35,9 +36,9 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   const card = useTheme().density === "card";
   const snippet = useMemo(() => {
     const html = post.description ?? post.content;
-    return card && html ? plainTextSnippet(html, 160) : "";
+    return card && html ? plainTextSnippet(html, CONTENT.cardSnippetLength) : "";
   }, [card, post.description, post.content]);
-  const readMode = settings?.read_mode ?? "on_open";
+  const readMode = settings?.read_mode;
   const isRead = readMode === "disabled" ? true : post.is_read;
 
   function handleReadToggle(e: React.MouseEvent) {

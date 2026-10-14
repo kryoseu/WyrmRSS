@@ -31,9 +31,9 @@ export function PostReader({ postId, onClose, width }: Props) {
   const loadedId = post?.id;
   const isRead = post?.is_read;
   const readMode = settings?.read_mode;
-  const readDelaySecs = settings?.read_delay_secs ?? 0;
+  const readDelaySecs = settings?.read_delay_secs;
   useEffect(() => {
-    if (loadedId === undefined || readMode === undefined) return;
+    if (loadedId === undefined || readMode === undefined || readDelaySecs === undefined) return;
     if (handledPostId.current === loadedId) return;
     if (isRead || readMode !== "on_open") {
       handledPostId.current = loadedId;

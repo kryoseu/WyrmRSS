@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { TIMING } from "../utils/constants";
 
-export function useDebouncedSearch(delay = 300) {
+export function useDebouncedSearch(delay = TIMING.searchDebounceMs) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 

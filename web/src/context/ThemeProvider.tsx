@@ -3,12 +3,7 @@ import { ThemeContext, type ThemeContextValue } from "./ThemeContext";
 import { PALETTES } from "../hooks/useTheme";
 import type { AccentKey, Density, FontSize, Theme } from "../hooks/useTheme";
 import { useIsMobile } from "../hooks/useIsMobile";
-
-const FONT_SIZE_MAP: Record<FontSize, string> = {
-  small: "15px",
-  default: "18px",
-  large: "21px",
-};
+import { DEFAULTS, LAYOUT } from "../utils/constants";
 
 function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
@@ -27,19 +22,19 @@ function applyAccent(hex: string, isDark: boolean) {
 function getInitialTheme(): Theme {
   const saved = localStorage.getItem("theme");
   if (saved === "light" || saved === "dark") return saved;
-  return "dark";
+  return DEFAULTS.theme;
 }
 
 function getInitialAccent(): AccentKey {
   const saved = localStorage.getItem("accent");
   if (saved && saved in PALETTES) return saved as AccentKey;
-  return "orange";
+  return DEFAULTS.accent;
 }
 
 function getInitialFontSize(): FontSize {
   const saved = localStorage.getItem("font-size");
   if (saved === "small" || saved === "default" || saved === "large") return saved;
-  return "default";
+  return DEFAULTS.fontSize;
 }
 
 function getSavedDensity(): Density | null {
@@ -63,7 +58,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme, accent]);
 
   useEffect(() => {
-    document.documentElement.style.setProperty("--font-base", FONT_SIZE_MAP[fontSize]);
+    document.documentElement.style.setProperty("--font-base", LAYOUT.fontSizes[fontSize]);
     localStorage.setItem("font-size", fontSize);
   }, [fontSize]);
 
@@ -78,7 +73,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     },
     fontSize,
     setFontSize: (size) => setFontSizeState(size),
-    density: savedDensity ?? (isMobile ? "card" : "title"),
+    density: savedDensity ?? DEFAULTS.density[isMobile ? "mobile" : "desktop"],
     setDensity: (d) => {
       setSavedDensity(d);
       localStorage.setItem("post-density", d);
