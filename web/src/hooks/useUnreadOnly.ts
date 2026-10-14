@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useDemoMode } from "./useSettings";
+import { DEFAULTS } from "../utils/constants";
 
 const STORAGE_KEY = "wyrm:unread-only";
 
@@ -16,8 +17,7 @@ export function useUnreadOnly() {
     setStored(String(value));
   };
 
-  // Demo visitors share read state, so default to everything there.
-  const unreadOnly = stored !== null ? stored !== "false" : !isDemo;
+  const unreadOnly = stored !== null ? stored !== "false" : DEFAULTS.unreadOnly[isDemo ? "demo" : "normal"];
 
   return { unreadOnly, setUnreadOnly };
 }

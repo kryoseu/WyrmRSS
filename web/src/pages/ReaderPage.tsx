@@ -4,13 +4,12 @@ import { ArchiveReader } from "../components/ArchiveReader";
 import { PostReader } from "../components/PostReader";
 import { useIsMobile } from "../hooks/useIsMobile";
 import type { PostId } from "../types/PostId";
+import { LAYOUT } from "../utils/constants";
 
 export type ReaderOutletContext = {
   activePostId: PostId | null;
   onOpenPost: (id: PostId) => void;
 };
-
-const MIN_WIDTH = 280;
 
 // The list a post route was opened from: "/feeds/3/posts/9" → "/feeds/3",
 // "/read-later/9" → "/read-later".
@@ -49,7 +48,7 @@ export function ReaderPage() {
     else navigate(listPath(pathname), { replace: true });
   }
 
-  const [readerWidth, setReaderWidth] = useState(() => Math.round(window.innerWidth * 0.40));
+  const [readerWidth, setReaderWidth] = useState(() => Math.round(window.innerWidth * LAYOUT.readerWidthFraction));
   const dragStart = useRef<{ x: number; width: number } | null>(null);
 
   function onResizeStart(e: React.PointerEvent) {
@@ -64,7 +63,7 @@ export function ReaderPage() {
     if (!dragStart.current) return;
     const delta = dragStart.current.x - e.clientX;
     const maxWidth = Math.round(window.innerWidth * 0.65);
-    setReaderWidth(Math.min(maxWidth, Math.max(MIN_WIDTH, dragStart.current.width + delta)));
+    setReaderWidth(Math.min(maxWidth, Math.max(LAYOUT.readerMinWidthPx, dragStart.current.width + delta)));
   }
 
   function onResizeEnd() {
