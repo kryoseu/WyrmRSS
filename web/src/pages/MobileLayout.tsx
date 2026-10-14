@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation, useNavigate } from "react-router";
+import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router";
 import { TbChevronLeft, TbSettings } from "react-icons/tb";
 import { MobileTabBar } from "../components/MobileTabBar";
 import { DemoBanner } from "../components/DemoBanner";
@@ -10,6 +10,8 @@ import { initials } from "../utils/posts";
 
 export function MobileLayout() {
   const { pathname } = useLocation();
+  // The reader covers the screen on post routes (ReaderPage).
+  const { postId } = useParams();
   const navigate = useNavigate();
   const { title, subtitle, feed } = useScreenTitle();
   const iconUrl = useFeedIcon(feed);
@@ -49,7 +51,7 @@ export function MobileLayout() {
           <TbSettings />
         </Link>
       </header>
-      <DemoBanner />
+      {postId === undefined && <DemoBanner />}
       <DemoInstallHint mobile />
       <ServerStatusBanner />
       <div className="layout-mobile-content">
