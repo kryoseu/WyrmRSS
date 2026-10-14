@@ -5,6 +5,7 @@ import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 import { useOpenPostFromRoute } from "../hooks/useOpenPostFromRoute";
 import { useFeedMap } from "../hooks/useFeedMap";
 import { useFlattenedPages } from "../hooks/useFlattenedPages";
+import { DensityToggle } from "./DensityToggle";
 import { PostItem } from "./PostItem";
 import { PostsToolbar } from "./PostsToolbar";
 import { VirtualGroupedList } from "./VirtualGroupedList";
@@ -34,7 +35,9 @@ export function BookmarkedPostList() {
 
   return (
     <div className="pane pane-posts">
-      <PostsToolbar value={search} onChange={setSearch} placeholder="Search read later…" />
+      <PostsToolbar value={search} onChange={setSearch} placeholder="Search read later…">
+        <DensityToggle />
+      </PostsToolbar>
       <VirtualGroupedList
         items={posts}
         isLoading={isLoading}

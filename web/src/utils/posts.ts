@@ -6,7 +6,7 @@ import { getDateLabel } from "./utils";
 export function postPath(p: Post, feedId?: FeedId, isBookmarked?: boolean): string {
   if (isBookmarked) return `/read-later/${p.id}`;
   if (feedId !== undefined) return `/feeds/${p.feed_id}/posts/${p.id}`;
-  return `/feeds/posts/${p.id}`;
+  return `/posts/${p.id}`;
 }
 
 // Generates 1–2 character initials from a name for use in avatars.

@@ -14,7 +14,7 @@ import type { PostId } from "../types/PostId";
 interface Props {
   postId: PostId | null;
   onClose: () => void;
-  width: number;
+  width?: number;
 }
 
 export function PostReader({ postId, onClose, width }: Props) {

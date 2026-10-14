@@ -239,13 +239,17 @@ body.reader-resizing {
   &:hover {
     background: var(--accent-bg);
     color: var(--text-h);
+  }
 
-    .row-menu-trigger {
-      display: flex;
-    }
+  @media (hover: hover) {
+    &:hover {
+      .row-menu-trigger {
+        display: flex;
+      }
 
-    .feed-item-unread {
-      display: none;
+      .feed-item-unread {
+        display: none;
+      }
     }
   }
 
@@ -302,14 +306,18 @@ body.reader-resizing {
     .folder-group-toggle {
       color: var(--text-h);
     }
+  }
 
-    /* Swap the unread badge for the menu trigger, like feed rows do. */
-    .row-menu-trigger {
-      display: flex;
-    }
+  @media (hover: hover) {
+    &:hover {
+      /* Swap the unread badge for the menu trigger, like feed rows do. */
+      .row-menu-trigger {
+        display: flex;
+      }
 
-    .folder-group-unread {
-      display: none;
+      .folder-group-unread {
+        display: none;
+      }
     }
   }
 
@@ -1339,11 +1347,17 @@ body.reader-resizing {
 
   &:hover {
     background: var(--accent-bg);
+  }
 
-    .post-item-bookmark,
-    .post-item-archive,
-    .post-item-read {
-      opacity: 1;
+  /* Touch screens have no hover: revealing buttons there makes iOS spend the
+     first tap on hover instead of opening the post. */
+  @media (hover: hover) {
+    &:hover {
+      .post-item-bookmark,
+      .post-item-archive,
+      .post-item-read {
+        opacity: 1;
+      }
     }
   }
 
@@ -1873,4 +1887,620 @@ body.reader-resizing {
   opacity: 0.85;
   min-width: 1.6em;
   text-align: right;
+}
+
+/* ── Server status banner ────────────────────────────────────── */
+/* A floating pill on desktop; a bar under the top bar on phones. */
+
+.server-banner {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 12px;
+  font-size: 0.72rem;
+  color: #ef4444;
+  background: var(--bg);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+
+  svg {
+    flex-shrink: 0;
+    font-size: 1rem;
+  }
+
+  span {
+    flex: 1;
+  }
+}
+
+.server-banner-retry {
+  padding: 4px 10px;
+  font-size: inherit;
+  font-family: var(--sans);
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.layout--mobile .server-banner {
+  position: static;
+  transform: none;
+  flex-shrink: 0;
+  padding: 6px 8px 6px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: none;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0;
+  box-shadow: none;
+
+  .server-banner-retry {
+    padding: 8px 12px;
+  }
+}
+
+/* Public demo notice (run_as_demo). Desktop: corner pill, clear of the
+   centered server banner. Mobile: a strip under the top bar. */
+.demo-banner {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: var(--bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  transition: background 0.15s, color 0.15s;
+
+  svg {
+    flex-shrink: 0;
+    font-size: 1rem;
+  }
+
+  /* Briefly filled after a blocked write, so the message gets noticed. */
+  &.restricted {
+    color: #fff;
+    background: var(--accent);
+  }
+}
+
+.layout--mobile .demo-banner {
+  position: static;
+  flex-shrink: 0;
+  background: var(--accent-bg);
+  border: none;
+  border-bottom: 1px solid var(--accent-border);
+  border-radius: 0;
+  box-shadow: none;
+
+  &.restricted {
+    background: var(--accent);
+  }
+}
+
+/* Demo-only "try it on your phone" hint (DemoInstallHint). Desktop: a card
+   stacked above the demo banner pill. Mobile: a strip under the banner. */
+.demo-install {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.72rem;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.demo-install--desktop {
+  position: fixed;
+  right: 16px;
+  bottom: 72px;
+  z-index: 40;
+  width: 260px;
+  padding: 12px 28px 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.demo-install-qr {
+  flex-shrink: 0;
+  width: 84px;
+  height: 84px;
+  border-radius: 4px;
+  /* The QR is black on white in both themes so phone cameras can read it. */
+  background: #fff;
+}
+
+.demo-install-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  line-height: 1.4;
+
+  strong {
+    color: var(--text-h);
+  }
+}
+
+.demo-install--mobile {
+  flex-shrink: 0;
+  padding: 6px 4px 6px 12px;
+  border-bottom: 1px solid var(--border);
+
+  > svg {
+    flex-shrink: 0;
+    font-size: 1rem;
+    color: var(--accent);
+  }
+}
+
+.demo-install-btn {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: inherit;
+  font-family: var(--sans);
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.demo-install-close {
+  display: flex;
+  flex-shrink: 0;
+  padding: 8px;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  .demo-install--desktop & {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    padding: 6px;
+  }
+}
+
+/* ── Mobile layout ───────────────────────────────────────────── */
+/* Applied when AppLayout renders the phone layout (useIsMobile). */
+
+.layout--mobile {
+  flex-direction: column;
+}
+
+.layout-mobile-content {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mobile-topbar {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.mobile-topbar-btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-h);
+  font-size: 1.22rem;
+  cursor: pointer;
+
+  &.active {
+    color: var(--accent);
+  }
+}
+
+.mobile-topbar-icon {
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;
+  border-radius: 5px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* The back button already spaces the icon from the edge. */
+.mobile-topbar-btn + .mobile-topbar-icon {
+  margin-left: 0;
+}
+
+.mobile-topbar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.mobile-topbar-heading {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 0 8px;
+}
+
+.mobile-topbar-title {
+  margin: 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-topbar-subtitle {
+  font-size: 0.67rem;
+  color: var(--text);
+}
+
+/* The top bar already names the screen. */
+.layout-mobile-content .radar-header {
+  display: none;
+}
+
+.mobile-tabbar {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding: 4px 8px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.mobile-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 48px;
+  text-decoration: none;
+  font-size: 0.61rem;
+  color: var(--text);
+
+  svg {
+    font-size: 1.22rem;
+  }
+
+  &.active {
+    color: var(--accent);
+    font-weight: 600;
+  }
+}
+
+/* The Feeds tab: the sidebar's feed list, full screen. */
+.feeds-page {
+  flex: 1;
+  width: auto;
+  border-right: none;
+
+  /* The top bar already says "Feeds". */
+  .sidebar-feeds-header > span {
+    display: none;
+  }
+
+  .sidebar-feeds-search {
+    flex: 1;
+    padding: 6px 10px;
+  }
+}
+
+/* Bigger post-row text for touch, in either density. */
+.layout--mobile .post-item {
+  font-size: 0.86rem;
+}
+
+/* Card density: two-line titles, a snippet, and a feed · time line. */
+.post-item--card {
+  padding: 12px;
+  gap: 9px;
+
+  .post-item-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .post-item-title {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .post-item-snippet {
+    font-size: 0.72rem;
+    color: var(--text);
+    opacity: 0.7;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .post-item-meta {
+    font-size: 0.67rem;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Pull-to-refresh indicator: pinned at the top of the list, revealed as
+   usePullToRefresh slides the content down. */
+.pull-refresh {
+  position: sticky;
+  top: 0;
+  height: 0;
+  display: flex;
+  justify-content: center;
+  opacity: 0;
+  color: var(--accent);
+  font-size: 1.22rem;
+  transition: opacity 0.15s;
+
+  svg {
+    margin-top: 16px;
+    transition: transform 0.2s;
+  }
+
+  &[data-state="pulling"],
+  &[data-state="ready"],
+  &.refreshing {
+    opacity: 1;
+  }
+
+  &[data-state="ready"] svg {
+    transform: rotate(180deg);
+  }
+}
+
+/* Reader covers the list, which stays mounted underneath and keeps its scroll
+   position for when the reader closes. */
+.layout--mobile .pane-reader {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: var(--bg);
+
+  /* Don't drag the page underneath on overscroll. */
+  .pane-scroll {
+    overscroll-behavior: contain;
+  }
+}
+
+.pane-reader-topbar {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px 4px 4px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.pane-reader-back {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0 12px 0 4px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: 0.83rem;
+  cursor: pointer;
+
+  svg {
+    font-size: 1.22rem;
+  }
+}
+
+.pane-reader-actions {
+  display: flex;
+  justify-content: space-around;
+  padding: 4px 8px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+
+  .pane-reader-bookmark,
+  .pane-reader-archive {
+    min-width: 48px;
+    min-height: 48px;
+    margin: 0;
+    font-size: 1.33rem;
+  }
+}
+
+.layout--mobile .post-reader {
+  padding: 20px 18px 32px;
+  max-width: none;
+}
+
+/* Settings: tabs become a scrolling row on top, fields stack label-over-input. */
+.layout--mobile {
+  .settings-page {
+    flex-direction: column;
+  }
+
+  .settings-tabs {
+    width: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 8px 12px;
+    gap: 4px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    scrollbar-width: none;
+  }
+
+  .settings-tab {
+    width: auto;
+    flex-shrink: 0;
+    padding: 8px 12px;
+    white-space: nowrap;
+  }
+
+  .settings-content {
+    padding: 16px;
+  }
+
+  .settings-section {
+    max-width: none;
+  }
+
+  /* The leading label takes its own line; a trailing unit label ("days")
+     stays next to the input. */
+  .settings-field {
+    flex-wrap: wrap;
+    gap: 6px 8px;
+
+    label {
+      width: auto;
+    }
+
+    label:first-child {
+      width: 100%;
+    }
+
+    input {
+      padding: 8px 10px;
+    }
+  }
+
+  .segmented-btn {
+    padding: 8px 16px;
+  }
+
+  .appearance-accents {
+    flex-wrap: wrap;
+  }
+
+  .settings-table-search {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+
+  /* Table rows become cards: title + actions, then the URL, then the details. */
+  .settings-table-header {
+    display: none;
+  }
+
+  .settings-table-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    padding: 10px 12px;
+  }
+
+  .settings-table-title {
+    flex: 1 1 0;
+    min-width: 0;
+    font-weight: 600;
+  }
+
+  .settings-table-actions {
+    order: 1;
+  }
+
+  .settings-table-url {
+    order: 2;
+    flex-basis: 100%;
+  }
+
+  .settings-table-meta,
+  .settings-table-badge {
+    order: 3;
+  }
+
+  /* Folder rows have no URL line to push the feed count down. */
+  .folders-table .settings-table-meta {
+    flex-basis: 100%;
+  }
+
+  /* No folder, nothing to show. */
+  .settings-table-badge:empty,
+  .settings-table-ttl {
+    display: none;
+  }
+
+  .settings-table-btn {
+    font-size: 18px;
+    padding: 6px;
+  }
+}
+
+/* ── Touch input ─────────────────────────────────────────────── */
+/* Hover-only controls would be invisible but still tappable on touch screens. */
+@media (hover: none) {
+  /* Read toggle keeps its slot so titles stay aligned. */
+  .post-item-read:not(.unread) {
+    visibility: hidden;
+  }
+
+  .post-item-bookmark:not(.bookmarked),
+  .post-item-archive:not(.archived) {
+    display: none;
+  }
+
+  /* No hover to reveal the ⋮ menu, so show it at the right edge of every row,
+     after the unread count, in one column for feeds and folders alike. */
+  .row-menu-trigger {
+    display: flex;
+  }
+
+  .feed-item .row-menu {
+    order: 1;
+  }
+
+  /* Feed rows already have 12px right padding; folder headers have none and
+     use the trigger's own 12px, so both triggers end 12px from the edge. */
+  .feed-item .row-menu-trigger {
+    padding: 0 0 0 4px;
+  }
+
+  /* iOS zooms into fields under 16px; !important beats component rules. */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }

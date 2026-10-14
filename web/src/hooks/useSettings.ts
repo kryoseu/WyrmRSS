@@ -14,6 +14,11 @@ export function useSettings() {
   });
 }
 
+/** True when the server runs as the public demo and rejects risky writes. */
+export function useDemoMode() {
+  return useSettings().data?.run_as_demo ?? false;
+}
+
 export function useUpdateSettings() {
   const qc = useQueryClient();
   return useMutation({

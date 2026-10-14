@@ -2,6 +2,7 @@ use database::{DatabasePool, utils::settings::RuntimeSettings};
 use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc::Sender;
 use wyrm_rss::{http::HttpClient, worker::WorkerCommand};
+use wyrm_utils::result::WyrmResult;
 
 #[derive(Clone)]
 pub struct WyrmContext {
@@ -15,4 +16,17 @@ pub struct WyrmContext {
     pub http: HttpClient,
     /// Channel to send commands to the background RSS worker.
     pub worker_tx: Sender<WorkerCommand>,
+    /// Whether or not this server is running in demo mode.
+    /// Demo mode means certain APIs are restricted.
+    /// Used for https://demo.wyrmrss.com
+    pub run_as_demo: bool,
+}
+
+impl WyrmContext {
+    pub fn deny_in_demo(&self) -> WyrmResult<()> {
+        if self.run_as_demo {
+            return Err(wyrm_utils::error::WyrmError::DemoRestricted);
+        }
+        Ok(())
+    }
 }

@@ -9,7 +9,7 @@ import type { PostId } from "../types/PostId";
 interface Props {
   postId: PostId | null;
   onClose: () => void;
-  width: number;
+  width?: number;
 }
 
 export function ArchiveReader({ postId, onClose, width }: Props) {

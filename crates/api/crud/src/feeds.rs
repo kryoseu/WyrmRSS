@@ -46,6 +46,8 @@ pub async fn create(
     Json(data): Json<CreateFeed>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<Feed>> {
+    ctx.deny_in_demo()?;
+
     // One fetch serves both discovery and the icon lookup below: we try to
     // find a feed from a normal page url (blog homepage, YouTube channel),
     // and if the URL provided already resolves to a feed, we simply pass through.
@@ -78,6 +80,8 @@ pub async fn update(
     Json(data): Json<UpdateFeed>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<Feed>> {
+    ctx.deny_in_demo()?;
+
     let id = path.into_inner();
     // Only a *changed* URL triggers discovery. The edit form always sends the
     // url field, so an unchanged one must pass through without a network
@@ -124,6 +128,8 @@ pub async fn update(
 }
 
 pub async fn delete(path: Path<FeedId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Feed>> {
+    ctx.deny_in_demo()?;
+
     let feed = Feed::delete(&ctx.db_pool, path.into_inner()).await?;
     Ok(Json(feed))
 }

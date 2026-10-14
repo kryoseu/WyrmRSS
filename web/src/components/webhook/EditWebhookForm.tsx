@@ -4,6 +4,7 @@ import type { UpdateWebhook } from "../../types/UpdateWebhook";
 import type { Webhook } from "../../types/Webhook";
 import type { WebhookKind } from "../../types/WebhookKind";
 import { DEFAULT_WEBHOOK_TEMPLATE } from "../../utils/webhook";
+import { IS_TOUCH } from "../../utils/utils";
 
 interface Props {
   webhook: Webhook;
@@ -40,7 +41,7 @@ export function EditWebhookForm({ webhook, onClose }: Props) {
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
         required
-        autoFocus
+        autoFocus={!IS_TOUCH}
       />
       <select value={kind} onChange={(e) => selectKind(e.target.value as WebhookKind)}>
         <option value="discord">Discord</option>

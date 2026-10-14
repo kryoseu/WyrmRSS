@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Link } from "react-router";
 import { HiMail, HiMailOpen } from "react-icons/hi";
 import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
@@ -7,7 +7,10 @@ import type { FeedId } from "../types/FeedId";
 import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../hooks/usePostMutations";
 import { useSettings } from "../hooks/useSettings";
 import { useFeedIcon } from "../hooks/useFeeds";
+import { useTheme } from "../hooks/useTheme";
 import { initials } from "../utils/posts";
+import { plainTextSnippet } from "../utils/radar";
+import { formatLastFetched } from "../utils/utils";
 
 export interface FeedMeta {
   id: FeedId;
@@ -29,6 +32,11 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
   const iconUrl = useFeedIcon(feed);
+  const card = useTheme().density === "card";
+  const snippet = useMemo(() => {
+    const html = post.description ?? post.content;
+    return card && html ? plainTextSnippet(html, 160) : "";
+  }, [card, post.description, post.content]);
   const readMode = settings?.read_mode ?? "on_open";
   const isRead = readMode === "disabled" ? true : post.is_read;
 
@@ -63,8 +71,13 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   const bookmarkIcon = post.bookmarked ? <TbBookmarkFilled /> : <TbBookmark />;
   const bookmarkLabel = post.bookmarked ? "Remove from read later" : "Read later";
 
+  const title = <span className="post-item-title">{post.title ?? "Untitled"}</span>;
+
   return (
-    <Link to={to} className={`post-item${active ? " active" : ""}${isRead ? " read" : ""}`}>
+    <Link
+      to={to}
+      className={`post-item${card ? " post-item--card" : ""}${active ? " active" : ""}${isRead ? " read" : ""}`}
+    >
       {readMode !== "disabled" && (
         <button
           className={`post-item-read${!post.is_read ? " unread" : ""}`}
@@ -80,7 +93,18 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
         ) : (
           <span className="post-item-feed">{initials(feed.name)}</span>
         ))}
-      <span className="post-item-title">{post.title ?? "Untitled"}</span>
+      {card ? (
+        <span className="post-item-main">
+          {title}
+          {snippet && <span className="post-item-snippet">{snippet}</span>}
+          <span className="post-item-meta">
+            {feed && `${feed.name} · `}
+            {formatLastFetched(post.published_at)}
+          </span>
+        </span>
+      ) : (
+        title
+      )}
       <button
         className={`post-item-archive${post.is_archived ? " archived" : ""}`}
         onClick={handleArchiveToggle}
