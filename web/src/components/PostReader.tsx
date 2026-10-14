@@ -10,6 +10,7 @@ import { extractYouTubeId, formatDate } from "../utils/utils";
 import { ReaderPane } from "./ReaderPane";
 import { SanitizedHtml } from "./SanitizedHtml";
 import type { PostId } from "../types/PostId";
+import { useFeed } from "../hooks/useFeeds";
 
 interface Props {
   postId: PostId | null;
@@ -19,6 +20,7 @@ interface Props {
 
 export function PostReader({ postId, onClose, width }: Props) {
   const { data: post, isLoading } = usePost(postId ?? undefined);
+  const { data: feed } = useFeed(post?.feed_id);
   const { mutate: setRead } = useSetPostRead();
   const { mutate: setBookmarked } = useSetPostBookmarked();
   const { mutate: archivePost } = useArchivePost();
@@ -84,6 +86,7 @@ export function PostReader({ postId, onClose, width }: Props) {
         <div className="post-reader">
           <h1 className="post-reader-title">{post.title ?? "Untitled"}</h1>
           <div className="post-reader-meta">
+            {feed && <span>{feed.title}</span>}
             {post.authors && <span>{post.authors}</span>}
             {date && <span>{date}</span>}
             {post.url && (
