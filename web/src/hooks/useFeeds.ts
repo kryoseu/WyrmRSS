@@ -20,6 +20,16 @@ export function useFeeds() {
   });
 }
 
+/** One feed from the cached feeds list; no extra request. */
+export function useFeed(id?: FeedId) {
+  return useQuery({
+    queryKey: feedKeys.all,
+    queryFn: getFeeds,
+    staleTime: Infinity,
+    select: (feeds) => feeds.find((f) => f.id === id),
+  });
+}
+
 /**
  * Object URL for a feed's icon, or `undefined` while it loads / when the
  * feed has none (render the initials fallback then). The blob is fetched

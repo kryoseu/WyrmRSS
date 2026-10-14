@@ -1575,8 +1575,17 @@ body.reader-resizing {
   color: var(--text);
   margin-bottom: 24px;
   display: flex;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
+}
+
+/* Dot between items that rendered; none leading or doubled. */
+.post-reader-meta > * + *::before {
+  content: "·";
+  margin-right: 8px;
+  /* Keeps the link's dot from taking its accent color and hover underline. */
+  display: inline-block;
+  color: var(--text);
 }
 
 .post-reader-meta a {
