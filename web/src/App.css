@@ -2299,6 +2299,11 @@ body.reader-resizing {
   inset: 0;
   z-index: 20;
   background: var(--bg);
+
+  /* Don't drag the page underneath on overscroll. */
+  .pane-scroll {
+    overscroll-behavior: contain;
+  }
 }
 
 .pane-reader-topbar {
