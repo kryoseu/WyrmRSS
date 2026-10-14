@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDemoMode } from "./useSettings";
 
 const STORAGE_KEY = "wyrm:unread-only";
 
@@ -7,14 +8,16 @@ const STORAGE_KEY = "wyrm:unread-only";
  * Persisted in localStorage so the choice survives refreshes and navigation.
  */
 export function useUnreadOnly() {
-  const [unreadOnly, setUnreadOnlyState] = useState(
-    () => localStorage.getItem(STORAGE_KEY) !== "false",
-  );
+  const isDemo = useDemoMode();
+  const [stored, setStored] = useState(() => localStorage.getItem(STORAGE_KEY));
 
   const setUnreadOnly = (value: boolean) => {
     localStorage.setItem(STORAGE_KEY, String(value));
-    setUnreadOnlyState(value);
+    setStored(String(value));
   };
+
+  // Demo visitors share read state, so default to everything there.
+  const unreadOnly = stored !== null ? stored !== "false" : !isDemo;
 
   return { unreadOnly, setUnreadOnly };
 }
