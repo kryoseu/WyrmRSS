@@ -78,7 +78,7 @@
      settings (is_singleton) {
          is_singleton -> Bool,
          page_size -> Integer,
-@@ -86,20 +92,23 @@
+@@ -86,21 +92,24 @@
          http_connect_timeout -> Integer,
          http_retries -> Integer,
          http_user_agent -> Nullable<Text>,
@@ -86,6 +86,7 @@
 +        read_mode -> ReadModeMapping,
          expire_read_after_days -> Nullable<Integer>,
          expire_unread_after_days -> Nullable<Integer>,
+         read_delay_secs -> Integer,
      }
  }
  

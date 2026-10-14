@@ -19,6 +19,7 @@ function GeneralForm({ initial }: { initial: Settings }) {
   const [readMode, setReadMode] = useState<ReadMode>(initial.read_mode);
   const [expireReadAfterDays, setExpireReadAfterDays] = useState(String(initial.expire_read_after_days ?? ""));
   const [expireUnreadAfterDays, setExpireUnreadAfterDays] = useState(String(initial.expire_unread_after_days ?? ""));
+  const [readDelaySecs, setReadDelaySecs] = useState(String(initial.read_delay_secs));
 
   const update = useUpdateSettings();
 
@@ -34,6 +35,7 @@ function GeneralForm({ initial }: { initial: Settings }) {
       read_mode: readMode,
       expire_read_after_days: parseInt(expireReadAfterDays),
       expire_unread_after_days: parseInt(expireUnreadAfterDays),
+      read_delay_secs: parseInt(readDelaySecs),
     });
   }
 
@@ -55,6 +57,13 @@ function GeneralForm({ initial }: { initial: Settings }) {
           ))}
         </div>
       </div>
+      {readMode === "on_open" && (
+        <div className="settings-field">
+          <label>Mark as read delay</label>
+          <input type="number" min={0} value={readDelaySecs} onChange={(e) => setReadDelaySecs(e.target.value)} required />
+          <label>secs</label>
+        </div>
+      )}
       <div className="settings-field">
         <label>Page size</label>
         <input type="number" min={1} value={pageSize} onChange={(e) => setPageSize(e.target.value)} required />

@@ -25,18 +25,33 @@ export function PostReader({ postId, onClose, width }: Props) {
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
 
-  // Track the last seen post ID with a ref so the effect only fires
-  // when the user switches to a new post, not on every re-render.
-  const lastSeenPostId = useRef<PostId | null>(null);
+  // Mark read after the post stays open for read_delay_secs. Switching posts,
+  // closing, or a manual read toggle cancels it; at most once per selection.
+  const handledPostId = useRef<PostId | null>(null);
+  const loadedId = post?.id;
+  const isRead = post?.is_read;
+  const readMode = settings?.read_mode;
+  const readDelaySecs = settings?.read_delay_secs ?? 0;
   useEffect(() => {
-    if (!post) return;
-    if (lastSeenPostId.current !== post.id) {
-      lastSeenPostId.current = post.id;
-      if (!post.is_read && settings?.read_mode === "on_open") {
-        setRead({ id: post.id, isRead: true });
-      }
+    if (loadedId === undefined || readMode === undefined) return;
+    if (handledPostId.current === loadedId) return;
+    if (isRead || readMode !== "on_open") {
+      handledPostId.current = loadedId;
+      return;
     }
-  }, [post, setRead, settings?.read_mode]);
+    const timer = setTimeout(() => {
+      handledPostId.current = loadedId;
+      setRead({ id: loadedId, isRead: true });
+    }, readDelaySecs * 1000);
+    return () => clearTimeout(timer);
+  }, [loadedId, isRead, readMode, readDelaySecs, setRead]);
+
+  // Opening the original is a clear read signal, so skip the delay.
+  function markReadOnOpenOriginal() {
+    if (post && !post.is_read && readMode === "on_open") {
+      setRead({ id: post.id, isRead: true });
+    }
+  }
 
   if (!postId) return null;
 
@@ -73,7 +88,13 @@ export function PostReader({ postId, onClose, width }: Props) {
             {date && <span>{date}</span>}
             {post.url && (
               // target="_blank" bypasses the desktop link handler; drop it there.
-              <a href={post.url} target={isTauri() ? undefined : "_blank"} rel="noopener noreferrer">
+              <a
+                href={post.url}
+                target={isTauri() ? undefined : "_blank"}
+                rel="noopener noreferrer"
+                onClick={markReadOnOpenOriginal}
+                onAuxClick={(e) => e.button === 1 && markReadOnOpenOriginal()}
+              >
                 Open original ↗
               </a>
             )}

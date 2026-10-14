@@ -59,6 +59,8 @@ pub struct Settings {
     /// Delete unread posts after N days.
     /// Skips bookmarked (read later) and archived posts.
     pub expire_unread_after_days: Option<i32>,
+    /// Delay before marking post as read.
+    pub read_delay_secs: i32,
 }
 
 impl Settings {
@@ -97,6 +99,7 @@ pub struct SettingsUpdateForm {
     pub expire_read_after_days: Option<i32>,
     #[diesel(treat_none_as_null = true)]
     pub expire_unread_after_days: Option<i32>,
+    pub read_delay_secs: Option<i32>,
 }
 
 #[cfg(all(test, feature = "postgres"))]
@@ -127,6 +130,7 @@ mod tests {
                 read_mode: Some(ReadMode::Disabled),
                 expire_read_after_days: None,
                 expire_unread_after_days: None,
+                read_delay_secs: None,
             },
         )
         .await
@@ -145,6 +149,7 @@ mod tests {
                 read_mode: None,
                 expire_read_after_days: None,
                 expire_unread_after_days: None,
+                read_delay_secs: None,
             },
         )
         .await
@@ -163,6 +168,7 @@ mod tests {
                 read_mode: Some(original.read_mode.clone()),
                 expire_read_after_days: None,
                 expire_unread_after_days: None,
+                read_delay_secs: None,
             },
         )
         .await

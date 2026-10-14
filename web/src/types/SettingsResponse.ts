@@ -40,4 +40,8 @@ expire_read_after_days?: number,
  * Delete unread posts after N days.
  * Skips bookmarked (read later) and archived posts.
  */
-expire_unread_after_days?: number, };
+expire_unread_after_days?: number, 
+/**
+ * Delay before marking post as read.
+ */
+read_delay_secs: number, };
