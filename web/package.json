@@ -12,7 +12,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.104.0",
     "@tanstack/react-virtual": "^3.14.13",
-    "@tauri-apps/api": "^2.12.0",
+    "@tauri-apps/api": "^2.12.1",
     "dompurify": "^3.4.16",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
