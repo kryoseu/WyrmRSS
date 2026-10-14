@@ -1,0 +1,1 @@
+ALTER TABLE settings ADD COLUMN read_delay_secs INTEGER NOT NULL DEFAULT 0;

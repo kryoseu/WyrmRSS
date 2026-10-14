@@ -95,6 +95,7 @@ diesel::table! {
         read_mode -> ReadModeMapping,
         expire_read_after_days -> Nullable<Integer>,
         expire_unread_after_days -> Nullable<Integer>,
+        read_delay_secs -> Integer,
     }
 }
 

@@ -20,6 +20,7 @@ pub struct UpdateSettings {
     http_user_agent: Option<String>,
     expire_read_after_days: Option<i32>,
     expire_unread_after_days: Option<i32>,
+    read_delay_secs: Option<i32>,
 }
 
 pub async fn update(
@@ -40,6 +41,7 @@ pub async fn update(
             http_user_agent: data.http_user_agent,
             expire_read_after_days: data.expire_read_after_days,
             expire_unread_after_days: data.expire_unread_after_days,
+            read_delay_secs: data.read_delay_secs,
         },
     )
     .await?;
