@@ -110,7 +110,7 @@ jobs:
         with:
           ref: ${{ needs.get-version.outputs.sha }}
       - name: Download desktop artifacts
-        uses: actions/download-artifact@v8.0.1
+        uses: actions/download-artifact@v8.0.2
         with:
           path: artifacts
       - name: Tag & Release
