@@ -3,6 +3,7 @@ import { useBookmarkedPosts } from "../../hooks/usePosts";
 import { useFeeds } from "../../hooks/useFeeds";
 import { useDebouncedSearch } from "../../hooks/useDebouncedSearch";
 import { useOpenPostFromRoute } from "../../hooks/useOpenPostFromRoute";
+import { usePostNavigation } from "../../hooks/usePostNavigation";
 import { useFeedMap } from "../../hooks/useFeedMap";
 import { useFlattenedPages } from "../../hooks/useFlattenedPages";
 import { DensityToggle } from "./DensityToggle";
@@ -14,6 +15,7 @@ import type { Post } from "../../types/Post";
 import { postPath } from "../../utils/posts";
 
 const groupDate = (post: Post) => post.created_at;
+const pathFor = (post: Post) => postPath(post, undefined, true);
 
 export function BookmarkedPostList() {
   const { activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
@@ -33,6 +35,15 @@ export function BookmarkedPostList() {
 
   const posts = useFlattenedPages(data);
 
+  usePostNavigation({
+    items: posts,
+    activePostId,
+    onOpenPost,
+    pathFor,
+    hasNextPage,
+    fetchNextPage,
+  });
+
   return (
     <div className="pane pane-posts">
       <PostsToolbar value={search} onChange={setSearch} placeholder="Search read later…">
@@ -46,10 +57,11 @@ export function BookmarkedPostList() {
         isFetchingNextPage={isFetchingNextPage}
         groupDate={groupDate}
         emptyMessage="Nothing saved for later"
+        activeId={activePostId}
         renderItem={(post) => (
           <PostItem
             post={post}
-            to={postPath(post, undefined, true)}
+            to={pathFor(post)}
             active={activePostId === post.id}
             feed={feedMap.get(post.feed_id)}
           />

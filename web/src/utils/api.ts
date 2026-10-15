@@ -4,6 +4,7 @@ import type { FeedId } from "../types/FeedId";
 import type { PostId } from "../types/PostId";
 import type { WebhookId } from "../types/WebhookId";
 import type { FolderId } from "../types/FolderId";
+import type { ShortcutAction } from "../types/ShortcutAction";
 
 // Same-origin by default (self-hosted, reverse-proxied). The desktop build
 // points this at the embedded backend's dynamic local port at startup.
@@ -72,6 +73,11 @@ export const ENDPOINTS = {
     update: () => `${apiBase()}/settings`,
     import: () => `${apiBase()}/settings/opml/import`,
     export: () => `${apiBase()}/settings/opml/export`,
+  },
+  shortcuts: {
+    list: () => `${apiBase()}/settings/shortcuts`,
+    update: (action: ShortcutAction) => `${apiBase()}/settings/shortcuts/${action}`,
+    reset: (action: ShortcutAction) => `${apiBase()}/settings/shortcuts/${action}`,
   },
   webhooks: {
     list: () => `${apiBase()}/webhooks`,

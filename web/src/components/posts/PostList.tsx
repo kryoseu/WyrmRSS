@@ -6,6 +6,7 @@ import { useFeeds, usePollFeeds } from "../../hooks/useFeeds";
 import { useMarkRead } from "../../hooks/usePostMutations";
 import { useDebouncedSearch } from "../../hooks/useDebouncedSearch";
 import { useOpenPostFromRoute } from "../../hooks/useOpenPostFromRoute";
+import { usePostNavigation } from "../../hooks/usePostNavigation";
 import { useFeedMap } from "../../hooks/useFeedMap";
 import { useFlattenedPages } from "../../hooks/useFlattenedPages";
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -59,6 +60,17 @@ export function PostList() {
 
   const posts = useFlattenedPages(data);
 
+  const pathFor = (post: Post) => postPath(post, feedIdNum, false);
+
+  usePostNavigation({
+    items: posts,
+    activePostId,
+    onOpenPost,
+    pathFor,
+    hasNextPage,
+    fetchNextPage,
+  });
+
   return (
     <div className="pane pane-posts">
       <PostsToolbar value={search} onChange={setSearch}>
@@ -98,10 +110,11 @@ export function PostList() {
         emptyMessage={unreadOnly && !debouncedSearch ? "All caught up" : "No posts"}
         onRefresh={isMobile ? () => pollFeeds.mutate() : undefined}
         refreshing={pollFeeds.isPending}
+        activeId={activePostId}
         renderItem={(post) => (
           <PostItem
             post={post}
-            to={postPath(post, feedIdNum, false)}
+            to={pathFor(post)}
             active={activePostId === post.id}
             feed={feedIdNum === undefined ? feedMap.get(post.feed_id) : undefined}
           />
