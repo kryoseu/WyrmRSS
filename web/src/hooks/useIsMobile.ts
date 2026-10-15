@@ -1,8 +1,9 @@
 import { useSyncExternalStore } from "react";
+import { LAYOUT } from "../utils/constants";
 
 // Phone-width layout. The desktop app's window has an 800px minimum width,
 // so this only ever matches in a browser.
-const MOBILE_QUERY = window.matchMedia("(max-width: 768px)");
+const MOBILE_QUERY = window.matchMedia(`(max-width: ${LAYOUT.mobileBreakpointPx}px)`);
 
 function subscribe(onChange: () => void) {
   MOBILE_QUERY.addEventListener("change", onChange);

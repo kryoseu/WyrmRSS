@@ -1,11 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router";
 import "./App.css";
-import { ApiKeyGate } from "./components/ApiKeyGate";
-import { ArchiveList } from "./components/ArchiveList";
-import { BookmarkedPostList } from "./components/BookmarkedPostList";
-import { PostList } from "./components/PostList";
-import { RadarBoard } from "./components/RadarBoard";
+import { ApiKeyGate } from "./components/layout/ApiKeyGate";
+import { ArchiveList } from "./components/archive/ArchiveList";
+import { BookmarkedPostList } from "./components/posts/BookmarkedPostList";
+import { PostList } from "./components/posts/PostList";
+import { RadarBoard } from "./components/feeds/RadarBoard";
 import { ThemeProvider } from "./context/ThemeProvider";
 import { AppLayout } from "./pages/AppLayout";
 import { FeedsPage } from "./pages/FeedsPage";

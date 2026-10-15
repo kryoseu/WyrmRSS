@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
+import { LAYOUT } from "../utils/constants";
 
 const SHOW_AT = 25; // px pulled before the indicator appears
-const TRIGGER_AT = 100; // px pulled to refresh on release
+const TRIGGER_AT = LAYOUT.pullToRefreshTriggerPx; // px pulled to refresh on release
 const HOLD_AT = 56; // px the content stays down while refreshing
 const MAX_PULL = 128;
 

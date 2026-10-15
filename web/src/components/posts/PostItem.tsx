@@ -2,15 +2,16 @@ import { memo, useMemo } from "react";
 import { Link } from "react-router";
 import { HiMail, HiMailOpen } from "react-icons/hi";
 import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
-import type { Post } from "../types/Post";
-import type { FeedId } from "../types/FeedId";
-import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../hooks/usePostMutations";
-import { useSettings } from "../hooks/useSettings";
-import { useFeedIcon } from "../hooks/useFeeds";
-import { useTheme } from "../hooks/useTheme";
-import { initials } from "../utils/posts";
-import { plainTextSnippet } from "../utils/radar";
-import { formatLastFetched } from "../utils/utils";
+import type { Post } from "../../types/Post";
+import type { FeedId } from "../../types/FeedId";
+import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../../hooks/usePostMutations";
+import { useSettings } from "../../hooks/useSettings";
+import { useFeedIcon } from "../../hooks/useFeeds";
+import { useTheme } from "../../hooks/useTheme";
+import { initials } from "../../utils/posts";
+import { plainTextSnippet } from "../../utils/radar";
+import { CONTENT } from "../../utils/constants";
+import { formatLastFetched } from "../../utils/utils";
 
 export interface FeedMeta {
   id: FeedId;
@@ -35,9 +36,9 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
   const card = useTheme().density === "card";
   const snippet = useMemo(() => {
     const html = post.description ?? post.content;
-    return card && html ? plainTextSnippet(html, 160) : "";
+    return card && html ? plainTextSnippet(html, CONTENT.cardSnippetLength) : "";
   }, [card, post.description, post.content]);
-  const readMode = settings?.read_mode ?? "on_open";
+  const readMode = settings?.read_mode;
   const isRead = readMode === "disabled" ? true : post.is_read;
 
   function handleReadToggle(e: React.MouseEvent) {

@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { TbChecks, TbChevronDown, TbChevronRight, TbEdit, TbFolder, TbFolderOpen } from "react-icons/tb";
-import { useFeeds } from "../hooks/useFeeds";
-import { useFolders, useUpdateFolder } from "../hooks/useFolders";
-import { useMarkRead } from "../hooks/usePostMutations";
+import { useFeeds } from "../../hooks/useFeeds";
+import { useFolders, useUpdateFolder } from "../../hooks/useFolders";
+import { useMarkRead } from "../../hooks/usePostMutations";
 import { FeedItem } from "./FeedItem";
-import { RowMenu } from "./RowMenu";
+import { RowMenu } from "../common/RowMenu";
 import { useParams } from "react-router";
 import { AddFeedForm } from "./AddFeedForm";
-import { FolderForm } from "./FolderForm";
-import { renameErrorMessage } from "../api/folders";
-import type { FolderId } from "../types/FolderId";
+import { FolderForm } from "../folders/FolderForm";
+import { renameErrorMessage } from "../../api/folders";
+import type { FolderId } from "../../types/FolderId";
 
 export function FeedList() {
   const { feedId } = useParams();

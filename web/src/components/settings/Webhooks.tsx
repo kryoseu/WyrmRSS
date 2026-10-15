@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { TbEdit, TbPlus, TbTrash } from "react-icons/tb";
 import { useDeleteWebhook, useWebhooks } from "../../hooks/useWebhooks";
-import { AddWebhookForm } from "../webhook/AddWebhookForm";
-import { EditWebhookForm } from "../webhook/EditWebhookForm";
+import { AddWebhookForm } from "../webhooks/AddWebhookForm";
+import { EditWebhookForm } from "../webhooks/EditWebhookForm";
 import type { Webhook } from "../../types/Webhook";
 
 function WebhookRow({ webhook }: { webhook: Webhook }) {

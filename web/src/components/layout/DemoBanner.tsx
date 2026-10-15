@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { TbInfoCircle } from "react-icons/tb";
-import { useDemoMode } from "../hooks/useSettings";
-
-const RESTRICTED_MS = 3000;
+import { useDemoMode } from "../../hooks/useSettings";
+import { TIMING } from "../../utils/constants";
 
 /**
  * Shown on the public demo instance, where changes are reset nightly. Blocked
@@ -18,7 +17,7 @@ export function DemoBanner() {
     const handle = () => {
       setRestricted(true);
       clearTimeout(timer);
-      timer = window.setTimeout(() => setRestricted(false), RESTRICTED_MS);
+      timer = window.setTimeout(() => setRestricted(false), TIMING.demoRestrictedMs);
     };
     window.addEventListener("wyrm:demo-restricted", handle);
     return () => {

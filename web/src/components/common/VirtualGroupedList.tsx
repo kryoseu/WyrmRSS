@@ -1,8 +1,8 @@
 import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { TbArrowDown, TbRefresh } from "react-icons/tb";
-import { usePullToRefresh } from "../hooks/usePullToRefresh";
-import { groupByDate } from "../utils/posts";
+import { usePullToRefresh } from "../../hooks/usePullToRefresh";
+import { groupByDate } from "../../utils/posts";
 
 type VRow<T> =
   | { kind: "header"; label: string; count: number }

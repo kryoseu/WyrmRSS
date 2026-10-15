@@ -1,6 +1,6 @@
 import { useLocation, useParams } from "react-router";
 import { useFeeds } from "./useFeeds";
-import type { FeedMeta } from "../components/PostItem";
+import type { FeedMeta } from "../components/posts/PostItem";
 
 const SECTION_TITLES: [prefix: string, title: string][] = [
   ["/read-later", "Read Later"],

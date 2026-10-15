@@ -1,10 +1,10 @@
 import { TbArchiveOff } from "react-icons/tb";
-import { useArchivedPost } from "../hooks/usePosts";
-import { useUnarchivePost } from "../hooks/usePostMutations";
-import { formatDate } from "../utils/utils";
-import { ReaderPane } from "./ReaderPane";
-import { SanitizedHtml } from "./SanitizedHtml";
-import type { PostId } from "../types/PostId";
+import { useArchivedPost } from "../../hooks/usePosts";
+import { useUnarchivePost } from "../../hooks/usePostMutations";
+import { formatDate } from "../../utils/utils";
+import { ReaderPane } from "../layout/ReaderPane";
+import { SanitizedHtml } from "../common/SanitizedHtml";
+import type { PostId } from "../../types/PostId";
 
 interface Props {
   postId: PostId | null;

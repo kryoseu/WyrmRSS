@@ -2,14 +2,15 @@ import { useEffect, useRef } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import YouTube from "react-youtube";
 import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
-import { usePost } from "../hooks/usePosts";
-import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../hooks/usePostMutations";
-import { useSettings } from "../hooks/useSettings";
-import { ENDPOINTS } from "../utils/api";
-import { extractYouTubeId, formatDate } from "../utils/utils";
-import { ReaderPane } from "./ReaderPane";
-import { SanitizedHtml } from "./SanitizedHtml";
-import type { PostId } from "../types/PostId";
+import { usePost } from "../../hooks/usePosts";
+import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../../hooks/usePostMutations";
+import { useSettings } from "../../hooks/useSettings";
+import { ENDPOINTS } from "../../utils/api";
+import { extractYouTubeId, formatDate } from "../../utils/utils";
+import { ReaderPane } from "../layout/ReaderPane";
+import { SanitizedHtml } from "../common/SanitizedHtml";
+import type { PostId } from "../../types/PostId";
+import { useFeed } from "../../hooks/useFeeds";
 
 interface Props {
   postId: PostId | null;
@@ -19,24 +20,40 @@ interface Props {
 
 export function PostReader({ postId, onClose, width }: Props) {
   const { data: post, isLoading } = usePost(postId ?? undefined);
+  const { data: feed } = useFeed(post?.feed_id);
   const { mutate: setRead } = useSetPostRead();
   const { mutate: setBookmarked } = useSetPostBookmarked();
   const { mutate: archivePost } = useArchivePost();
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
 
-  // Track the last seen post ID with a ref so the effect only fires
-  // when the user switches to a new post, not on every re-render.
-  const lastSeenPostId = useRef<PostId | null>(null);
+  // Mark read after the post stays open for read_delay_secs. Switching posts,
+  // closing, or a manual read toggle cancels it; at most once per selection.
+  const handledPostId = useRef<PostId | null>(null);
+  const loadedId = post?.id;
+  const isRead = post?.is_read;
+  const readMode = settings?.read_mode;
+  const readDelaySecs = settings?.read_delay_secs;
   useEffect(() => {
-    if (!post) return;
-    if (lastSeenPostId.current !== post.id) {
-      lastSeenPostId.current = post.id;
-      if (!post.is_read && settings?.read_mode === "on_open") {
-        setRead({ id: post.id, isRead: true });
-      }
+    if (loadedId === undefined || readMode === undefined || readDelaySecs === undefined) return;
+    if (handledPostId.current === loadedId) return;
+    if (isRead || readMode !== "on_open") {
+      handledPostId.current = loadedId;
+      return;
     }
-  }, [post, setRead, settings?.read_mode]);
+    const timer = setTimeout(() => {
+      handledPostId.current = loadedId;
+      setRead({ id: loadedId, isRead: true });
+    }, readDelaySecs * 1000);
+    return () => clearTimeout(timer);
+  }, [loadedId, isRead, readMode, readDelaySecs, setRead]);
+
+  // Opening the original is a clear read signal, so skip the delay.
+  function markReadOnOpenOriginal() {
+    if (post && !post.is_read && readMode === "on_open") {
+      setRead({ id: post.id, isRead: true });
+    }
+  }
 
   if (!postId) return null;
 
@@ -69,11 +86,18 @@ export function PostReader({ postId, onClose, width }: Props) {
         <div className="post-reader">
           <h1 className="post-reader-title">{post.title ?? "Untitled"}</h1>
           <div className="post-reader-meta">
+            {feed && <span>{feed.title}</span>}
             {post.authors && <span>{post.authors}</span>}
             {date && <span>{date}</span>}
             {post.url && (
               // target="_blank" bypasses the desktop link handler; drop it there.
-              <a href={post.url} target={isTauri() ? undefined : "_blank"} rel="noopener noreferrer">
+              <a
+                href={post.url}
+                target={isTauri() ? undefined : "_blank"}
+                rel="noopener noreferrer"
+                onClick={markReadOnOpenOriginal}
+                onAuxClick={(e) => e.button === 1 && markReadOnOpenOriginal()}
+              >
                 Open original ↗
               </a>
             )}

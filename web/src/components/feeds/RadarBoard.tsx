@@ -1,15 +1,11 @@
 import { Link } from "react-router";
-import { useFeeds, useFeedIcon } from "../hooks/useFeeds";
-import { usePosts } from "../hooks/usePosts";
-import { useUnreadOnly } from "../hooks/useUnreadOnly";
-import { initials } from "../utils/posts";
-import { plainTextSnippet } from "../utils/radar";
-import type { FeedView } from "../types/FeedView";
-
-// Feeds clearing this bar get a full card; the rest become compact rows.
-// Capped so the featured tier can't sprawl even if many feeds qualify.
-const FEATURED_MIN_UNREAD = 10;
-const FEATURED_MAX_CARDS = 8;
+import { useFeeds, useFeedIcon } from "../../hooks/useFeeds";
+import { usePosts } from "../../hooks/usePosts";
+import { useUnreadOnly } from "../../hooks/useUnreadOnly";
+import { initials } from "../../utils/posts";
+import { plainTextSnippet } from "../../utils/radar";
+import { CONTENT } from "../../utils/constants";
+import type { FeedView } from "../../types/FeedView";
 
 // One card per featured Radar feed. A card's snippet reuses the same
 // per-feed post query (and cache key) PostList uses for /feeds/:feedId
@@ -75,8 +71,8 @@ export function RadarBoard() {
   // cards is sorted by unread desc, and the threshold is monotone over that
   // order, so qualifying feeds are always a prefix -- rest is just whatever
   // wasn't featured.
-  const qualifying = cards.filter((f) => f.unread_count >= FEATURED_MIN_UNREAD);
-  const featured = qualifying.slice(0, FEATURED_MAX_CARDS);
+  const qualifying = cards.filter((f) => f.unread_count >= CONTENT.radarFeaturedMinUnread);
+  const featured = qualifying.slice(0, CONTENT.radarFeaturedMaxCards);
   const rest = cards.slice(featured.length);
 
   return (

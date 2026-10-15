@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useFolders } from "../hooks/useFolders";
+import { useFolders } from "../../hooks/useFolders";
 
 interface Props {
   value: string;

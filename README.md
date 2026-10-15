@@ -6,7 +6,12 @@
 </p>
 
 <p align="center">
-  <i>A self-hosted RSS reader and aggregator, also available as a desktop app</i>.
+  <i>A self-hosted RSS reader and aggregator for web and mobile, also available as a desktop app.</i>
+</p>
+
+<p align="center">
+  <a href="https://demo.wyrmrss.com"><b>Try the live demo</b></a><br>
+  <sub>Shared and mostly read-only, resets daily.</sub>
 </p>
 
 <p align="center">

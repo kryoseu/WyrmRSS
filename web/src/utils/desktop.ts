@@ -2,6 +2,7 @@ import { isTauri, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { setApiOrigin } from "./api";
 import { setApiKey } from "./auth";
+import { TIMING } from "./constants";
 
 interface ServerInfo {
   base_url: string;
@@ -12,7 +13,7 @@ interface ServerInfo {
 // emits `wyrm://backend-ready` once `server_info` is populated. Check once up
 // front in case it's already ready, then wait for that event instead of
 // polling.
-async function waitForServerInfo(timeoutMs = 30_000): Promise<ServerInfo> {
+async function waitForServerInfo(timeoutMs = TIMING.desktopBackendTimeoutMs): Promise<ServerInfo> {
   const existing = await invoke<ServerInfo | null>("server_info");
   if (existing) return existing;
 

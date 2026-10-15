@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { TbChecks, TbPencil, TbPlayerPause, TbPlayerPlay, TbX } from "react-icons/tb";
-import { useDeleteFeed, useSetFeedPaused } from "../hooks/useFeeds";
-import { useMarkRead } from "../hooks/usePostMutations";
-import type { FeedView } from "../types/FeedView";
+import { useDeleteFeed, useSetFeedPaused } from "../../hooks/useFeeds";
+import { useMarkRead } from "../../hooks/usePostMutations";
+import type { FeedView } from "../../types/FeedView";
 import { EditFeedForm } from "./EditFeedForm";
-import { RowMenu } from "./RowMenu";
+import { RowMenu } from "../common/RowMenu";
 
 interface Props {
   feed: FeedView;

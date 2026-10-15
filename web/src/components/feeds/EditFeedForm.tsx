@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { TbToggleLeft, TbToggleRightFilled } from "react-icons/tb";
 import { useQueryClient } from "@tanstack/react-query";
-import { useUpdateFeed } from "../hooks/useFeeds";
-import { useFolders } from "../hooks/useFolders";
-import { useFeedWebhooks, webhookKeys } from "../hooks/useWebhooks";
-import { attachWebhook, detachWebhook } from "../api/webhooks";
-import type { Feed } from "../types/Feed";
-import type { WebhookId } from "../types/WebhookId";
-import { FeedWebhooks } from "./webhook/FeedWebhooks";
-import { FolderCombobox } from "./FolderCombobox";
+import { useUpdateFeed } from "../../hooks/useFeeds";
+import { useFolders } from "../../hooks/useFolders";
+import { useFeedWebhooks, webhookKeys } from "../../hooks/useWebhooks";
+import { attachWebhook, detachWebhook } from "../../api/webhooks";
+import type { Feed } from "../../types/Feed";
+import type { WebhookId } from "../../types/WebhookId";
+import { FeedWebhooks } from "../webhooks/FeedWebhooks";
+import { FolderCombobox } from "../folders/FolderCombobox";
 import { DisplayModeSelect } from "./DisplayModeSelect";
-import type { DisplayMode } from "../types/DisplayMode";
-import { IS_TOUCH } from "../utils/utils";
+import type { DisplayMode } from "../../types/DisplayMode";
+import { IS_TOUCH } from "../../utils/utils";
 
 interface Props {
   feed: Feed;

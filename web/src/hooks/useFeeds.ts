@@ -6,7 +6,7 @@ import { folderKeys } from "./useFolders";
 import type { CreateFeed } from "../types/CreateFeed";
 import type { UpdateFeed } from "../types/UpdateFeed";
 import type { FeedId } from "../types/FeedId";
-import type { FeedMeta } from "../components/PostItem";
+import type { FeedMeta } from "../components/posts/PostItem";
 
 export function useFeeds() {
   return useQuery({
@@ -17,6 +17,16 @@ export function useFeeds() {
     // under `Infinity`. Only an autonomous background poll won't be reflected
     // until the next user action or reload.
     staleTime: Infinity,
+  });
+}
+
+/** One feed from the cached feeds list; no extra request. */
+export function useFeed(id?: FeedId) {
+  return useQuery({
+    queryKey: feedKeys.all,
+    queryFn: getFeeds,
+    staleTime: Infinity,
+    select: (feeds) => feeds.find((f) => f.id === id),
   });
 }
 
