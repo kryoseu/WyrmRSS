@@ -2,7 +2,7 @@ import { useState } from "react";
 import { TbEdit, TbPlus, TbTrash } from "react-icons/tb";
 import { useCreateFolder, useDeleteFolder, useFolders, useUpdateFolder } from "../../hooks/useFolders";
 import { useFeeds } from "../../hooks/useFeeds";
-import { FolderForm } from "../FolderForm";
+import { FolderForm } from "../folders/FolderForm";
 import { renameErrorMessage } from "../../api/folders";
 import type { Folder } from "../../types/Folder";
 import type { FolderId } from "../../types/FolderId";

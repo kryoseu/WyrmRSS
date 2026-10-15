@@ -6,7 +6,7 @@ import { folderKeys } from "./useFolders";
 import type { CreateFeed } from "../types/CreateFeed";
 import type { UpdateFeed } from "../types/UpdateFeed";
 import type { FeedId } from "../types/FeedId";
-import type { FeedMeta } from "../components/PostItem";
+import type { FeedMeta } from "../components/posts/PostItem";
 
 export function useFeeds() {
   return useQuery({

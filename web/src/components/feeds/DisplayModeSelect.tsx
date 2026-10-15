@@ -1,5 +1,5 @@
-import { DISPLAY_MODE_DESCRIPTIONS, DISPLAY_MODE_LABELS } from "../utils/displayMode";
-import type { DisplayMode } from "../types/DisplayMode";
+import { DISPLAY_MODE_DESCRIPTIONS, DISPLAY_MODE_LABELS } from "../../utils/displayMode";
+import type { DisplayMode } from "../../types/DisplayMode";
 
 interface Props {
   value: DisplayMode;

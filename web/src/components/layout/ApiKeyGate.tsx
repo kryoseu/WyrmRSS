@@ -1,5 +1,5 @@
 import { type SubmitEvent, useEffect, useRef, useState } from "react";
-import { setApiKey, verifyApiKey } from "../utils/auth";
+import { setApiKey, verifyApiKey } from "../../utils/auth";
 
 export function ApiKeyGate({ children }: { children: React.ReactNode }) {
   // Assume access until a request comes back 401. utils/api.ts dispatches

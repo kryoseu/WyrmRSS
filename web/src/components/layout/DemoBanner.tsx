@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { TbInfoCircle } from "react-icons/tb";
-import { useDemoMode } from "../hooks/useSettings";
-import { TIMING } from "../utils/constants";
+import { useDemoMode } from "../../hooks/useSettings";
+import { TIMING } from "../../utils/constants";
 
 /**
  * Shown on the public demo instance, where changes are reset nightly. Blocked

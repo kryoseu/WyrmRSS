@@ -2,16 +2,16 @@ import { memo, useMemo } from "react";
 import { Link } from "react-router";
 import { HiMail, HiMailOpen } from "react-icons/hi";
 import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
-import type { Post } from "../types/Post";
-import type { FeedId } from "../types/FeedId";
-import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../hooks/usePostMutations";
-import { useSettings } from "../hooks/useSettings";
-import { useFeedIcon } from "../hooks/useFeeds";
-import { useTheme } from "../hooks/useTheme";
-import { initials } from "../utils/posts";
-import { plainTextSnippet } from "../utils/radar";
-import { CONTENT } from "../utils/constants";
-import { formatLastFetched } from "../utils/utils";
+import type { Post } from "../../types/Post";
+import type { FeedId } from "../../types/FeedId";
+import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../../hooks/usePostMutations";
+import { useSettings } from "../../hooks/useSettings";
+import { useFeedIcon } from "../../hooks/useFeeds";
+import { useTheme } from "../../hooks/useTheme";
+import { initials } from "../../utils/posts";
+import { plainTextSnippet } from "../../utils/radar";
+import { CONTENT } from "../../utils/constants";
+import { formatLastFetched } from "../../utils/utils";
 
 export interface FeedMeta {
   id: FeedId;

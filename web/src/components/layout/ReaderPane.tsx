@@ -1,5 +1,5 @@
 import { TbChevronLeft, TbX } from "react-icons/tb";
-import { useIsMobile } from "../hooks/useIsMobile";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 interface Props {
   /** Omitted on phones, where the reader covers the whole screen. */

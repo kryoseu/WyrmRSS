@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { FeedView } from "../types/FeedView";
 import type { FeedId } from "../types/FeedId";
-import type { FeedMeta } from "../components/PostItem";
+import type { FeedMeta } from "../components/posts/PostItem";
 
 /**
  * Maps feed id - display metadata for post rows. Memoised so the FeedMeta

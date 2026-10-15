@@ -1,8 +1,8 @@
 import { type SubmitEvent, useState } from "react";
-import { useCreateFeed } from "../hooks/useFeeds";
-import { FolderCombobox } from "./FolderCombobox";
+import { useCreateFeed } from "../../hooks/useFeeds";
+import { FolderCombobox } from "../folders/FolderCombobox";
 import { DisplayModeSelect } from "./DisplayModeSelect";
-import type { DisplayMode } from "../types/DisplayMode";
+import type { DisplayMode } from "../../types/DisplayMode";
 
 interface Props {
   onClose: () => void;

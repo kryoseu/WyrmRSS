@@ -1,7 +1,7 @@
 import { NavLink } from "react-router";
-import { useTheme, PALETTES } from "../hooks/useTheme";
-import type { AccentKey } from "../hooks/useTheme";
-import { FeedList } from "./FeedList";
+import { useTheme, PALETTES } from "../../hooks/useTheme";
+import type { AccentKey } from "../../hooks/useTheme";
+import { FeedList } from "../feeds/FeedList";
 
 export function SideMenu() {
   const { theme, toggleTheme, accent, setAccent } = useTheme();
