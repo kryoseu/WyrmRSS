@@ -1,9 +1,9 @@
 import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router";
 import { TbChevronLeft, TbSettings } from "react-icons/tb";
-import { MobileTabBar } from "../components/MobileTabBar";
-import { DemoBanner } from "../components/DemoBanner";
-import { DemoInstallHint } from "../components/DemoInstallHint";
-import { ServerStatusBanner } from "../components/ServerStatusBanner";
+import { MobileTabBar } from "../components/layout/MobileTabBar";
+import { DemoBanner } from "../components/layout/DemoBanner";
+import { DemoInstallHint } from "../components/layout/DemoInstallHint";
+import { ServerStatusBanner } from "../components/layout/ServerStatusBanner";
 import { useFeedIcon } from "../hooks/useFeeds";
 import { useScreenTitle } from "../hooks/useScreenTitle";
 import { initials } from "../utils/posts";

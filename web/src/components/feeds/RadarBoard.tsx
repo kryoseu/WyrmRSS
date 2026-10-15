@@ -1,11 +1,11 @@
 import { Link } from "react-router";
-import { useFeeds, useFeedIcon } from "../hooks/useFeeds";
-import { usePosts } from "../hooks/usePosts";
-import { useUnreadOnly } from "../hooks/useUnreadOnly";
-import { initials } from "../utils/posts";
-import { plainTextSnippet } from "../utils/radar";
-import { CONTENT } from "../utils/constants";
-import type { FeedView } from "../types/FeedView";
+import { useFeeds, useFeedIcon } from "../../hooks/useFeeds";
+import { usePosts } from "../../hooks/usePosts";
+import { useUnreadOnly } from "../../hooks/useUnreadOnly";
+import { initials } from "../../utils/posts";
+import { plainTextSnippet } from "../../utils/radar";
+import { CONTENT } from "../../utils/constants";
+import type { FeedView } from "../../types/FeedView";
 
 // One card per featured Radar feed. A card's snippet reuses the same
 // per-feed post query (and cache key) PostList uses for /feeds/:feedId

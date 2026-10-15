@@ -1,17 +1,17 @@
 import { useOutletContext, useParams } from "react-router";
-import { useBookmarkedPosts } from "../hooks/usePosts";
-import { useFeeds } from "../hooks/useFeeds";
-import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
-import { useOpenPostFromRoute } from "../hooks/useOpenPostFromRoute";
-import { useFeedMap } from "../hooks/useFeedMap";
-import { useFlattenedPages } from "../hooks/useFlattenedPages";
+import { useBookmarkedPosts } from "../../hooks/usePosts";
+import { useFeeds } from "../../hooks/useFeeds";
+import { useDebouncedSearch } from "../../hooks/useDebouncedSearch";
+import { useOpenPostFromRoute } from "../../hooks/useOpenPostFromRoute";
+import { useFeedMap } from "../../hooks/useFeedMap";
+import { useFlattenedPages } from "../../hooks/useFlattenedPages";
 import { DensityToggle } from "./DensityToggle";
 import { PostItem } from "./PostItem";
 import { PostsToolbar } from "./PostsToolbar";
-import { VirtualGroupedList } from "./VirtualGroupedList";
-import type { ReaderOutletContext } from "../pages/ReaderPage";
-import type { Post } from "../types/Post";
-import { postPath } from "../utils/posts";
+import { VirtualGroupedList } from "../common/VirtualGroupedList";
+import type { ReaderOutletContext } from "../../pages/ReaderPage";
+import type { Post } from "../../types/Post";
+import { postPath } from "../../utils/posts";
 
 const groupDate = (post: Post) => post.created_at;
 

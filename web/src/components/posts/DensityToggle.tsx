@@ -1,5 +1,5 @@
 import { TbLayoutList, TbList } from "react-icons/tb";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "../../hooks/useTheme";
 
 /** Toolbar shortcut for Settings › Appearance › Post list. */
 export function DensityToggle() {

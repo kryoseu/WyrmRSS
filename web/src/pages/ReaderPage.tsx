@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Outlet, useLocation, useNavigate, useParams } from "react-router";
-import { ArchiveReader } from "../components/ArchiveReader";
-import { PostReader } from "../components/PostReader";
+import { ArchiveReader } from "../components/archive/ArchiveReader";
+import { PostReader } from "../components/posts/PostReader";
 import { useIsMobile } from "../hooks/useIsMobile";
 import type { PostId } from "../types/PostId";
 import { LAYOUT } from "../utils/constants";

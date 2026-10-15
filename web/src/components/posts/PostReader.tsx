@@ -2,15 +2,15 @@ import { useEffect, useRef } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import YouTube from "react-youtube";
 import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
-import { usePost } from "../hooks/usePosts";
-import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../hooks/usePostMutations";
-import { useSettings } from "../hooks/useSettings";
-import { ENDPOINTS } from "../utils/api";
-import { extractYouTubeId, formatDate } from "../utils/utils";
-import { ReaderPane } from "./ReaderPane";
-import { SanitizedHtml } from "./SanitizedHtml";
-import type { PostId } from "../types/PostId";
-import { useFeed } from "../hooks/useFeeds";
+import { usePost } from "../../hooks/usePosts";
+import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../../hooks/usePostMutations";
+import { useSettings } from "../../hooks/useSettings";
+import { ENDPOINTS } from "../../utils/api";
+import { extractYouTubeId, formatDate } from "../../utils/utils";
+import { ReaderPane } from "../layout/ReaderPane";
+import { SanitizedHtml } from "../common/SanitizedHtml";
+import type { PostId } from "../../types/PostId";
+import { useFeed } from "../../hooks/useFeeds";
 
 interface Props {
   postId: PostId | null;

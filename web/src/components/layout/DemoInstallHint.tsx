@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { TbDeviceMobile, TbX } from "react-icons/tb";
-import { useDemoMode } from "../hooks/useSettings";
+import { useDemoMode } from "../../hooks/useSettings";
 
 const DISMISSED_KEY = "wyrm:demo-install-hint-dismissed";
 

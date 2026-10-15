@@ -1,13 +1,13 @@
 import { useOutletContext, useParams } from "react-router";
-import { useArchivedPosts } from "../hooks/usePosts";
-import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
-import { useOpenPostFromRoute } from "../hooks/useOpenPostFromRoute";
-import { useFlattenedPages } from "../hooks/useFlattenedPages";
+import { useArchivedPosts } from "../../hooks/usePosts";
+import { useDebouncedSearch } from "../../hooks/useDebouncedSearch";
+import { useOpenPostFromRoute } from "../../hooks/useOpenPostFromRoute";
+import { useFlattenedPages } from "../../hooks/useFlattenedPages";
 import { ArchiveItem } from "./ArchiveItem";
-import { PostsToolbar } from "./PostsToolbar";
-import { VirtualGroupedList } from "./VirtualGroupedList";
-import type { ReaderOutletContext } from "../pages/ReaderPage";
-import type { PostArchive } from "../types/PostArchive";
+import { PostsToolbar } from "../posts/PostsToolbar";
+import { VirtualGroupedList } from "../common/VirtualGroupedList";
+import type { ReaderOutletContext } from "../../pages/ReaderPage";
+import type { PostArchive } from "../../types/PostArchive";
 
 const groupDate = (archive: PostArchive) => archive.archived_at;
 

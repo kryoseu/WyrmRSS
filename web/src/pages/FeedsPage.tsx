@@ -1,5 +1,5 @@
 import { Navigate } from "react-router";
-import { FeedList } from "../components/FeedList";
+import { FeedList } from "../components/feeds/FeedList";
 import { useIsMobile } from "../hooks/useIsMobile";
 
 /** Phone-only Feeds tab; on desktop the sidebar already shows this list. */
