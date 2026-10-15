@@ -78,7 +78,7 @@
      settings (is_singleton) {
          is_singleton -> Bool,
          page_size -> Integer,
-@@ -86,21 +92,24 @@
+@@ -86,7 +92,7 @@
          http_connect_timeout -> Integer,
          http_retries -> Integer,
          http_user_agent -> Nullable<Text>,
@@ -87,7 +87,7 @@
          expire_read_after_days -> Nullable<Integer>,
          expire_unread_after_days -> Nullable<Integer>,
          read_delay_secs -> Integer,
-     }
+@@ -101,13 +107,16 @@
  }
  
  diesel::table! {

@@ -7,4 +7,5 @@ pub mod expired;
 pub mod feed_icon;
 pub mod folder;
 pub mod settings;
+pub mod shortcut;
 pub mod webhook;
