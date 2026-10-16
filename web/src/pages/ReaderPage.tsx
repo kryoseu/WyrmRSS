@@ -3,19 +3,15 @@ import { Outlet, useLocation, useNavigate, useParams } from "react-router";
 import { ArchiveReader } from "../components/archive/ArchiveReader";
 import { PostReader } from "../components/posts/PostReader";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { useShortcutHandler } from "../hooks/useShortcuts";
 import type { PostId } from "../types/PostId";
 import { LAYOUT } from "../utils/constants";
+import { listPath } from "../utils/posts";
 
 export type ReaderOutletContext = {
   activePostId: PostId | null;
   onOpenPost: (id: PostId) => void;
 };
-
-// The list a post route was opened from: "/feeds/3/posts/9" → "/feeds/3",
-// "/read-later/9" → "/read-later".
-function listPath(pathname: string): string {
-  return pathname.replace(/\/(posts\/)?\d+$/, "") || "/";
-}
 
 export function ReaderPage() {
   const { pathname } = useLocation();
@@ -47,6 +43,8 @@ export function ReaderPage() {
     if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
     else navigate(listPath(pathname), { replace: true });
   }
+
+  useShortcutHandler("close_reader", closeReader, activePostId !== null);
 
   const [readerWidth, setReaderWidth] = useState(() => Math.round(window.innerWidth * LAYOUT.readerWidthFraction));
   const dragStart = useRef<{ x: number; width: number } | null>(null);

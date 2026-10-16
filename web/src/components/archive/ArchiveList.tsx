@@ -2,6 +2,7 @@ import { useOutletContext, useParams } from "react-router";
 import { useArchivedPosts } from "../../hooks/usePosts";
 import { useDebouncedSearch } from "../../hooks/useDebouncedSearch";
 import { useOpenPostFromRoute } from "../../hooks/useOpenPostFromRoute";
+import { usePostNavigation } from "../../hooks/usePostNavigation";
 import { useFlattenedPages } from "../../hooks/useFlattenedPages";
 import { ArchiveItem } from "./ArchiveItem";
 import { PostsToolbar } from "../posts/PostsToolbar";
@@ -30,6 +31,15 @@ export function ArchiveList() {
 
   const archives = useFlattenedPages(data);
 
+  usePostNavigation({
+    items: archives,
+    activePostId,
+    onOpenPost,
+    pathFor: (archive) => `/archive/${archive.id}`,
+    hasNextPage,
+    fetchNextPage,
+  });
+
   return (
     <div className="pane pane-posts">
       <PostsToolbar value={search} onChange={setSearch} placeholder="Search archive…" />
@@ -41,6 +51,7 @@ export function ArchiveList() {
         isFetchingNextPage={isFetchingNextPage}
         groupDate={groupDate}
         emptyMessage="No archived posts"
+        activeId={activePostId}
         renderItem={(archive) => (
           <ArchiveItem
             archive={archive}

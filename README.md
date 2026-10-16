@@ -29,11 +29,12 @@
 - Filters per feed — exclude entries matching a pattern, scoped to URL, title or content
 - Save posts to Read Later
 - Archive posts
+- Keyboard shortcuts — move between posts and sections, open, mark, save and archive posts without the mouse, all rebindable in Settings
 - Webhooks - get notified on new posts (Discord, Slack and custom)
 - OPML import and export
 - Background feed polling with configurable interval and retry logic
 - Full-text search on post titles and description
-- Hot-reloaded settings (poll interval, HTTP timeouts, page size, reading mode) configurable via the UI
+- Hot-reloaded settings (poll interval, HTTP timeouts, page size, reading mode and delay, post expiry) configurable via the UI
 - Easy to install
 
 ## Installation
@@ -87,6 +88,10 @@ The following settings are stored in the database and can be changed at runtime 
 | HTTP connect timeout | `10` | Connection timeout in seconds |
 | HTTP retries | `3` | Max retries for failed feed fetches |
 | HTTP user agent | `wyrm-rss/<version>` | User agent sent with feed requests |
+| Mark as read | `On open` | When posts are marked read: `On open`, `Manually`, or `Disabled` (no read tracking) |
+| Mark as read delay | `0` | Seconds a post must stay open before it's marked read (`On open` mode only); `0` marks it immediately |
+| Delete read posts after | _(never)_ | Days before read posts are deleted; Read Later and archived posts are kept |
+| Delete unread posts after | _(never)_ | Days before unread posts are deleted; Read Later and archived posts are kept |
 
 ### Frontend
 
