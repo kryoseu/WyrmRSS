@@ -4,8 +4,10 @@ import { useArchivedPost } from "../../hooks/usePosts";
 import { useUnarchivePost } from "../../hooks/usePostMutations";
 import { useShortcutHandler } from "../../hooks/useShortcuts";
 import { formatDate } from "../../utils/utils";
+import { extractHlsVideo } from "../../utils/hls";
 import { ReaderPane } from "../layout/ReaderPane";
 import { SanitizedHtml } from "../common/SanitizedHtml";
+import { HlsVideo } from "../common/HlsVideo";
 import type { PostId } from "../../types/PostId";
 
 interface Props {
@@ -30,7 +32,9 @@ export function ArchiveReader({ postId, onClose, width }: Props) {
 
   if (!postId) return null;
 
-  const body = archive?.content ?? archive?.description;
+  const rawBody = archive?.content ?? archive?.description;
+  const video = rawBody ? extractHlsVideo(rawBody) : null;
+  const body = video?.html ?? rawBody;
   const date = formatDate(archive?.published_at ?? null);
 
   const actions = archive && (
@@ -57,6 +61,7 @@ export function ArchiveReader({ postId, onClose, width }: Props) {
               </a>
             )}
           </div>
+          {video && <HlsVideo src={video.src} poster={video.poster} />}
           {body && (
             <SanitizedHtml className="post-reader-body" html={body} />
           )}
