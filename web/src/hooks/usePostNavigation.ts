@@ -57,9 +57,9 @@ export function usePostNavigation<T extends { id: PostId; feed_id?: FeedId }>({
     return index >= 0 ? index : -0.5;
   }
 
-  // Opens the next (1) or previous (-1) post from our position. With `sameFeed`, posts
-  // from other feeds are skipped. Past the last loaded post, "next" loads the next page.
-  function step(direction: 1 | -1, sameFeed: boolean) {
+  // Opens the next or previous post from our position. With `sameFeed`, posts from
+  // other feeds are skipped. Past the last loaded post, "next" loads the next page.
+  function step(direction: "next" | "prev", { sameFeed = false } = {}) {
     // A post opened in another list says nothing about where we are in this one.
     const last = lastOpened.current?.list === list ? lastOpened.current : null;
     const position = currentPosition(last);
@@ -68,7 +68,7 @@ export function usePostNavigation<T extends { id: PostId; feed_id?: FeedId }>({
     if (sameFeed && (feedId === undefined || position < 0)) return;
     const matches = (item: T) => !sameFeed || item.feed_id === feedId;
     // First match after our position, or last match before it.
-    const target = direction > 0
+    const target = direction === "next"
       ? items.find((item, i) => i > position && matches(item))
       : items.findLast((item, i) => i < position && matches(item));
     if (target) {
@@ -76,13 +76,13 @@ export function usePostNavigation<T extends { id: PostId; feed_id?: FeedId }>({
       onOpenPost(target.id);
       // Replace while reading, so back still returns to the list.
       navigate(pathFor(target), { replace: activePostId !== null });
-    } else if (direction > 0 && hasNextPage) {
+    } else if (direction === "next" && hasNextPage) {
       fetchNextPage();
     }
   }
 
-  useShortcutHandler("next_post", () => step(1, false));
-  useShortcutHandler("prev_post", () => step(-1, false));
-  useShortcutHandler("next_post_in_feed", () => step(1, true));
-  useShortcutHandler("prev_post_in_feed", () => step(-1, true));
+  useShortcutHandler("next_post", () => step("next"));
+  useShortcutHandler("prev_post", () => step("prev"));
+  useShortcutHandler("next_post_in_feed", () => step("next", { sameFeed: true }));
+  useShortcutHandler("prev_post_in_feed", () => step("prev", { sameFeed: true }));
 }

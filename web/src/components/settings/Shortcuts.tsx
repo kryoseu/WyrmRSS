@@ -21,11 +21,14 @@ function ShortcutRow({ action, shortcuts }: RowProps) {
     if (e.key === "Tab") return;
     // Handled here, so the window shortcut handlers skip this keypress.
     e.preventDefault();
+    if (e.key === "Escape") {
+      setRecording(false);
+      return;
+    }
     const key = keyFromEvent(e.nativeEvent);
     // A lone modifier: wait for the key it goes with.
     if (!key) return;
     setRecording(false);
-    if (e.key === "Escape") return;
     const owner = SHORTCUT_ACTIONS.find((other) => other !== action && shortcuts[other] === key);
     if (owner) {
       setError(`Already used by ${SHORTCUT_LABELS[owner]}`);

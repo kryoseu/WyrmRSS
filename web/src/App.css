@@ -2543,14 +2543,14 @@ body.reader-resizing {
   color: var(--text);
   box-shadow: var(--shadow);
   width: min(420px, calc(100vw - 32px));
-}
 
-.shortcuts-help:focus {
-  outline: none;
-}
+  &:focus {
+    outline: none;
+  }
 
-.shortcuts-help::backdrop {
-  background: rgba(0, 0, 0, 0.4);
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+  }
 }
 
 .shortcuts-help-content {
@@ -2574,16 +2574,16 @@ body.reader-resizing {
   align-items: center;
   padding: 6px 0;
   border-bottom: 1px solid var(--border);
-}
 
-.shortcuts-help-row:last-child {
-  border-bottom: none;
-}
+  &:last-child {
+    border-bottom: none;
+  }
 
-.shortcuts-help-row dd {
-  display: flex;
-  gap: 4px;
-  margin: 0;
+  & dd {
+    display: flex;
+    gap: 4px;
+    margin: 0;
+  }
 }
 
 kbd {

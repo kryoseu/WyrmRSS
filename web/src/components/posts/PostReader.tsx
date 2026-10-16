@@ -27,6 +27,8 @@ export function PostReader({ postId, onClose, width }: Props) {
   const { mutate: archivePost } = useArchivePost();
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
+  // Clicking the link reuses its mark-read and desktop handling.
+  const originalLinkRef = useRef<HTMLAnchorElement>(null);
 
   // Mark read after the post stays open for read_delay_secs. Switching posts,
   // closing, or a manual read toggle cancels it; at most once per selection.
@@ -69,9 +71,6 @@ export function PostReader({ postId, onClose, width }: Props) {
     if (post.is_archived) unarchivePost(post.id);
     else archivePost(post.id);
   }
-
-  // Clicking the link reuses its mark-read and desktop handling.
-  const originalLinkRef = useRef<HTMLAnchorElement>(null);
 
   useShortcutHandler("toggle_read", toggleRead);
   useShortcutHandler("toggle_read_later", toggleBookmarked);
