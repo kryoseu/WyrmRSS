@@ -1597,6 +1597,16 @@ body.reader-resizing {
   }
 }
 
+/* Reddit videos are often portrait; cap height so they don't fill the pane. */
+.post-reader-video {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  margin-bottom: 1em;
+  border-radius: 6px;
+  background: #000;
+}
+
 .post-reader-body {
   font-size: 0.83rem;
   line-height: 1.7;
