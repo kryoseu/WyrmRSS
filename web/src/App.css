@@ -1570,19 +1570,30 @@ body.reader-resizing {
   margin: 0 0 12px;
 }
 
+/* nowrap keeps the arrow from wrapping onto a line of its own. Padding
+   widens the tap target; negative margins cancel its layout shift. */
+.post-reader-original {
+  padding: 0.25em 0.4em;
+  margin: -0.25em 0 -0.25em 0.1em;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
 .post-reader-meta {
   font-size: 0.72rem;
   color: var(--text);
   margin-bottom: 24px;
   display: flex;
-  gap: 8px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
 /* Dot between items that rendered; none leading or doubled. */
 .post-reader-meta > * + *::before {
   content: "·";
-  margin-right: 8px;
+  margin-right: 5px;
   /* Keeps the link's dot from taking its accent color and hover underline. */
   display: inline-block;
   color: var(--text);

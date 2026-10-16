@@ -51,15 +51,25 @@ export function ArchiveReader({ postId, onClose, width }: Props) {
     <ReaderPane width={width} onClose={onClose} actions={actions} isLoading={isLoading} notFound={!isLoading && !archive} notFoundMessage="Archive not found">
       {archive && (
         <div className="post-reader">
-          <h1 className="post-reader-title">{archive.title ?? "Untitled"}</h1>
-          <div className="post-reader-meta">
-            {archive.authors && <span>{archive.authors}</span>}
-            {date && <span>{date}</span>}
+          <h1 className="post-reader-title">
+            {archive.title ?? "Untitled"}
             {archive.url && (
-              <a ref={originalLinkRef} href={archive.url} target="_blank" rel="noopener noreferrer">
-                Open original ↗
+              <a
+                ref={originalLinkRef}
+                className="post-reader-original"
+                href={archive.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open original"
+                title="Open original"
+              >
+                ↗
               </a>
             )}
+          </h1>
+          <div className="post-reader-meta">
+            {date && <span>{date}</span>}
+            {archive.authors && <span>{archive.authors}</span>}
           </div>
           {video && <HlsVideo src={video.src} poster={video.poster} />}
           {body && (
