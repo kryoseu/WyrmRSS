@@ -5,6 +5,7 @@ import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-ico
 import { usePost } from "../../hooks/usePosts";
 import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../../hooks/usePostMutations";
 import { useSettings } from "../../hooks/useSettings";
+import { useShortcutHandler } from "../../hooks/useShortcuts";
 import { ENDPOINTS } from "../../utils/api";
 import { extractYouTubeId, formatDate } from "../../utils/utils";
 import { ReaderPane } from "../layout/ReaderPane";
@@ -26,6 +27,8 @@ export function PostReader({ postId, onClose, width }: Props) {
   const { mutate: archivePost } = useArchivePost();
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
+  // Clicking the link reuses its mark-read and desktop handling.
+  const originalLinkRef = useRef<HTMLAnchorElement>(null);
 
   // Mark read after the post stays open for read_delay_secs. Switching posts,
   // closing, or a manual read toggle cancels it; at most once per selection.
@@ -55,6 +58,25 @@ export function PostReader({ postId, onClose, width }: Props) {
     }
   }
 
+  function toggleRead() {
+    if (post && readMode !== "disabled") setRead({ id: post.id, isRead: !post.is_read });
+  }
+
+  function toggleBookmarked() {
+    if (post) setBookmarked({ id: post.id, bookmarked: !post.bookmarked });
+  }
+
+  function toggleArchived() {
+    if (!post) return;
+    if (post.is_archived) unarchivePost(post.id);
+    else archivePost(post.id);
+  }
+
+  useShortcutHandler("toggle_read", toggleRead);
+  useShortcutHandler("toggle_read_later", toggleBookmarked);
+  useShortcutHandler("toggle_archive", toggleArchived);
+  useShortcutHandler("open_original", () => originalLinkRef.current?.click());
+
   if (!postId) return null;
 
   const body = post?.content ?? post?.description;
@@ -65,14 +87,14 @@ export function PostReader({ postId, onClose, width }: Props) {
     <>
       <button
         className={`pane-reader-bookmark${post.bookmarked ? " bookmarked" : ""}`}
-        onClick={() => setBookmarked({ id: post.id, bookmarked: !post.bookmarked })}
+        onClick={toggleBookmarked}
         aria-label={post.bookmarked ? "Remove from read later" : "Read later"}
       >
         {post.bookmarked ? <TbBookmarkFilled /> : <TbBookmark />}
       </button>
       <button
         className={`pane-reader-archive${post.is_archived ? " archived" : ""}`}
-        onClick={() => post.is_archived ? unarchivePost(post.id) : archivePost(post.id)}
+        onClick={toggleArchived}
         aria-label={post.is_archived ? "Unarchive" : "Archive"}
       >
         {post.is_archived ? <TbArchiveOff /> : <TbArchive />}
@@ -92,6 +114,7 @@ export function PostReader({ postId, onClose, width }: Props) {
             {post.url && (
               // target="_blank" bypasses the desktop link handler; drop it there.
               <a
+                ref={originalLinkRef}
                 href={post.url}
                 target={isTauri() ? undefined : "_blank"}
                 rel="noopener noreferrer"

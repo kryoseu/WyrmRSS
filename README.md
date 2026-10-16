@@ -29,6 +29,7 @@
 - Filters per feed — exclude entries matching a pattern, scoped to URL, title or content
 - Save posts to Read Later
 - Archive posts
+- Keyboard shortcuts — move between posts and sections, open, mark, save and archive posts without the mouse, all rebindable in Settings
 - Webhooks - get notified on new posts (Discord, Slack and custom)
 - OPML import and export
 - Background feed polling with configurable interval and retry logic

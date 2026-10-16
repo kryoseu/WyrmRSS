@@ -114,6 +114,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    shortcut_overrides (shortcut_action) {
+        shortcut_action -> Text,
+        key -> Text,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::WebhookKind;
 
@@ -143,5 +150,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     post_archive,
     posts,
     settings,
+    shortcut_overrides,
     webhooks,
 );

@@ -9,6 +9,12 @@ export function postPath(p: Post, feedId?: FeedId, isBookmarked?: boolean): stri
   return `/posts/${p.id}`;
 }
 
+// The list a post route was opened from: "/feeds/3/posts/9" → "/feeds/3",
+// "/read-later/9" → "/read-later".
+export function listPath(pathname: string): string {
+  return pathname.replace(/\/(posts\/)?\d+$/, "") || "/";
+}
+
 // Generates 1–2 character initials from a name for use in avatars.
 export function initials(name: string): string {
   const words = name.trim().split(/\s+/).filter((w) => /^[a-zA-Z0-9]/.test(w));

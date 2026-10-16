@@ -2531,3 +2531,91 @@ body.reader-resizing {
     font-size: 16px !important;
   }
 }
+
+/* Keyboard shortcuts help */
+.shortcuts-help {
+  /* rem follows the font size setting; 0.83rem matches the rest of the UI text. */
+  font-size: 0.83rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  width: min(420px, calc(100vw - 32px));
+
+  &:focus {
+    outline: none;
+  }
+
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+  }
+}
+
+.shortcuts-help-content {
+  padding: 16px 20px 20px;
+}
+
+.shortcuts-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.shortcuts-help-list {
+  margin: 0;
+}
+
+.shortcuts-help-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  & dd {
+    display: flex;
+    gap: 4px;
+    margin: 0;
+  }
+}
+
+kbd {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+/* Shortcuts settings */
+.shortcut-keys {
+  display: flex;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.shortcut-recording {
+  flex: none;
+  min-width: 120px;
+}
+
+.shortcut-btn {
+  flex: none;
+}
+
+.shortcut-intro-hint {
+  margin-bottom: 8px;
+}
+
+.shortcut-footer-hint {
+  margin-top: 8px;
+}

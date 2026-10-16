@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { TbArrowDown, TbRefresh } from "react-icons/tb";
 import { usePullToRefresh } from "../../hooks/usePullToRefresh";
@@ -22,9 +22,11 @@ interface Props<T> {
   /** Enables pull-to-refresh. */
   onRefresh?: () => void;
   refreshing?: boolean;
+  /** Scrolled into view when it changes, e.g. on keyboard navigation. */
+  activeId?: number | null;
 }
 
-export function VirtualGroupedList<T>({
+export function VirtualGroupedList<T extends { id: number }>({
   items,
   isLoading,
   hasNextPage,
@@ -35,6 +37,7 @@ export function VirtualGroupedList<T>({
   emptyMessage,
   onRefresh,
   refreshing = false,
+  activeId,
 }: Props<T>) {
   const rows = useMemo<VRow<T>[]>(() => {
     const result: VRow<T>[] = [];
@@ -56,6 +59,16 @@ export function VirtualGroupedList<T>({
     estimateSize: () => 41,
     overscan: 10,
   });
+
+  // Only on a new active id, so a refetch that shifts rows doesn't pull the list back.
+  // "auto" leaves an on-screen row alone, so clicks don't scroll.
+  const scrollToActive = useEffectEvent((id: number) => {
+    const index = rows.findIndex((row) => row.kind === "item" && row.item.id === id);
+    if (index >= 0) virtualizer.scrollToIndex(index, { align: "auto" });
+  });
+  useEffect(() => {
+    if (activeId != null) scrollToActive(activeId);
+  }, [activeId]);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);

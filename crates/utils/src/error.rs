@@ -71,6 +71,8 @@ pub enum WyrmError {
     FeedDiscovery(String),
     #[error("invalid config: {0}")]
     StartupConfigError(#[from] config::ConfigError),
+    #[error("invalid input: {0}")]
+    InvalidInput(String),
 }
 
 impl From<reqwest::Error> for WyrmError {
@@ -128,6 +130,7 @@ impl WyrmError {
             WyrmError::WebhookTemplate(msg) => msg,
             WyrmError::EmptyFolderName => "folder name cannot be empty",
             WyrmError::FeedDiscovery(msg) => msg,
+            WyrmError::InvalidInput(msg) => msg,
             _ => "internal server error",
         }
     }
@@ -159,6 +162,7 @@ impl error::ResponseError for WyrmError {
             WyrmError::WebhookTemplate(_) => StatusCode::BAD_REQUEST,
             WyrmError::EmptyFolderName => StatusCode::BAD_REQUEST,
             WyrmError::FeedDiscovery(_) => StatusCode::BAD_REQUEST,
+            WyrmError::InvalidInput(_) => StatusCode::BAD_REQUEST,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
