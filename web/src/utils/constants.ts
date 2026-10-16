@@ -8,7 +8,7 @@ export const DEFAULTS = {
   theme: "dark" as Theme,
   accent: "orange" as AccentKey,
   fontSize: "default" as FontSize,
-  density: { mobile: "card", desktop: "title" } as Record<"mobile" | "desktop", Density>,
+  density: { mobile: "card", desktop: "card" } as Record<"mobile" | "desktop", Density>,
   // Demo visitors share read state, so show everything there.
   unreadOnly: { normal: true, demo: false },
 };
