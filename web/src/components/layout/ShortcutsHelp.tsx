@@ -8,14 +8,13 @@ export function ShortcutsHelp() {
   const { data: shortcuts } = useShortcuts();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
-  // showModal() brings the backdrop, focus trapping and closing on Escape. It also
-  // focuses the ✕ button, which shows a focus ring, so focus the dialog instead.
+  // showModal() focuses the "x" button and shows a focus ring, so focus the dialog instead.
   useShortcutHandler("show_help", () => {
     dialogRef.current?.showModal();
     dialogRef.current?.focus();
   });
 
-  // The dialog has no padding, so a click on the dialog element itself is on the backdrop.
+  // Clicks outside the box land on the dialog element itself.
   function closeOnBackdropClick(e: React.MouseEvent<HTMLDialogElement>) {
     if (e.target === e.currentTarget) e.currentTarget.close();
   }
