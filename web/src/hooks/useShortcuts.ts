@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
 import { getShortcuts, resetShortcut, updateShortcut } from "../api/shortcuts";
 import type { ShortcutAction } from "../types/ShortcutAction";
 import { keyFromEvent, shouldIgnoreKeypress } from "../utils/shortcuts";
@@ -47,4 +48,12 @@ export function useShortcutHandler(action: ShortcutAction, handler: () => void, 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [key, enabled]);
+}
+
+export function useNavigationShortcuts() {
+  const navigate = useNavigate();
+  useShortcutHandler("navigate_home", () => navigate("/"));
+  useShortcutHandler("navigate_read_later", () => navigate("/read-later"));
+  useShortcutHandler("navigate_archive", () => navigate("/archive"));
+  useShortcutHandler("navigate_radar", () => navigate("/radar"));
 }

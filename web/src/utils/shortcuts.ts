@@ -11,6 +11,10 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   toggle_archive: "Archive / unarchive",
   open_original: "Open original",
   focus_search: "Search",
+  navigate_home: "Navigate to Home",
+  navigate_read_later: "Navigate to Read Later",
+  navigate_archive: "Navigate to Archive",
+  navigate_radar: "Navigate to Radar",
   show_help: "Show shortcuts",
 };
 

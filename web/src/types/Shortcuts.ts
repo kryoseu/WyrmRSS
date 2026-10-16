@@ -47,4 +47,20 @@ show_help: string,
 /**
  * Focus the search box.
  */
-focus_search: string, };
+focus_search: string, 
+/**
+ * Navigate to Home.
+ */
+navigate_home: string, 
+/**
+ * Navigate to Read Later.
+ */
+navigate_read_later: string, 
+/**
+ * Navigate to Archive.
+ */
+navigate_archive: string, 
+/**
+ * Navigate to Radar.
+ */
+navigate_radar: string, };

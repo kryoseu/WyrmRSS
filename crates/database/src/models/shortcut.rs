@@ -37,6 +37,14 @@ pub enum ShortcutAction {
     ShowHelp,
     /// Focus the search box.
     FocusSearch,
+    /// Navigate to Home.
+    NavigateHome,
+    /// Navigate to Read Later.
+    NavigateReadLater,
+    /// Navigate to Archive.
+    NavigateArchive,
+    /// Navigate to Radar.
+    NavigateRadar,
 }
 
 // Parses the stored action name, reusing serde's snake_case names.
@@ -75,6 +83,14 @@ pub struct Shortcuts {
     pub show_help: String,
     /// Focus the search box.
     pub focus_search: String,
+    /// Navigate to Home.
+    pub navigate_home: String,
+    /// Navigate to Read Later.
+    pub navigate_read_later: String,
+    /// Navigate to Archive.
+    pub navigate_archive: String,
+    /// Navigate to Radar.
+    pub navigate_radar: String,
 }
 
 impl Default for Shortcuts {
@@ -91,6 +107,10 @@ impl Default for Shortcuts {
             open_original: "v".into(),
             show_help: "?".into(),
             focus_search: "/".into(),
+            navigate_home: "1".into(),
+            navigate_read_later: "2".into(),
+            navigate_archive: "3".into(),
+            navigate_radar: "4".into(),
         }
     }
 }
@@ -122,6 +142,10 @@ impl Shortcuts {
             ShortcutAction::OpenOriginal => &mut self.open_original,
             ShortcutAction::ShowHelp => &mut self.show_help,
             ShortcutAction::FocusSearch => &mut self.focus_search,
+            ShortcutAction::NavigateHome => &mut self.navigate_home,
+            ShortcutAction::NavigateReadLater => &mut self.navigate_read_later,
+            ShortcutAction::NavigateArchive => &mut self.navigate_archive,
+            ShortcutAction::NavigateRadar => &mut self.navigate_radar,
         }
     }
 
@@ -138,6 +162,10 @@ impl Shortcuts {
             (ShortcutAction::OpenOriginal, &self.open_original),
             (ShortcutAction::ShowHelp, &self.show_help),
             (ShortcutAction::FocusSearch, &self.focus_search),
+            (ShortcutAction::NavigateHome, &self.navigate_home),
+            (ShortcutAction::NavigateReadLater, &self.navigate_read_later),
+            (ShortcutAction::NavigateArchive, &self.navigate_archive),
+            (ShortcutAction::NavigateRadar, &self.navigate_radar),
         ]
     }
 

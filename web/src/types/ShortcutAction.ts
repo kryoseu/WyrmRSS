@@ -4,4 +4,4 @@
  * A rebindable keyboard action. Stored as its snake_case name in
  * `shortcut_overrides.shortcut_action`.
  */
-export type ShortcutAction = "next_post" | "prev_post" | "next_post_in_feed" | "prev_post_in_feed" | "close_reader" | "toggle_archive" | "toggle_read_later" | "toggle_read" | "open_original" | "show_help" | "focus_search";
+export type ShortcutAction = "next_post" | "prev_post" | "next_post_in_feed" | "prev_post_in_feed" | "close_reader" | "toggle_archive" | "toggle_read_later" | "toggle_read" | "open_original" | "show_help" | "focus_search" | "navigate_home" | "navigate_read_later" | "navigate_archive" | "navigate_radar";
