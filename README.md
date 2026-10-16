@@ -23,6 +23,7 @@
 - Subscribe to RSS and Atom feeds
 - Feed discovery — paste a blog homepage or YouTube channel URL and Wyrm finds the feed for you
 - YouTube channel support — subscribe to any channel and watch videos inline without leaving the reader
+- HLS video playback — posts with `.m3u8` streams or Reddit videos play inline in the reader
 - Browse posts per feed or across all feeds
 - Per-feed display modes — River (home feed), Feed only (posts only shown on Feed directly), or Radar (quiet, visit when nothing else going on)
 - Group feeds into folders — collapsible sidebar sections with unread counts, preserved across OPML import/export

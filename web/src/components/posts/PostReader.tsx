@@ -8,8 +8,10 @@ import { useSettings } from "../../hooks/useSettings";
 import { useShortcutHandler } from "../../hooks/useShortcuts";
 import { ENDPOINTS } from "../../utils/api";
 import { extractYouTubeId, formatDate } from "../../utils/utils";
+import { extractHlsVideo } from "../../utils/hls";
 import { ReaderPane } from "../layout/ReaderPane";
 import { SanitizedHtml } from "../common/SanitizedHtml";
+import { HlsVideo } from "../common/HlsVideo";
 import type { PostId } from "../../types/PostId";
 import { useFeed } from "../../hooks/useFeeds";
 
@@ -79,9 +81,11 @@ export function PostReader({ postId, onClose, width }: Props) {
 
   if (!postId) return null;
 
-  const body = post?.content ?? post?.description;
+  const rawBody = post?.content ?? post?.description;
   const date = formatDate(post?.published_at ?? null);
   const youtubeId = extractYouTubeId(post?.url ?? null);
+  const video = youtubeId || !rawBody ? null : extractHlsVideo(rawBody);
+  const body = video?.html ?? rawBody;
 
   const actions = post && (
     <>
@@ -148,6 +152,7 @@ export function PostReader({ postId, onClose, width }: Props) {
               )}
             </div>
           )}
+          {video && <HlsVideo src={video.src} poster={video.poster} />}
           {body && !youtubeId && (
             <SanitizedHtml className="post-reader-body" html={body} />
           )}
