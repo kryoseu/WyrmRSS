@@ -25,7 +25,7 @@ export function AppLayout() {
           <ServerStatusBanner />
         </div>
       )}
-      {/* Outside both layouts, so tablets with a keyboard get it too. */}
+      {/* Outside both layouts: shortcuts work at any window width. */}
       <ShortcutsHelp />
     </>
   );
