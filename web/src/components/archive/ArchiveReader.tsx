@@ -1,6 +1,8 @@
+import { useRef } from "react";
 import { TbArchiveOff } from "react-icons/tb";
 import { useArchivedPost } from "../../hooks/usePosts";
 import { useUnarchivePost } from "../../hooks/usePostMutations";
+import { useShortcutHandler } from "../../hooks/useShortcuts";
 import { formatDate } from "../../utils/utils";
 import { ReaderPane } from "../layout/ReaderPane";
 import { SanitizedHtml } from "../common/SanitizedHtml";
@@ -16,6 +18,16 @@ export function ArchiveReader({ postId, onClose, width }: Props) {
   const { data: archive, isLoading } = useArchivedPost(postId ?? undefined);
   const { mutate: unarchive } = useUnarchivePost();
 
+  // Unarchiving removes the post from this list, so close its reader too.
+  function unarchiveAndClose() {
+    if (archive) unarchive(archive.id, { onSuccess: onClose });
+  }
+
+  const originalLinkRef = useRef<HTMLAnchorElement>(null);
+
+  useShortcutHandler("toggle_archive", unarchiveAndClose);
+  useShortcutHandler("open_original", () => originalLinkRef.current?.click());
+
   if (!postId) return null;
 
   const body = archive?.content ?? archive?.description;
@@ -24,7 +36,7 @@ export function ArchiveReader({ postId, onClose, width }: Props) {
   const actions = archive && (
     <button
       className="pane-reader-archive archived"
-      onClick={() => unarchive(archive.id, { onSuccess: onClose })}
+      onClick={unarchiveAndClose}
       aria-label="Unarchive"
     >
       <TbArchiveOff />
@@ -40,7 +52,7 @@ export function ArchiveReader({ postId, onClose, width }: Props) {
             {archive.authors && <span>{archive.authors}</span>}
             {date && <span>{date}</span>}
             {archive.url && (
-              <a href={archive.url} target="_blank" rel="noopener noreferrer">
+              <a ref={originalLinkRef} href={archive.url} target="_blank" rel="noopener noreferrer">
                 Open original ↗
               </a>
             )}
