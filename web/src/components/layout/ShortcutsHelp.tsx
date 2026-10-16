@@ -1,8 +1,8 @@
 import { useRef } from "react";
 import { TbX } from "react-icons/tb";
 import { useShortcutHandler, useShortcuts } from "../../hooks/useShortcuts";
-import type { ShortcutAction } from "../../types/ShortcutAction";
-import { keyLabels, SHORTCUT_LABELS } from "../../utils/shortcuts";
+import { SHORTCUT_ACTIONS, SHORTCUT_LABELS } from "../../utils/shortcuts";
+import { ShortcutKeys } from "../common/ShortcutKeys";
 
 export function ShortcutsHelp() {
   const { data: shortcuts } = useShortcuts();
@@ -31,10 +31,10 @@ export function ShortcutsHelp() {
         </div>
         {shortcuts && (
           <dl className="shortcuts-help-list">
-            {(Object.entries(SHORTCUT_LABELS) as [ShortcutAction, string][]).map(([action, label]) => (
+            {SHORTCUT_ACTIONS.map((action) => (
               <div key={action} className="shortcuts-help-row">
-                <dt>{label}</dt>
-                <dd>{keyLabels(shortcuts[action]).map((part) => <kbd key={part}>{part}</kbd>)}</dd>
+                <dt>{SHORTCUT_LABELS[action]}</dt>
+                <dd><ShortcutKeys shortcut={shortcuts[action]} /></dd>
               </div>
             ))}
           </dl>

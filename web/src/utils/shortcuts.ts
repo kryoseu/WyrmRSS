@@ -1,6 +1,5 @@
 import type { ShortcutAction } from "../types/ShortcutAction";
 
-// Display order for the settings tab and the help dialog.
 export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   next_post: "Next post",
   prev_post: "Previous post",
@@ -14,6 +13,9 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   focus_search: "Search",
   show_help: "Show shortcuts",
 };
+
+// Display order for the settings tab and the help dialog.
+export const SHORTCUT_ACTIONS = Object.keys(SHORTCUT_LABELS) as ShortcutAction[];
 
 const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta"]);
 
