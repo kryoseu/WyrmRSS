@@ -152,7 +152,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
               value={filter}
               onChange={(e) => updateFilter(i, e.target.value)}
               placeholder="e.g. title:sponsored"
-              title="url: title: content: to scope; no prefix matches everywhere"
+              title="Matches are excluded; start with + to keep only matches. Scope with url: title: content:, no prefix matches everywhere."
             />
             <button type="button" className="btn-remove-filter" onClick={() => removeFilter(i)}>×</button>
           </div>
@@ -162,7 +162,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
           className="btn btn-ghost"
           onClick={() => setUrlFilters([...urlFilters, ""])}
         >
-          + Filter
+          Add filter
         </button>
       </div>
       <div className="feed-webhooks-section">

@@ -27,7 +27,7 @@
 - Browse posts per feed or across all feeds
 - Per-feed display modes — River (home feed), Feed only (posts only shown on Feed directly), or Radar (quiet, visit when nothing else going on)
 - Group feeds into folders — collapsible sidebar sections with unread counts, preserved across OPML import/export
-- Filters per feed — exclude entries matching a pattern, scoped to URL, title or content
+- Filters per feed — include or exclude entries matching a pattern, scoped to URL, title or content
 - Save posts to Read Later
 - Archive posts
 - Keyboard shortcuts — move between posts and sections, open, mark, save and archive posts without the mouse, all rebindable in Settings
@@ -113,7 +113,8 @@ The reader detects YouTube links and renders an embedded player in place of the 
 
 ### Filtering content
 
-Use filters to exclude entries you don't want from a feed. Each filter is a
+Use filters to exclude entries you don't want from a feed, or prefix a filter
+with `+` to keep only the entries that match it. Each filter is a
 case-insensitive substring pattern, optionally scoped to a field with a
 `url:`, `title:` or `content:` prefix; an unprefixed pattern matches any of
 them. `content:` matches both the entry's summary and body.
@@ -128,6 +129,17 @@ Example, for YouTube you may want to exclude:
 
 Filters are per-feed, so `url:/shorts` drops any entry from that feed whose
 URL contains `/shorts`.
+
+Include filters keep only matching entries; matching any one of them is
+enough. Exclude filters still apply on top and win over includes:
+
+| Filters | Keeps |
+| -------- | ---------- |
+| `+url:/shorts` | Only YouTube Shorts |
+| `+title:rust`, `+title:zig` | Entries with "rust" or "zig" in the title |
+| `+title:rust`, `title:jobs` | Rust entries, except job posts |
+
+Filters apply as new entries are fetched; posts already saved aren't removed.
 
 ## Stack
 
