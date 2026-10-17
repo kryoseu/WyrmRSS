@@ -14,6 +14,7 @@ import { SanitizedHtml } from "../common/SanitizedHtml";
 import { HlsVideo } from "../common/HlsVideo";
 import type { PostId } from "../../types/PostId";
 import { useFeed } from "../../hooks/useFeeds";
+import { Link, useParams } from "react-router";
 
 interface Props {
   postId: PostId | null;
@@ -29,6 +30,8 @@ export function PostReader({ postId, onClose, width }: Props) {
   const { mutate: archivePost } = useArchivePost();
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
+  const { feedId } = useParams();
+
   // Clicking the link reuses its mark-read and desktop handling.
   const originalLinkRef = useRef<HTMLAnchorElement>(null);
 
@@ -110,24 +113,31 @@ export function PostReader({ postId, onClose, width }: Props) {
     <ReaderPane width={width} onClose={onClose} actions={actions} isLoading={isLoading} notFound={!isLoading && !post} notFoundMessage="Post not found">
       {post && (
         <div className="post-reader">
-          <h1 className="post-reader-title">{post.title ?? "Untitled"}</h1>
-          <div className="post-reader-meta">
-            {feed && <span>{feed.title}</span>}
-            {post.authors && <span>{post.authors}</span>}
-            {date && <span>{date}</span>}
+          <h1 className="post-reader-title">
+            {post.title ?? "Untitled"}
             {post.url && (
               // target="_blank" bypasses the desktop link handler; drop it there.
               <a
                 ref={originalLinkRef}
+                className="post-reader-original"
                 href={post.url}
                 target={isTauri() ? undefined : "_blank"}
                 rel="noopener noreferrer"
+                aria-label="Open original"
+                title="Open original"
                 onClick={markReadOnOpenOriginal}
                 onAuxClick={(e) => e.button === 1 && markReadOnOpenOriginal()}
               >
-                Open original ↗
+                ↗
               </a>
             )}
+          </h1>
+          <div className="post-reader-meta">
+            {feed && (String(feed.id) === feedId
+              ? <span>{feed.title}</span>
+              : <Link to={`/feeds/${feed.id}`}>{feed.title}</Link>)}
+            {post.authors && <span>{post.authors}</span>}
+            {date && <span>{date}</span>}
           </div>
           {youtubeId && (
             <div className="post-reader-youtube">
