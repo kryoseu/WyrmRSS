@@ -8,23 +8,37 @@ enum FilterScope {
     Content,
 }
 
-/// Splits a stored filter into its scope and pattern: an optional `url:` /
-/// `title:` / `content:` prefix limits the match to that field, no prefix
-/// matches every field. Only known prefixes count as scopes — a bare
-/// "https://example.com" keeps its colon and stays a plain pattern.
-fn parse_filter(raw: &str) -> (FilterScope, &str) {
-    match raw.split_once(':') {
-        Some(("url", p)) => (FilterScope::Url, p),
-        Some(("title", p)) => (FilterScope::Title, p),
-        Some(("content", p)) => (FilterScope::Content, p),
-        _ => (FilterScope::All, raw),
+#[derive(Debug, PartialEq)]
+enum FilterAction {
+    /// `+` prefix: keep only entries matching at least one include filter.
+    Include,
+    /// No prefix: drop entries matching this filter. Wins over includes.
+    Exclude,
+}
+
+/// Splits a stored filter into its scope, action and pattern: a leading `+`
+/// marks an include filter. An optional `url:` / `title:` / `content:` prefix
+/// limits the match to that field, no prefix matches every field. Only known
+/// prefixes count as scopes, e.g. "https://example.com" as a filter excludes
+/// posts where that URL appears anywhere (url, title or content).
+fn parse_filter(raw: &str) -> (FilterScope, FilterAction, &str) {
+    let (action, rest) = match raw.strip_prefix('+') {
+        Some(rest) => (FilterAction::Include, rest),
+        None => (FilterAction::Exclude, raw),
+    };
+
+    match rest.split_once(':') {
+        Some(("url", p)) => (FilterScope::Url, action, p),
+        Some(("title", p)) => (FilterScope::Title, action, p),
+        Some(("content", p)) => (FilterScope::Content, action, p),
+        _ => (FilterScope::All, action, rest),
     }
 }
 
-/// A feed's exclusion filters, parsed once per poll and matched per entry.
+/// A feed's include and exclude filters, parsed once per poll and matched per entry.
 /// Matching is case-insensitive: patterns are lowercased here, haystacks in
 /// [`CompiledFilters::excludes`].
-pub struct CompiledFilters(Vec<(FilterScope, String)>);
+pub struct CompiledFilters(Vec<(FilterScope, FilterAction, String)>);
 
 impl CompiledFilters {
     pub fn new(filters: &[Option<String>]) -> Self {
@@ -33,14 +47,15 @@ impl CompiledFilters {
                 .iter()
                 .filter_map(|f| f.as_deref())
                 .map(|raw| {
-                    let (scope, pattern) = parse_filter(raw);
-                    (scope, pattern.to_lowercase())
+                    let (scope, action, pattern) = parse_filter(raw);
+                    (scope, action, pattern.to_lowercase())
                 })
                 .collect(),
         )
     }
 
-    /// True when any filter matches the entry, i.e. the entry should be skipped.
+    /// True when the entry should be skipped: it matches an exclude filter, or
+    /// the feed has include filters and it matches none of them.
     pub fn excludes(&self, entry: &Entry) -> bool {
         if self.0.is_empty() {
             return false;
@@ -73,14 +88,33 @@ impl CompiledFilters {
     // one of the two (from_entry stores summary as the description for the
     // same reason).
     fn excludes_fields(&self, url: &str, title: &str, summary: &str, body: &str) -> bool {
-        self.0.iter().any(|(scope, pattern)| match scope {
-            FilterScope::Url => url.contains(pattern),
-            FilterScope::Title => title.contains(pattern),
-            FilterScope::Content => summary.contains(pattern) || body.contains(pattern),
+        let matches = |(scope, _, pattern): &(FilterScope, FilterAction, String)| match scope {
+            FilterScope::Url => url.contains(pattern.as_str()),
+            FilterScope::Title => title.contains(pattern.as_str()),
+            FilterScope::Content => {
+                summary.contains(pattern.as_str()) || body.contains(pattern.as_str())
+            }
             FilterScope::All => [url, title, summary, body]
                 .into_iter()
-                .any(|h| h.contains(pattern)),
-        })
+                .any(|h| h.contains(pattern.as_str())),
+        };
+
+        let has_includes = self
+            .0
+            .iter()
+            .any(|(_, action, _)| *action == FilterAction::Include);
+
+        let included = self
+            .0
+            .iter()
+            .any(|f| f.1 == FilterAction::Include && matches(f));
+
+        let excluded = self
+            .0
+            .iter()
+            .any(|f| f.1 == FilterAction::Exclude && matches(f));
+
+        excluded || (has_includes && !included)
     }
 }
 
@@ -95,29 +129,54 @@ mod tests {
 
     #[test]
     fn parse_filter_scoped_prefixes() {
-        assert_eq!(parse_filter("url:/shorts"), (FilterScope::Url, "/shorts"));
+        assert_eq!(
+            parse_filter("url:/shorts"),
+            (FilterScope::Url, FilterAction::Exclude, "/shorts")
+        );
         assert_eq!(
             parse_filter("title:sponsored"),
-            (FilterScope::Title, "sponsored")
+            (FilterScope::Title, FilterAction::Exclude, "sponsored")
         );
         assert_eq!(
             parse_filter("content:crypto"),
-            (FilterScope::Content, "crypto")
+            (FilterScope::Content, FilterAction::Exclude, "crypto")
         );
     }
 
     #[test]
     fn parse_filter_bare_pattern_matches_all() {
-        assert_eq!(parse_filter("sponsored"), (FilterScope::All, "sponsored"));
+        assert_eq!(
+            parse_filter("sponsored"),
+            (FilterScope::All, FilterAction::Exclude, "sponsored")
+        );
     }
 
     #[test]
     fn parse_filter_unknown_prefix_keeps_colon() {
         assert_eq!(
             parse_filter("https://example.com"),
-            (FilterScope::All, "https://example.com")
+            (
+                FilterScope::All,
+                FilterAction::Exclude,
+                "https://example.com"
+            )
         );
-        assert_eq!(parse_filter("titel:typo"), (FilterScope::All, "titel:typo"));
+        assert_eq!(
+            parse_filter("titel:typo"),
+            (FilterScope::All, FilterAction::Exclude, "titel:typo")
+        );
+    }
+
+    #[test]
+    fn parse_filter_plus_prefix_marks_include() {
+        assert_eq!(
+            parse_filter("+url:/shorts"),
+            (FilterScope::Url, FilterAction::Include, "/shorts")
+        );
+        assert_eq!(
+            parse_filter("+sponsored"),
+            (FilterScope::All, FilterAction::Include, "sponsored")
+        );
     }
 
     #[test]
@@ -159,5 +218,27 @@ mod tests {
     fn no_filters_excludes_nothing() {
         let f = CompiledFilters::new(&[]);
         assert!(!f.excludes_fields("url", "title", "summary", "body"));
+    }
+
+    #[test]
+    fn include_skips_entries_that_do_not_match() {
+        let f = compiled(&["+url:/shorts"]);
+        assert!(!f.excludes_fields("https://youtube.com/shorts/abc", "", "", ""));
+        assert!(f.excludes_fields("https://youtube.com/watch?v=1", "", "", ""));
+    }
+
+    #[test]
+    fn matching_any_include_is_enough() {
+        let f = compiled(&["+title:rust", "+title:zig"]);
+        assert!(!f.excludes_fields("", "rust 2.0 released", "", ""));
+        assert!(!f.excludes_fields("", "zig 1.0 released", "", ""));
+        assert!(f.excludes_fields("", "go 2.0 released", "", ""));
+    }
+
+    #[test]
+    fn exclude_wins_over_include() {
+        let f = compiled(&["+title:rust", "title:jobs"]);
+        assert!(!f.excludes_fields("", "rust 2.0 released", "", ""));
+        assert!(f.excludes_fields("", "rust jobs this week", "", ""));
     }
 }
