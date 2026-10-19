@@ -48,7 +48,7 @@ pub async fn create(
 ) -> WyrmResult<Json<Feed>> {
     ctx.deny_in_demo()?;
 
-    let http = ctx.http()?;
+    let http = ctx.http().await?;
 
     // One fetch serves both discovery and the icon lookup below: we try to
     // find a feed from a normal page url (blog homepage, YouTube channel),
@@ -84,7 +84,7 @@ pub async fn update(
 ) -> WyrmResult<Json<Feed>> {
     ctx.deny_in_demo()?;
 
-    let http = ctx.http()?;
+    let http = ctx.http().await?;
 
     let id = path.into_inner();
     // Only a *changed* URL triggers discovery. The edit form always sends the

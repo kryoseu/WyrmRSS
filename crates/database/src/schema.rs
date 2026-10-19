@@ -6,6 +6,10 @@ pub mod sql_types {
     pub struct DisplayMode;
 
     #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "host_credential_kind"))]
+    pub struct HostCredentialKind;
+
+    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "read_mode"))]
     pub struct ReadMode;
 
@@ -60,6 +64,20 @@ diesel::table! {
     folders (id) {
         id -> Int4,
         name -> Text,
+    }
+}
+
+diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::HostCredentialKind;
+
+    host_credentials (id) {
+        id -> Int4,
+        host -> Text,
+        kind -> HostCredentialKind,
+        name -> Text,
+        secret -> Text,
+        created_at -> Timestamptz,
     }
 }
 
@@ -147,6 +165,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     feed_webhooks,
     feeds,
     folders,
+    host_credentials,
     post_archive,
     posts,
     settings,
