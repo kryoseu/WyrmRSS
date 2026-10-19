@@ -213,3 +213,66 @@ pub fn custom_header(name: &str, value: &str) -> WyrmResult<(HeaderName, HeaderV
 
     Ok((header_name, header_value))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn host_key_of(url: &str) -> Option<String> {
+        host_key(&Url::parse(url).unwrap())
+    }
+
+    #[test]
+    fn host_key_lowercases_and_defaults_port_by_scheme() {
+        assert_eq!(
+            host_key_of("https://Feeds.Example.com/rss").as_deref(),
+            Some("feeds.example.com:443")
+        );
+        // http and https keys differ, so credentials never match a plaintext request.
+        assert_eq!(
+            host_key_of("http://feeds.example.com/rss").as_deref(),
+            Some("feeds.example.com:80")
+        );
+        assert_eq!(
+            host_key_of("https://feeds.example.com:8443/").as_deref(),
+            Some("feeds.example.com:8443")
+        );
+        assert_eq!(host_key_of("mailto:someone@example.com"), None);
+    }
+
+    #[test]
+    fn parse_host_key_accepts_bare_hosts_and_full_urls() {
+        assert_eq!(
+            parse_host_key("feeds.example.com").unwrap(),
+            "feeds.example.com:443"
+        );
+        assert_eq!(
+            parse_host_key("  feeds.example.com  ").unwrap(),
+            "feeds.example.com:443"
+        );
+        assert_eq!(
+            parse_host_key("feeds.example.com:8080").unwrap(),
+            "feeds.example.com:8080"
+        );
+        assert_eq!(
+            parse_host_key("http://feeds.example.com/rss?x=1").unwrap(),
+            "feeds.example.com:80"
+        );
+    }
+
+    #[test]
+    fn parse_host_key_rejects_invalid_input() {
+        assert!(parse_host_key("").is_err());
+        assert!(parse_host_key("not a host").is_err());
+        assert!(parse_host_key("feeds.example.com:notaport").is_err());
+    }
+
+    #[test]
+    fn custom_header_rejects_invalid_names_and_values() {
+        assert!(custom_header("x-api-key", "secret").is_ok());
+        assert!(custom_header("bad name", "secret").is_err());
+        assert!(custom_header("", "secret").is_err());
+        // A newline in the value would let a stored secret inject extra headers.
+        assert!(custom_header("x-api-key", "secret\r\nx-injected: 1").is_err());
+    }
+}

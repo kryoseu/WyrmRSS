@@ -116,3 +116,89 @@ pub struct HostCredentialUpdateForm {
     pub name: Option<String>,
     pub secret: Option<String>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn secret_is_never_serialized() {
+        let credential = HostCredential {
+            id: HostCredentialId(1),
+            host: "feeds.example.com:443".into(),
+            kind: HostCredentialKind::BasicAuth,
+            name: "reader".into(),
+            secret: "hunter2".into(),
+            created_at: Utc::now(),
+        };
+
+        let json = serde_json::to_string(&credential).unwrap();
+
+        // The other fields still serialize, so the check below isn't vacuous.
+        assert!(json.contains("\"name\":\"reader\""));
+        assert!(!json.contains("secret"));
+        assert!(!json.contains("hunter2"));
+    }
+
+    #[cfg(feature = "postgres")]
+    #[tokio::test]
+    async fn create_update_delete_round_trip() {
+        let pool = crate::setup_test_db().await;
+        // Unique host per run: the test database is shared across concurrent tests.
+        let host = format!(
+            "{}.example.com:443",
+            Utc::now()
+                .timestamp_nanos_opt()
+                .expect("timestamp in range")
+        );
+        let insert_form = || HostCredentialInsertForm {
+            host: host.clone(),
+            kind: HostCredentialKind::BasicAuth,
+            name: "reader".into(),
+            secret: "hunter2".into(),
+        };
+
+        let created = HostCredential::create(&pool, insert_form())
+            .await
+            .expect("create should succeed");
+        assert!(
+            matches!(
+                HostCredential::create(&pool, insert_form()).await,
+                Err(WyrmError::Database(
+                    wyrm_utils::error::DatabaseError::UniqueViolation(_)
+                ))
+            ),
+            "a second credential for the same host should conflict"
+        );
+
+        // A partial update leaves the other fields untouched.
+        let updated = HostCredential::update(
+            &pool,
+            HostCredentialUpdateForm {
+                id: created.id,
+                host: None,
+                kind: None,
+                name: None,
+                secret: Some("correct horse".into()),
+            },
+        )
+        .await
+        .expect("update should succeed");
+        assert_eq!(updated.secret, "correct horse");
+        assert_eq!(updated.name, "reader");
+        assert_eq!(updated.host, host);
+
+        let fetched = HostCredential::get(&pool, created.id)
+            .await
+            .expect("get should succeed");
+        assert_eq!(fetched.secret, "correct horse");
+
+        HostCredential::delete(&pool, created.id)
+            .await
+            .expect("delete should succeed");
+        assert!(
+            HostCredential::get(&pool, created.id).await.is_err(),
+            "deleted credential should be gone"
+        );
+    }
+}
