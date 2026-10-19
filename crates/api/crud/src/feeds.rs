@@ -48,10 +48,12 @@ pub async fn create(
 ) -> WyrmResult<Json<Feed>> {
     ctx.deny_in_demo()?;
 
+    let http = ctx.http()?;
+
     // One fetch serves both discovery and the icon lookup below: we try to
     // find a feed from a normal page url (blog homepage, YouTube channel),
     // and if the URL provided already resolves to a feed, we simply pass through.
-    let fetched = fetch_url(&ctx.http, &data.url).await;
+    let fetched = fetch_url(&http, &data.url).await;
     let url = resolve_feed_url(&data.url, &fetched)?;
     let feed = Feed::create(
         &ctx.db_pool,
@@ -69,7 +71,7 @@ pub async fn create(
     // Resolved here when discovery already parsed the feed, so the icon is
     // stored before the frontend refetches the feed list.
     if let Some(parsed) = fetched.parsed_feed() {
-        ensure_feed_icon(&ctx.db_pool, &ctx.http, &feed, parsed).await;
+        ensure_feed_icon(&ctx.db_pool, &http, &feed, parsed).await;
     }
 
     Ok(Json(feed))
@@ -82,6 +84,8 @@ pub async fn update(
 ) -> WyrmResult<Json<Feed>> {
     ctx.deny_in_demo()?;
 
+    let http = ctx.http()?;
+
     let id = path.into_inner();
     // Only a *changed* URL triggers discovery. The edit form always sends the
     // url field, so an unchanged one must pass through without a network
@@ -91,7 +95,7 @@ pub async fn update(
     let (url, fetched) = match data.url {
         Some(u) if u == feed.url => (Some(u), FetchedUrl::None),
         Some(u) => {
-            let fetched = fetch_url(&ctx.http, &u).await;
+            let fetched = fetch_url(&http, &u).await;
             (Some(resolve_feed_url(&u, &fetched)?), fetched)
         }
         None => (None, FetchedUrl::None),
@@ -120,7 +124,7 @@ pub async fn update(
     if url_changed {
         FeedIcon::delete(&ctx.db_pool, id).await?;
         if let Some(parsed) = fetched.parsed_feed() {
-            ensure_feed_icon(&ctx.db_pool, &ctx.http, &feed, parsed).await;
+            ensure_feed_icon(&ctx.db_pool, &http, &feed, parsed).await;
         }
     }
 

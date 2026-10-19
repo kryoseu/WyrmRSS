@@ -34,19 +34,13 @@ pub enum WorkerCommand {
 /// settings without waiting for the current interval to expire.
 pub struct FeedWorker {
     pub db_pool: DatabasePool,
-    pub http: HttpClient,
     pub runtime_settings: Arc<RwLock<RuntimeSettings>>,
 }
 
 impl FeedWorker {
-    pub fn new(
-        pool: DatabasePool,
-        http: HttpClient,
-        runtime_settings: Arc<RwLock<RuntimeSettings>>,
-    ) -> Self {
+    pub fn new(pool: DatabasePool, runtime_settings: Arc<RwLock<RuntimeSettings>>) -> Self {
         Self {
             db_pool: pool,
-            http,
             runtime_settings,
         }
     }
@@ -92,9 +86,9 @@ impl FeedWorker {
 
         info!("Processing {} due feeds", due_feeds.len());
 
-        // Re-configure the http client from in-memory runtime settings
+        // Build the http client from in-memory runtime settings
         // as settings may have been updated.
-        self.http = HttpClient::new(&HttpConfig::from(&*self.runtime_settings.read()?))?;
+        let http = HttpClient::new(&HttpConfig::from(&*self.runtime_settings.read()?))?;
 
         let feed_webhooks = views::webhook::all_by_feed(&self.db_pool).await?;
         let feed_folders = views::folder::all_by_feed(&self.db_pool).await?;
@@ -107,7 +101,7 @@ impl FeedWorker {
         let tasks: Vec<_> = due_feeds
             .into_iter()
             .map(|feed| {
-                let http = self.http.clone();
+                let http = http.clone();
                 let pool = self.db_pool.clone();
                 let webhooks = feed_webhooks.get(&feed.id).cloned().unwrap_or_default();
                 let folder = feed_folders.get(&feed.id).map(|f| f.name.clone());

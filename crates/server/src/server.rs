@@ -3,10 +3,7 @@ use api_utils::context::WyrmContext;
 use database::{models::settings::Settings, utils::settings::RuntimeSettings};
 use std::sync::{Arc, RwLock};
 use tracing::info;
-use wyrm_rss::{
-    http::{HttpClient, HttpConfig},
-    worker::{FeedWorker, WorkerCommand},
-};
+use wyrm_rss::worker::{FeedWorker, WorkerCommand};
 use wyrm_utils::{
     config::WyrmStartupConfig,
     error::{DatabaseError, HttpServerError},
@@ -31,9 +28,6 @@ pub async fn start_server() -> WyrmResult<()> {
 
     let rs = RuntimeSettings::from(&settings);
 
-    info!("Building http client");
-    let http = HttpClient::new(&HttpConfig::from(&rs))?;
-
     let runtime_settings = Arc::new(RwLock::new(rs));
 
     let (tx, rx) = tokio::sync::mpsc::channel::<WorkerCommand>(1);
@@ -41,13 +35,12 @@ pub async fn start_server() -> WyrmResult<()> {
     let ctx = web::Data::new(WyrmContext {
         db_pool: db_pool.clone(),
         runtime_settings: runtime_settings.clone(),
-        http: http.clone(),
         worker_tx: tx,
         run_as_demo: startup_conf.run_as_demo,
     });
 
     tokio::spawn(async move {
-        let mut rss_worker = FeedWorker::new(db_pool, http, runtime_settings);
+        let mut rss_worker = FeedWorker::new(db_pool, runtime_settings);
         let _ = rss_worker.run(rx).await;
     });
 
