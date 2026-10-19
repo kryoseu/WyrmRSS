@@ -25,6 +25,16 @@ export function FeedList() {
   const update = useUpdateFolder();
   const markRead = useMarkRead();
 
+  // Opens the active feed's folder whenever the active feed changes (e.g.
+  // clicking the feed name in PostReader), so it can still be collapsed by hand.
+  const activeFolderId = feeds?.find((f) => String(f.id) === feedId)?.folder_id;
+  const [revealedFeedId, setRevealedFeedId] = useState<string | undefined>();
+  if (feeds && feedId !== revealedFeedId) {
+    setRevealedFeedId(feedId);
+    if (activeFolderId !== undefined) setExpanded((prev) => new Set(prev).add(activeFolderId));
+  }
+
+  // Toggle the folder expansion (e.g. folder left click)
   function toggleExpanded(id: FolderId) {
     setExpanded((prev) => {
       const next = new Set(prev);
