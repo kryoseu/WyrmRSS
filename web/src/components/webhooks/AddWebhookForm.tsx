@@ -63,7 +63,7 @@ export function AddWebhookForm({ onClose }: Props) {
             rows={8}
             spellCheck={false}
           />
-          <p className="webhook-vars">
+          <p className="form-hint">
             Variables: <code>{"${feed.title}"}</code> <code>{"${feed.url}"}</code>{" "}
             <code>{"${feed.folder}"}</code> <code>{"${posts}"}</code>{" "}
             <code>{"${posts_count}"}</code>

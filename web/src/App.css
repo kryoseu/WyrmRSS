@@ -1107,6 +1107,14 @@ body.reader-resizing {
   grid-template-columns: 180px 90px 1fr 60px;
 }
 
+/* ── Credentials ─────────────────────────────────────────────── */
+
+/* Credential columns: host · kind · name · actions */
+.credentials-table .settings-table-header,
+.credentials-table .settings-table-row {
+  grid-template-columns: 1fr 90px 1fr 60px;
+}
+
 /* ── Folders ─────────────────────────────────────────────────── */
 
 /* Folder columns: name · feeds · actions */
@@ -1115,7 +1123,8 @@ body.reader-resizing {
   grid-template-columns: 180px 1fr 60px;
 }
 
-.webhook-kind {
+.webhook-kind,
+.credential-kind {
   display: inline-block;
   width: 72px;
   text-align: center;
@@ -1136,14 +1145,43 @@ body.reader-resizing {
   resize: vertical;
 }
 
-.add-webhook-form .webhook-vars {
+.entity-form .form-hint {
   margin: 0;
   font-size: 11px;
   color: var(--text);
   opacity: 0.8;
 
+  /* Inline in a sentence: drop the global code block padding. */
   & code {
     font-size: 11px;
+    padding: 0 2px;
+    display: inline;
+  }
+}
+
+.secret-input {
+  position: relative;
+
+  /* Leave room for the toggle so text never runs under it. */
+  & input {
+    padding-right: 28px;
+  }
+}
+
+.secret-input-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  display: flex;
+  padding: 2px;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text-h);
   }
 }
 

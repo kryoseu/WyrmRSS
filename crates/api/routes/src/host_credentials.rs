@@ -3,7 +3,7 @@ use api_api::host_credentials;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("/host-credential")
+        web::scope("/host-credentials")
             .route("", web::get().to(host_credentials::list))
             .route("", web::post().to(api_crud::host_credentials::create))
             .route(
