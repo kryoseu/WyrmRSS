@@ -19,6 +19,16 @@ export function useFolders() {
   });
 }
 
+/** One folder from the cached folders list; no extra request. */
+export function useFolder(id?: FolderId) {
+  return useQuery({
+    queryKey: folderKeys.all,
+    queryFn: getFolders,
+    staleTime: Infinity,
+    select: (folders) => folders.find((f) => f.id === id),
+  });
+}
+
 export function useCreateFolder() {
   const qc = useQueryClient();
   return useMutation({

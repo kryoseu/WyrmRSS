@@ -1599,6 +1599,17 @@ body.reader-resizing {
   color: var(--text);
 }
 
+/* Authors get their own top line so wrapping never starts a row with a dot. */
+.post-reader-authors {
+  flex-basis: 100%;
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+.post-reader-authors + *::before {
+  content: none;
+}
+
 .post-reader-meta a {
   color: var(--accent);
   text-decoration: none;
@@ -2399,6 +2410,18 @@ body.reader-resizing {
 .layout--mobile .post-reader {
   padding: 20px 18px 32px;
   max-width: none;
+}
+
+.layout--mobile {
+  .post-reader-meta {
+    font-size: 0.8rem;
+  }
+
+  /* Bigger tap target for the feed link; negative margins cancel the shift. */
+  .post-reader-meta a {
+    padding: 6px 4px;
+    margin: -6px -4px;
+  }
 }
 
 /* Settings: tabs become a scrolling row on top, fields stack label-over-input. */
