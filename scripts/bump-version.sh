@@ -26,6 +26,9 @@ fi
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
+sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"${new_version}\"/" web/package.json
+echo "Bumped frontend to ${new_version}"
+
 for manifest in Cargo.toml desktop/src-tauri/Cargo.toml; do
   if ! grep -q '^version = "' "$manifest"; then
     echo "Could not find a 'version = \"...\"' line in $manifest" >&2
@@ -48,4 +51,4 @@ fi
 
 echo
 echo "Review the diff, then commit:"
-git --no-pager diff --stat -- Cargo.toml Cargo.lock desktop/src-tauri/Cargo.toml desktop/src-tauri/Cargo.lock
+git --no-pager diff --stat -- Cargo.toml Cargo.lock desktop/src-tauri/Cargo.toml desktop/src-tauri/Cargo.lock web/package.json

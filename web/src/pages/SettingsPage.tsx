@@ -8,6 +8,7 @@ import { Opml } from "../components/settings/Opml";
 import { Shortcuts } from "../components/settings/Shortcuts";
 import { Webhooks } from "../components/settings/Webhooks";
 import { useIsMobile } from "../hooks/useIsMobile";
+import { version } from "../../package.json";
 
 type Tab =
   | "general"
@@ -87,6 +88,7 @@ export function SettingsPage() {
         {tab === "folders" && <Folders />}
         {tab === "webhooks" && <Webhooks />}
         {tab === "opml" && <Opml />}
+        <div className="settings-app-version">v{version}</div>
       </div>
     </div>
   );
