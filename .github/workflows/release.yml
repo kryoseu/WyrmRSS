@@ -131,6 +131,7 @@ jobs:
         uses: actions/download-artifact@v8.0.2
         with:
           path: artifacts
+          pattern: wyrm-desktop-*
       - name: Generate release notes
         env:
           GH_TOKEN: ${{ github.token }}
