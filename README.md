@@ -31,6 +31,7 @@
 - Save posts to Read Later
 - Archive posts
 - Keyboard shortcuts — move between posts and sections, open, mark, save and archive posts without the mouse, all rebindable in Settings
+- Feeds behind authentication — per-host basic auth or custom header credentials, set in Settings
 - Webhooks - get notified on new posts (Discord, Slack and custom)
 - OPML import and export
 - Background feed polling with configurable interval and retry logic
@@ -140,6 +141,26 @@ enough. Exclude filters still apply on top and win over includes:
 | `+title:rust`, `title:jobs` | Rust entries, except job posts |
 
 Filters apply as new entries are fetched; posts already saved aren't removed.
+
+## Feeds behind authentication
+
+For feeds behind HTTP basic auth (e.g. `.htaccess`) or an API key header, add
+a credential in **Settings → Credentials**. Credentials are per host, not per
+feed, so one entry covers every feed on that host. They're sent with feed
+polls, feed discovery and icon fetches, but not webhooks.
+
+| Kind | Sent as |
+| --- | --- |
+| Basic auth | `Authorization: Basic …` from a username and password |
+| Custom header | Any header and value, e.g. `X-Api-Key: …` or `Authorization: Bearer …` |
+
+Credentials match on host **and** port. A bare host like `feeds.example.com`
+means `https` on port 443; for an `http://` feed enter
+`http://feeds.example.com`, and for a custom port add it:
+`feeds.example.com:8443`.
+
+Secrets are never returned by the API once saved; they can be replaced but
+not read back. They are stored unencrypted in the database.
 
 ## Stack
 
