@@ -23,6 +23,11 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      }
+    },
     "android": {
       "debugApplicationIdSuffix": ".debug"
     }

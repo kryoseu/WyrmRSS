@@ -105,7 +105,11 @@ jobs:
             libxdo-dev \
             libssl-dev \
             libfuse2 \
-            rpm
+            rpm \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-libav
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
