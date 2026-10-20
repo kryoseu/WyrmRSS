@@ -55,6 +55,12 @@ jobs:
             echo "Run scripts/bump-version.sh to keep them in sync, then merge and retry."
             exit 1
           fi
+          web_version=$(grep '"version": "' web/package.json | head -1 | sed 's/.*"version": "\(.*\)".*/\1/')
+          if [ "$version" != "$web_version" ]; then
+            echo "Cargo.toml is at $version but web/package.json is at $web_version."
+            echo "Run scripts/bump-version.sh to keep them in sync, then merge and retry."
+            exit 1
+          fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Compute tag
@@ -125,6 +131,7 @@ jobs:
         uses: actions/download-artifact@v8.0.2
         with:
           path: artifacts
+          pattern: wyrm-desktop-*
       - name: Generate release notes
         env:
           GH_TOKEN: ${{ github.token }}
