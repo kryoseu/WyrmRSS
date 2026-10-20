@@ -7,6 +7,8 @@ use diesel::result::DatabaseErrorKind;
 
 #[derive(thiserror::Error, Debug)]
 pub enum HttpClientError {
+    #[error("unauthorized")]
+    Unauthorized,
     #[error("http error: {0}")]
     ClientError(#[from] reqwest::Error),
     #[error("middleware error: {0}")]
@@ -77,6 +79,13 @@ pub enum WyrmError {
 
 impl From<reqwest::Error> for WyrmError {
     fn from(e: reqwest::Error) -> Self {
+        if matches!(
+            e.status(),
+            Some(reqwest::StatusCode::UNAUTHORIZED | reqwest::StatusCode::FORBIDDEN)
+        ) {
+            return WyrmError::HttpClient(HttpClientError::Unauthorized);
+        }
+
         WyrmError::HttpClient(HttpClientError::ClientError(e))
     }
 }

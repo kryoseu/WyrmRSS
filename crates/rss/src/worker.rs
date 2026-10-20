@@ -7,6 +7,7 @@ use database::{
     DatabasePool,
     models::{
         feed::{Feed, FeedUpdateForm},
+        host_credential::HostCredential,
         post::{Post, PostInsertForm},
         webhook::Webhook,
     },
@@ -86,9 +87,14 @@ impl FeedWorker {
 
         info!("Processing {} due feeds", due_feeds.len());
 
+        let host_credentials = HostCredential::get_all(&self.db_pool).await?;
+
         // Build the http client from in-memory runtime settings
         // as settings may have been updated.
-        let http = HttpClient::new(&HttpConfig::from(&*self.runtime_settings.read()?))?;
+        let http = HttpClient::new(
+            &HttpConfig::from(&*self.runtime_settings.read()?),
+            host_credentials,
+        )?;
 
         let feed_webhooks = views::webhook::all_by_feed(&self.db_pool).await?;
         let feed_folders = views::folder::all_by_feed(&self.db_pool).await?;

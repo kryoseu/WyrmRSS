@@ -40,7 +40,26 @@
      }
  }
  
-@@ -52,10 +55,10 @@
+@@ -47,13 +50,16 @@
+ }
+ 
+ diesel::table! {
++    use diesel::sql_types::*;
++    use crate::models::host_credentials::HostCredentialKindMapping;
++
+     host_credentials (id) {
+         id -> Integer,
+         host -> Text,
+-        kind -> Text,
++        kind -> HostCredentialKindMapping,
+         name -> Text,
+         secret -> Text,
+-        created_at -> Timestamp,
++        created_at -> TimestamptzSqlite,
+     }
+ }
+ 
+@@ -63,10 +69,10 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -53,7 +72,7 @@
      }
  }
  
-@@ -66,18 +69,21 @@
+@@ -77,18 +83,21 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -78,7 +97,7 @@
      settings (is_singleton) {
          is_singleton -> Bool,
          page_size -> Integer,
-@@ -86,7 +92,7 @@
+@@ -97,7 +106,7 @@
          http_connect_timeout -> Integer,
          http_retries -> Integer,
          http_user_agent -> Nullable<Text>,
@@ -87,7 +106,7 @@
          expire_read_after_days -> Nullable<Integer>,
          expire_unread_after_days -> Nullable<Integer>,
          read_delay_secs -> Integer,
-@@ -101,13 +107,16 @@
+@@ -112,13 +121,16 @@
  }
  
  diesel::table! {

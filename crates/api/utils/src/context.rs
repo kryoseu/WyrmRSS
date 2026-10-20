@@ -1,4 +1,8 @@
-use database::{DatabasePool, utils::settings::RuntimeSettings};
+use database::{
+    DatabasePool,
+    models::host_credential::HostCredential,
+    utils::settings::RuntimeSettings,
+};
 use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc::Sender;
 use wyrm_rss::{
@@ -24,10 +28,14 @@ pub struct WyrmContext {
 }
 
 impl WyrmContext {
-    /// Builds an HTTP client from the in-memory runtime settings,
-    /// for feed discovery and icon fetches.
-    pub fn http(&self) -> WyrmResult<HttpClient> {
-        HttpClient::new(&HttpConfig::from(&*self.runtime_settings.read()?))
+    /// Builds an HTTP client from the runtime settings and stored host
+    /// credentials, for feed discovery and icon fetches.
+    pub async fn http(&self) -> WyrmResult<HttpClient> {
+        let host_credentials = HostCredential::get_all(&self.db_pool).await?;
+        HttpClient::new(
+            &HttpConfig::from(&*self.runtime_settings.read()?),
+            host_credentials,
+        )
     }
 
     /// Deny request if server is running in demo mode.
