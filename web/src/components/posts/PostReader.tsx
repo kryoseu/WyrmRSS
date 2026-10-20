@@ -14,7 +14,8 @@ import { SanitizedHtml } from "../common/SanitizedHtml";
 import { HlsVideo } from "../common/HlsVideo";
 import type { PostId } from "../../types/PostId";
 import { useFeed } from "../../hooks/useFeeds";
-import { Link, useParams } from "react-router";
+import { Link } from "react-router";
+import { useFolder } from "../../hooks/useFolders";
 
 interface Props {
   postId: PostId | null;
@@ -25,12 +26,12 @@ interface Props {
 export function PostReader({ postId, onClose, width }: Props) {
   const { data: post, isLoading } = usePost(postId ?? undefined);
   const { data: feed } = useFeed(post?.feed_id);
+  const { data: folder } = useFolder(feed?.folder_id);
   const { mutate: setRead } = useSetPostRead();
   const { mutate: setBookmarked } = useSetPostBookmarked();
   const { mutate: archivePost } = useArchivePost();
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
-  const { feedId } = useParams();
 
   // Clicking the link reuses its mark-read and desktop handling.
   const originalLinkRef = useRef<HTMLAnchorElement>(null);
@@ -133,10 +134,9 @@ export function PostReader({ postId, onClose, width }: Props) {
             )}
           </h1>
           <div className="post-reader-meta">
-            {feed && (String(feed.id) === feedId
-              ? <span>{feed.title}</span>
-              : <Link to={`/feeds/${feed.id}`}>{feed.title}</Link>)}
-            {post.authors && <span>{post.authors}</span>}
+            {post.authors && <span className="post-reader-authors">{post.authors}</span>}
+            {folder && <span>{folder.name}</span>}
+            {feed && <Link to={`/feeds/${feed.id}`}>{feed.title}</Link>}
             {date && <span>{date}</span>}
           </div>
           {youtubeId && (

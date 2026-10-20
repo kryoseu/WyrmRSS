@@ -3,6 +3,7 @@ use actix_web::web;
 mod auth;
 mod feeds;
 mod folders;
+mod host_credentials;
 mod posts;
 mod settings;
 mod webhooks;
@@ -15,6 +16,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .configure(feeds::config)
             .configure(webhooks::config)
             .configure(settings::config)
-            .configure(folders::config),
+            .configure(folders::config)
+            .configure(host_credentials::config),
     );
 }

@@ -12,7 +12,10 @@
 use crate::http::HttpClient;
 use scraper::{Html, Selector};
 use tracing::warn;
-use wyrm_utils::{error::WyrmError, result::WyrmResult};
+use wyrm_utils::{
+    error::{HttpClientError, WyrmError},
+    result::WyrmResult,
+};
 
 /// What a submitted URL turned out to serve — fetched once by [`fetch_url`],
 /// then shared by feed-URL resolution and icon resolution.
@@ -41,25 +44,31 @@ impl FetchedUrl {
     }
 }
 
-/// Fetches a submitted URL once and classifies what it serves.
-pub async fn fetch_url(http: &HttpClient, url: &str) -> FetchedUrl {
+/// Fetches a submitted URL once and classifies what it serves. Fails only
+/// when the server demands credentials; any other fetch failure is `None`.
+pub async fn fetch_url(http: &HttpClient, url: &str) -> WyrmResult<FetchedUrl> {
     // `/channel/<id>` URLs resolve directly; skip the network round-trip.
     if youtube_channel_shortcut(url).is_some() {
-        return FetchedUrl::None;
+        return Ok(FetchedUrl::None);
     }
 
     let bytes = match http.fetch(url).await {
         Ok((bytes, _)) => bytes,
+        Err(WyrmError::HttpClient(HttpClientError::Unauthorized)) => {
+            return Err(WyrmError::FeedDiscovery(
+                "Unauthorized — check credentials in Settings → Credentials".to_string(),
+            ));
+        }
         Err(e) => {
             warn!("feed discovery: could not fetch {url}: {e}");
-            return FetchedUrl::None;
+            return Ok(FetchedUrl::None);
         }
     };
 
-    match feed_rs::parser::parse(&bytes[..]) {
+    Ok(match feed_rs::parser::parse(&bytes[..]) {
         Ok(parsed) => FetchedUrl::Feed(Box::new(parsed)),
         Err(_) => FetchedUrl::Html(String::from_utf8_lossy(&bytes).into_owned()),
-    }
+    })
 }
 
 /// Resolves `url` to the feed URL to store, judging by what [`fetch_url`]

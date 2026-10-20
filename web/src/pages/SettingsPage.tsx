@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Appearance } from "../components/settings/Appearance";
+import { Credentials } from "../components/settings/Credentials";
 import { Feeds } from "../components/settings/Feeds";
 import { Folders } from "../components/settings/Folders";
 import { General } from "../components/settings/General";
@@ -8,7 +9,15 @@ import { Shortcuts } from "../components/settings/Shortcuts";
 import { Webhooks } from "../components/settings/Webhooks";
 import { useIsMobile } from "../hooks/useIsMobile";
 
-type Tab = "general" | "appearance" | "shortcuts" | "feeds" | "folders" | "webhooks" | "opml";
+type Tab =
+  | "general"
+  | "appearance"
+  | "shortcuts"
+  | "feeds"
+  | "credentials"
+  | "folders"
+  | "webhooks"
+  | "opml";
 
 export function SettingsPage() {
   const [tab, setTab] = useState<Tab>("general");
@@ -44,6 +53,12 @@ export function SettingsPage() {
           Feeds
         </button>
         <button
+          className={`settings-tab${tab === "credentials" ? " active" : ""}`}
+          onClick={() => setTab("credentials")}
+        >
+          Credentials
+        </button>
+        <button
           className={`settings-tab${tab === "folders" ? " active" : ""}`}
           onClick={() => setTab("folders")}
         >
@@ -68,6 +83,7 @@ export function SettingsPage() {
         {tab === "appearance" && <Appearance />}
         {tab === "shortcuts" && !isMobile && <Shortcuts />}
         {tab === "feeds" && <Feeds />}
+        {tab === "credentials" && <Credentials />}
         {tab === "folders" && <Folders />}
         {tab === "webhooks" && <Webhooks />}
         {tab === "opml" && <Opml />}

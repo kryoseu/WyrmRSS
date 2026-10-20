@@ -101,3 +101,4 @@ id_newtype!(PostId, "The Post ID");
 id_newtype!(FeedId, "The Feed ID");
 id_newtype!(WebhookId, "The Webhook ID");
 id_newtype!(FolderId, "The Folder ID");
+id_newtype!(HostCredentialId, "The HostCredential ID");

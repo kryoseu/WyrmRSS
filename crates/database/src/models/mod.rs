@@ -6,6 +6,7 @@ pub mod archive;
 pub mod expired;
 pub mod feed_icon;
 pub mod folder;
+pub mod host_credential;
 pub mod settings;
 pub mod shortcut;
 pub mod webhook;

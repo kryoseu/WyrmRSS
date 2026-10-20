@@ -50,6 +50,20 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use crate::models::host_credential::HostCredentialKindMapping;
+
+    host_credentials (id) {
+        id -> Integer,
+        host -> Text,
+        kind -> HostCredentialKindMapping,
+        name -> Text,
+        secret -> Text,
+        created_at -> TimestamptzSqlite,
+    }
+}
+
+diesel::table! {
     post_archive (id) {
         id -> Integer,
         title -> Nullable<Text>,
@@ -133,6 +147,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     feed_webhooks,
     feeds,
     folders,
+    host_credentials,
     post_archive,
     posts,
     settings,
