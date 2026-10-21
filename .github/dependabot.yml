@@ -13,9 +13,7 @@ updates:
 
   - package-ecosystem: "cargo"
     open-pull-requests-limit: 10
-    directories:
-      - "/"
-      - "/desktop/src-tauri"
+    directory: "/"
     schedule:
       interval: "weekly"
     cooldown:
@@ -23,6 +21,17 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+
+  # Separate workspace (excluded from the root one), so it needs its own entry.
+  - package-ecosystem: "cargo"
+    open-pull-requests-limit: 10
+    directory: "/desktop/src-tauri"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(desktop)"
 
   - package-ecosystem: "npm"
     open-pull-requests-limit: 10
