@@ -52,8 +52,8 @@ importers:
         specifier: ^1.14.3
         version: 1.14.3
       '@types/node':
-        specifier: ^26.6.4
-        version: 26.6.4
+        specifier: ^26.6.5
+        version: 26.6.5
       '@types/react':
         specifier: ^19.3.0
         version: 19.3.0
@@ -62,7 +62,7 @@ importers:
         version: 19.3.0(@types/react@19.3.0)
       '@vitejs/plugin-react':
         specifier: ^6.1.2
-        version: 6.1.2(vite@8.3.3(@types/node@26.6.4))
+        version: 6.1.2(vite@8.3.3(@types/node@26.6.5))
       eslint:
         specifier: ^10.12.0
         version: 10.12.0
@@ -83,7 +83,7 @@ importers:
         version: 8.71.1(eslint@10.12.0)(typescript@6.0.3)
       vite:
         specifier: ^8.3.3
-        version: 8.3.3(@types/node@26.6.4)
+        version: 8.3.3(@types/node@26.6.5)
 
 packages:
 
@@ -401,8 +401,8 @@ packages:
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
-  '@types/node@26.6.4':
-    resolution: {integrity: sha512-ldVPDCzj7fsaGZrLB0NuHuTvJcsNasysBAqMolr/cgxrLd1xbqxIr3XJiPnHHJUCxj5sNF1vnRj9aWnrVh5Jcg==}
+  '@types/node@26.6.5':
+    resolution: {integrity: sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==}
 
   '@types/react-dom@19.3.0':
     resolution: {integrity: sha512-ZI7bU42mZXXKHn/qNLEw2IrbiINU7X5+vfgdixBHkCNpYWXjKgfQ/P+uyGb5CjOLB9UcnTeg3rylQtV2hym44Q==}
@@ -1418,7 +1418,7 @@ snapshots:
 
   '@types/json-schema@7.0.15': {}
 
-  '@types/node@26.6.4':
+  '@types/node@26.6.5':
     dependencies:
       undici-types: 8.9.0
 
@@ -1524,10 +1524,10 @@ snapshots:
       '@typescript-eslint/types': 8.71.1
       eslint-visitor-keys: 5.0.1
 
-  '@vitejs/plugin-react@6.1.2(vite@8.3.3(@types/node@26.6.4))':
+  '@vitejs/plugin-react@6.1.2(vite@8.3.3(@types/node@26.6.5))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
-      vite: 8.3.3(@types/node@26.6.4)
+      vite: 8.3.3(@types/node@26.6.5)
 
   abbrev@5.0.0: {}
 
@@ -2048,7 +2048,7 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  vite@8.3.3(@types/node@26.6.4):
+  vite@8.3.3(@types/node@26.6.5):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -2056,7 +2056,7 @@ snapshots:
       rolldown: 1.2.12
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       fsevents: 2.3.3
 
   which@2.0.2:
