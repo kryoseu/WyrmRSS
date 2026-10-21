@@ -3,20 +3,23 @@ import { createFeed, deleteFeed, getFeedIcon, getFeeds, pollFeeds, updateFeed } 
 import { evictFeedIconIfUrlChanged, feedIconKey, feedKeys, setFeedPauseState } from "../cache/feeds";
 import { postKeys } from "../cache/posts";
 import { folderKeys } from "./useFolders";
+import { useSettings } from "./useSettings";
 import type { CreateFeed } from "../types/CreateFeed";
 import type { UpdateFeed } from "../types/UpdateFeed";
 import type { FeedId } from "../types/FeedId";
 import type { FeedMeta } from "../components/posts/PostItem";
 
 export function useFeeds() {
+  const pollIntervalSecs = useSettings().data?.feed_poll_interval_secs;
   return useQuery({
     queryKey: feedKeys.all,
     queryFn: getFeeds,
     // Don't refetch on every mount (settings/sidebar remount often). Mutations
     // — create/update/delete/poll — invalidate this key, which refetches even
-    // under `Infinity`. Only an autonomous background poll won't be reflected
-    // until the next user action or reload.
+    // under `Infinity`.
     staleTime: Infinity,
+    // Pick up unread counts from the server's background polls.
+    refetchInterval: pollIntervalSecs ? pollIntervalSecs * 1000 : false,
   });
 }
 
@@ -108,7 +111,8 @@ export function usePollFeeds() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: pollFeeds,
-    onSuccess: () => {
+    // Also on error: a timed-out poll may still have added posts.
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: feedKeys.all });
       qc.invalidateQueries({ queryKey: postKeys.all });
     },
