@@ -13,8 +13,8 @@
  * component has to know how the cache works.
  *
  * The same post can live in several cached entries at once — the all-posts list,
- * a single feed's list, the bookmarked list, the archived list, plus its own
- * detail entry. A change has to be reflected in all of them.
+ * a single feed's list, a folder's list, the bookmarked list, the archived list,
+ * plus its own detail entry. A change has to be reflected in all of them.
  *
  * Structure:
  *  - `postKeys`  — the single source of truth for every query key. Each entry
@@ -52,6 +52,10 @@ export const postKeys = {
   byFeed: (feedId: number, search?: string, unreadOnly?: boolean) =>
     [...postKeys.feedPrefix, feedId, { search, unreadOnly }] as const,
 
+  folderPrefix: ["posts", "folder"] as const,
+  byFolder: (folderId: number, search?: string, unreadOnly?: boolean) =>
+    [...postKeys.folderPrefix, folderId, { search, unreadOnly }] as const,
+
   bookmarkedPrefix: ["posts", "bookmarked"] as const,
   bookmarked: (search?: string) => [...postKeys.bookmarkedPrefix, { search }] as const,
 
@@ -77,10 +81,15 @@ function patchPostInPages(cached: PostPages, patch: (post: Post) => Post): PostP
 }
 
 // Update the post with `postId` wherever it appears in the cached lists
-// (all-posts, by-feed, bookmarked). Pass a full Post to replace it
+// (all-posts, by-feed, by-folder, bookmarked). Pass a full Post to replace it
 function patchPostInLists(queryClient: QueryClient, postId: number, changes: Partial<Post>) {
   const apply = (post: Post) => (post.id === postId ? { ...post, ...changes } : post);
-  for (const queryKey of [postKeys.listPrefix, postKeys.feedPrefix, postKeys.bookmarkedPrefix]) {
+  for (const queryKey of [
+    postKeys.listPrefix,
+    postKeys.feedPrefix,
+    postKeys.folderPrefix,
+    postKeys.bookmarkedPrefix,
+  ]) {
     queryClient.setQueriesData({ queryKey }, (cached: PostPages) => patchPostInPages(cached, apply));
   }
 }

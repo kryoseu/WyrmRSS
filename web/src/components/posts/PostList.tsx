@@ -18,15 +18,17 @@ import type { ReaderOutletContext } from "../../pages/ReaderPage";
 import type { FeedId } from "../../types/FeedId";
 import type { Post } from "../../types/Post";
 import { postPath } from "../../utils/posts";
+import type { FolderId } from "../../types/FolderId";
 
 const groupDate = (post: Post) => post.created_at;
 
 export function PostList() {
   const { activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
 
-  const { feedId, postId } = useParams();
+  const { feedId, postId, folderId } = useParams();
 
   const feedIdNum: FeedId | undefined = feedId ? Number(feedId) : undefined;
+  const folderIdNum: FolderId | undefined = folderId ? Number(folderId) : undefined;
 
   const { data: feeds } = useFeeds();
 
@@ -49,6 +51,7 @@ export function PostList() {
     isRefetching }
     = usePosts({
       feed_id: feedIdNum,
+      folder_id: folderIdNum,
       search: debouncedSearch || undefined,
       // unread-only is the API default; only "all" mode needs the param
       unread_only: unreadOnly ? undefined : false,
@@ -60,7 +63,7 @@ export function PostList() {
 
   const posts = useFlattenedPages(data);
 
-  const pathFor = (post: Post) => postPath(post, feedIdNum, false);
+  const pathFor = (post: Post) => postPath(post, feedIdNum, folderIdNum, false);
 
   usePostNavigation({
     items: posts,
