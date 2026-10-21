@@ -1573,6 +1573,7 @@ body.reader-resizing {
 }
 
 .pane-reader-bookmark,
+.pane-reader-source,
 .pane-reader-archive {
   background: none;
   border: none;
@@ -2447,6 +2448,7 @@ body.reader-resizing {
   flex-shrink: 0;
 
   .pane-reader-bookmark,
+  .pane-reader-source,
   .pane-reader-archive {
     min-width: 48px;
     min-height: 48px;
@@ -2675,6 +2677,66 @@ body.reader-resizing {
     display: flex;
     gap: 4px;
     margin: 0;
+  }
+}
+
+.post-source {
+  width: min(900px, calc(100vw - 32px));
+  height: 75vh;
+
+  .shortcuts-help-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
+  }
+}
+
+.post-source-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .segmented-btn {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+}
+
+.post-source-text {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--code-bg);
+  color: var(--text-h);
+
+  .hljs-tag,
+  .hljs-name {
+    color: var(--source-tag);
+  }
+
+  .hljs-attr {
+    color: var(--source-attr);
+  }
+
+  .hljs-string {
+    color: var(--source-value);
+  }
+
+  .hljs-comment,
+  .hljs-meta {
+    color: var(--source-comment);
   }
 }
 
