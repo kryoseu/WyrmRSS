@@ -43,10 +43,11 @@ export const ENDPOINTS = {
     poll: () => `${apiBase()}/feeds/poll`,
   },
   posts: {
-    list: ({ page, feed_id, bookmarked, unread_only, search }: ListPosts) =>
+    list: ({ page, feed_id, folder_id, bookmarked, unread_only, search }: ListPosts) =>
       buildUrl(`${apiBase()}/posts`, {
         page,
         feed_id: feed_id !== undefined ? String(feed_id) : undefined,
+        folder_id: folder_id !== undefined ? String(folder_id) : undefined,
         bookmarked: bookmarked ? "true" : undefined,
         unread_only: unread_only !== undefined ? String(unread_only) : undefined,
         search,

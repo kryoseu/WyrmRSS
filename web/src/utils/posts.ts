@@ -1,11 +1,13 @@
 import type { Post } from "../types/Post";
 import type { FeedId } from "../types/FeedId";
 import { getDateLabel } from "./utils";
+import type { FolderId } from "../types/FolderId";
 
 // Builds the route path for a post depending on context (all posts, a specific feed, or bookmarks).
-export function postPath(p: Post, feedId?: FeedId, isBookmarked?: boolean): string {
+export function postPath(p: Post, feedId?: FeedId, folderId?: FolderId, isBookmarked?: boolean): string {
   if (isBookmarked) return `/read-later/${p.id}`;
   if (feedId !== undefined) return `/feeds/${p.feed_id}/posts/${p.id}`;
+  if (folderId !== undefined) return `/folders/${folderId}/posts/${p.id}`;
   return `/posts/${p.id}`;
 }
 
