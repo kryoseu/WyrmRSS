@@ -12,6 +12,7 @@ import { extractHlsVideo } from "../../utils/hls";
 import { ReaderPane } from "../layout/ReaderPane";
 import { SanitizedHtml } from "../common/SanitizedHtml";
 import { HlsVideo } from "../common/HlsVideo";
+import { PostSource } from "./PostSource";
 import type { PostId } from "../../types/PostId";
 import { useFeed } from "../../hooks/useFeeds";
 import { Link } from "react-router";
@@ -100,6 +101,7 @@ export function PostReader({ postId, onClose, width }: Props) {
       >
         {post.bookmarked ? <TbBookmarkFilled /> : <TbBookmark />}
       </button>
+      {rawBody && <PostSource html={rawBody} />}
       <button
         className={`pane-reader-archive${post.is_archived ? " archived" : ""}`}
         onClick={toggleArchived}
