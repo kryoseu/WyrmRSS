@@ -8,6 +8,7 @@ import { extractHlsVideo } from "../../utils/hls";
 import { ReaderPane } from "../layout/ReaderPane";
 import { SanitizedHtml } from "../common/SanitizedHtml";
 import { HlsVideo } from "../common/HlsVideo";
+import { PostSource } from "../posts/PostSource";
 import type { PostId } from "../../types/PostId";
 
 interface Props {
@@ -38,13 +39,16 @@ export function ArchiveReader({ postId, onClose, width }: Props) {
   const date = formatDate(archive?.published_at ?? null);
 
   const actions = archive && (
-    <button
-      className="pane-reader-archive archived"
-      onClick={unarchiveAndClose}
-      aria-label="Unarchive"
-    >
-      <TbArchiveOff />
-    </button>
+    <>
+      {rawBody && <PostSource html={rawBody} />}
+      <button
+        className="pane-reader-archive archived"
+        onClick={unarchiveAndClose}
+        aria-label="Unarchive"
+      >
+        <TbArchiveOff />
+      </button>
+    </>
   );
 
   return (
