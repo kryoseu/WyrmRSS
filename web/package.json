@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.2",
-    "@tanstack/react-virtual": "^3.14.13",
+    "@tanstack/react-virtual": "^3.14.19",
     "@tauri-apps/api": "^2.12.1",
     "dompurify": "^3.4.17",
     "highlight.js": "^11.12.0",
