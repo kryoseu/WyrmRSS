@@ -10,6 +10,8 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        // Restores the main window's size, position and maximized state on launch.
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
             // Built programmatically (not via tauri.conf.json) so on_navigation
             // can send external links to the system browser instead of
