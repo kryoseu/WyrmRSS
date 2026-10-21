@@ -1,6 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "WyrmRSS",
+  "mainBinaryName": "wyrmrss",
   "identifier": "rss.wyrm.desktop",
   "build": {
     "frontendDist": "../../web/dist",
@@ -15,7 +16,13 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "rpm", "appimage", "nsis", "dmg"],
+    "targets": [
+      "deb",
+      "rpm",
+      "appimage",
+      "nsis",
+      "dmg"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
