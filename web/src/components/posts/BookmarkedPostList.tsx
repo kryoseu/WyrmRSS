@@ -15,7 +15,7 @@ import type { Post } from "../../types/Post";
 import { postPath } from "../../utils/posts";
 
 const groupDate = (post: Post) => post.created_at;
-const pathFor = (post: Post) => postPath(post, undefined, true);
+const pathFor = (post: Post) => postPath(post, undefined, undefined, true);
 
 export function BookmarkedPostList() {
   const { activePostId, onOpenPost } = useOutletContext<ReaderOutletContext>();
