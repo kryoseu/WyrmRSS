@@ -24,7 +24,7 @@ jobs:
             backend:
               - '**/*.rs'
               - '**/Cargo.toml'
-              - 'Cargo.lock'
+              - '**/Cargo.lock'
               - 'migrations/**'
               - 'migrations_sqlite/**'
               - 'crates/database/src/schema_sqlite.patch'
