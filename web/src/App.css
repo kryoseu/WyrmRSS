@@ -199,9 +199,34 @@ body.reader-resizing {
   letter-spacing: 0.8px;
   color: var(--text);
   flex-shrink: 0;
+  gap: 4px;
+}
+
+/* Sized to match the search box beside it. */
+.sidebar-feeds-filter {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 3px 5px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-h);
+  cursor: pointer;
+  font-size: 0.75rem;
+
+  &:hover {
+    background: var(--hover-bg);
+  }
+
+  &[aria-pressed="true"] {
+    color: var(--accent);
+    background: var(--accent-bg);
+  }
 }
 
 .sidebar-feeds-search {
+  margin-left: auto;
   font-size: 0.67rem;
   padding: 3px 7px;
   background: var(--code-bg);
@@ -2347,6 +2372,12 @@ body.reader-resizing {
   .sidebar-feeds-search {
     flex: 1;
     padding: 6px 10px;
+  }
+
+  .sidebar-feeds-filter {
+    align-self: stretch;
+    padding: 0 10px;
+    font-size: 0.95rem;
   }
 }
 
