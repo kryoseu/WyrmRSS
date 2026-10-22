@@ -2,7 +2,7 @@
  * Post cache: we use TanStack's QueryClient posts fetched under a query key.
  *
  * We store every fetched result under a "query key" (an array like
- * `["posts", "list", { search }]`). Components read from those
+ * `["posts", "list", { feed_id: 3 }]`). Components read from those
  * cached entries, so when the user changes a post (reads it, bookmarks it,
  * archives it) we can either edit the cached copy directly so the change shows
  * instantly, or mark the entry stale so React Query refetches it. The refetch
@@ -12,15 +12,15 @@
  * This file centralizes all of that, so the mutation hooks stay thin and no
  * component has to know how the cache works.
  *
- * The same post can live in several cached entries at once — the all-posts list,
- * a single feed's list, a folder's list, the bookmarked list, the archived list,
- * plus its own detail entry. A change has to be reflected in all of them.
+ * The same post can live in several cached entries at once — any number of
+ * lists (all posts, a feed, a folder, bookmarked), the archived list, plus its
+ * own by-id entry. A change has to be reflected in all of them.
  *
  * Structure:
  *  - `postKeys`  — the single source of truth for every query key. Each entry
- *                  is either a `*Prefix` (matches *every* variant of a list,
- *                  e.g. all search/unread combos — used for bulk updates) or a
- *                  function that builds the exact key one query is stored under.
+ *                  is either a prefix (matches a whole group, e.g. every list —
+ *                  used for bulk updates) or a function that builds the exact
+ *                  key one query is stored under.
  *  - patch helpers (`patchPostInPages`, `patchPostInLists`, `patchPost`) — edit
  *                  the cached copies in place so the UI updates without a refetch.
  *  - actions (`setPostArchived`, `setPostRead`, `setPostBookmarked`) — what the
@@ -33,37 +33,31 @@
  * patch can edit existing rows but can't add or remove them.
  */
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
+import type { ListPosts } from "../types/ListPosts";
 import type { Post } from "../types/Post";
 import type { PagedResponse } from "../types/PagedResponse";
 
 // ─── Cache keys ───
-// Every query key in one place. A `*Prefix` is a partial key matching a whole
-// group at once — e.g. bookmarkedPrefix = ["posts","bookmarked"] hits every
-// bookmarked query. A builder fills in the filters for the one exact key a query
-// uses — e.g. bookmarked("rust") = ["posts","bookmarked",{ search:"rust" }].
+// Every query key in one place. A prefix is a partial key matching a whole
+// group at once — e.g. listPrefix = ["posts","list"] hits every post list.
+// A builder makes the one exact key a query uses — a list's key holds the
+// request params themselves, so the key always matches what was fetched:
+// list({ feed_id: 3 }) = ["posts","list",{ feed_id: 3 }].
 export const postKeys = {
   all: ["posts"] as const,
 
   listPrefix: ["posts", "list"] as const,
-  listed: (search?: string, unreadOnly?: boolean) =>
-    [...postKeys.listPrefix, { search, unreadOnly }] as const,
+  list: (params: ListPosts) => [...postKeys.listPrefix, params] as const,
 
-  feedPrefix: ["posts", "feed"] as const,
-  byFeed: (feedId: number, search?: string, unreadOnly?: boolean) =>
-    [...postKeys.feedPrefix, feedId, { search, unreadOnly }] as const,
-
-  folderPrefix: ["posts", "folder"] as const,
-  byFolder: (folderId: number, search?: string, unreadOnly?: boolean) =>
-    [...postKeys.folderPrefix, folderId, { search, unreadOnly }] as const,
-
-  bookmarkedPrefix: ["posts", "bookmarked"] as const,
+  bookmarkedPrefix: ["posts", "list", "bookmarked"] as const,
   bookmarked: (search?: string) => [...postKeys.bookmarkedPrefix, { search }] as const,
 
   archivedPrefix: ["posts", "archived"] as const,
   archived: (search?: string) => [...postKeys.archivedPrefix, { search }] as const,
 
-  detail: (id: number) => [...postKeys.all, id] as const,
-  archiveDetail: (id: number) => [...postKeys.all, "archive", id] as const,
+  byId: (id: number) => [...postKeys.all, "byId", id] as const,
+
+  archiveById: (id: number) => [...postKeys.all, "archive", id] as const,
 };
 
 // ─── Cache writers (internal functions) ───
@@ -80,23 +74,18 @@ function patchPostInPages(cached: PostPages, patch: (post: Post) => Post): PostP
   };
 }
 
-// Update the post with `postId` wherever it appears in the cached lists
-// (all-posts, by-feed, by-folder, bookmarked). Pass a full Post to replace it
+// Update the post with `postId` wherever it appears in the cached lists.
+// Pass a full Post to replace it
 function patchPostInLists(queryClient: QueryClient, postId: number, changes: Partial<Post>) {
   const apply = (post: Post) => (post.id === postId ? { ...post, ...changes } : post);
-  for (const queryKey of [
-    postKeys.listPrefix,
-    postKeys.feedPrefix,
-    postKeys.folderPrefix,
-    postKeys.bookmarkedPrefix,
-  ]) {
-    queryClient.setQueriesData({ queryKey }, (cached: PostPages) => patchPostInPages(cached, apply));
-  }
+  queryClient.setQueriesData({ queryKey: postKeys.listPrefix }, (cached: PostPages) =>
+    patchPostInPages(cached, apply),
+  );
 }
 
-// Apply field changes to a post wherever it's cached — its detail entry and every list.
+// Apply field changes to a post wherever it's cached — its by-id entry and every list.
 function patchPost(queryClient: QueryClient, postId: number, changes: Partial<Post>) {
-  queryClient.setQueryData(postKeys.detail(postId), (cached: Post | undefined) =>
+  queryClient.setQueryData(postKeys.byId(postId), (cached: Post | undefined) =>
     cached ? { ...cached, ...changes } : cached,
   );
   patchPostInLists(queryClient, postId, changes);
@@ -111,7 +100,7 @@ export function setPostArchived(queryClient: QueryClient, postId: number, isArch
 
   // a cached single archived-post is only valid while it's archived
   if (!isArchived) {
-    queryClient.removeQueries({ queryKey: postKeys.archiveDetail(postId) });
+    queryClient.removeQueries({ queryKey: postKeys.archiveById(postId) });
   }
 }
 
