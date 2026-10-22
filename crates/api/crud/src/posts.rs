@@ -19,7 +19,7 @@ pub async fn update(
     Json(data): Json<UpdatePost>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<UpdatePostResponse>> {
-    let post = Post::update(
+    let (post, feed_unread_count) = Post::update_with_unread_count(
         &ctx.db_pool,
         PostUpdateForm {
             id: path.into_inner(),
@@ -28,8 +28,6 @@ pub async fn update(
         },
     )
     .await?;
-
-    let feed_unread_count = Post::unread_count(&ctx.db_pool, post.feed_id).await?;
 
     Ok(Json(UpdatePostResponse {
         post,

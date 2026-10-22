@@ -236,15 +236,31 @@ impl Post {
             .map_err(WyrmError::from)
     }
 
-    pub async fn unread_count(pool: &DatabasePool, feed_id: FeedId) -> WyrmResult<i64> {
+    /// Updates a post and returns it with its feed's unread count, both in one
+    /// transaction so the count always reflects this update.
+    pub async fn update_with_unread_count(
+        pool: &DatabasePool,
+        form: PostUpdateForm,
+    ) -> WyrmResult<(Self, i64)> {
         let mut conn = pool.get().await?;
-        posts::table
-            .filter(posts::feed_id.eq(feed_id))
-            .filter(posts::is_read.eq(false))
-            .count()
-            .get_result(&mut conn)
-            .await
-            .map_err(WyrmError::from)
+        let conn = &mut *conn;
+
+        conn.transaction(async |conn| {
+            let post: Self = diesel::update(posts::table.find(form.id))
+                .set(form)
+                .get_result(conn)
+                .await?;
+
+            let unread_count = posts::table
+                .filter(posts::feed_id.eq(post.feed_id))
+                .filter(posts::is_read.eq(false))
+                .count()
+                .get_result(conn)
+                .await?;
+
+            Ok::<(Self, i64), WyrmError>((post, unread_count))
+        })
+        .await
     }
 
     pub async fn expire_read(pool: &DatabasePool, days: i32) -> WyrmResult<usize> {
@@ -643,36 +659,39 @@ mod tests {
         }
 
         #[tokio::test]
-        async fn unread_count_ignores_read_posts_and_other_feeds() {
+        async fn update_with_unread_count_reflects_the_update() {
             let pool = setup_test_db().await;
             let feed = test_feed!(&pool);
             let other_feed = test_feed!(&pool);
-
+            let id = test_post!(&pool, feed.id).id;
             let _ = test_post!(&pool, feed.id);
-            let _ = test_post!(&pool, feed.id);
-            let read_id = test_post!(&pool, feed.id).id;
-            test_post!(&pool, other_feed.id);
+            // Must not affect `feed`'s count.
+            let _ = test_post!(&pool, other_feed.id);
 
-            Post::update(
-                &pool,
-                PostUpdateForm {
-                    id: read_id,
-                    bookmarked: None,
-                    is_read: Some(true),
-                },
-            )
-            .await
-            .expect("should mark post read");
+            let mark_read = |is_read| PostUpdateForm {
+                id,
+                bookmarked: None,
+                is_read: Some(is_read),
+            };
 
-            assert_eq!(Post::unread_count(&pool, feed.id).await.unwrap(), 2);
-            assert_eq!(Post::unread_count(&pool, other_feed.id).await.unwrap(), 1);
+            // Repeated toggles: each count must include its own update.
+            for _ in 0..3 {
+                let (post, count) = Post::update_with_unread_count(&pool, mark_read(true))
+                    .await
+                    .expect("should mark post read");
+                assert!(post.is_read);
+                assert_eq!(count, 1);
 
-            // Deleting cascades the posts away; a postless feed counts 0.
+                let (post, count) = Post::update_with_unread_count(&pool, mark_read(false))
+                    .await
+                    .expect("should mark post unread");
+                assert!(!post.is_read);
+                assert_eq!(count, 2);
+            }
+
             Feed::delete(&pool, other_feed.id)
                 .await
                 .expect("should delete feed");
-            assert_eq!(Post::unread_count(&pool, other_feed.id).await.unwrap(), 0);
-
             Feed::delete(&pool, feed.id)
                 .await
                 .expect("should delete feed");
@@ -726,6 +745,7 @@ mod tests {
                 Post::create(&pool, form).await.expect("should create post");
             }
             let read_id = post_id!(&read_url);
+            let unread_id = post_id!(&unread_url);
             let kept_id = post_id!(&kept_url);
             for (id, bookmarked) in [(read_id, None), (kept_id, Some(true))] {
                 Post::update(
@@ -745,8 +765,8 @@ mod tests {
             assert!(Post::expire_read(&pool, 5).await.unwrap() >= 1);
             assert!(Post::expire_unread(&pool, 5).await.unwrap() >= 1);
             assert!(Post::get(&pool, read_id).await.is_err());
+            assert!(Post::get(&pool, unread_id).await.is_err());
             assert!(Post::get(&pool, kept_id).await.is_ok());
-            assert_eq!(Post::unread_count(&pool, feed.id).await.unwrap(), 0);
 
             // Re-fetch: the expired urls must stay gone — their rows are deleted,
             // so only the expired_posts filter can block them — while a fresh url
