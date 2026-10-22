@@ -1,6 +1,16 @@
 import { useState } from "react";
-import { TbChecks, TbChevronDown, TbChevronRight, TbEdit, TbFolder, TbFolderOpen } from "react-icons/tb";
+import {
+  TbChecks,
+  TbChevronDown,
+  TbChevronRight,
+  TbEdit,
+  TbEye,
+  TbEyeOff,
+  TbFolder,
+  TbFolderOpen,
+} from "react-icons/tb";
 import { useFeeds } from "../../hooks/useFeeds";
+import { useHideCaughtUp } from "../../hooks/useHideCaughtUp";
 import { useFolders, useUpdateFolder } from "../../hooks/useFolders";
 import { useMarkRead } from "../../hooks/usePostMutations";
 import { FeedItem } from "./FeedItem";
@@ -10,6 +20,7 @@ import { AddFeedForm } from "./AddFeedForm";
 import { FolderForm } from "../folders/FolderForm";
 import { renameErrorMessage } from "../../api/folders";
 import type { FolderId } from "../../types/FolderId";
+import type { FeedView } from "../../types/FeedView";
 
 export function FeedList() {
   const { feedId, folderId } = useParams();
@@ -18,6 +29,7 @@ export function FeedList() {
 
   const [showAdd, setShowAdd] = useState(false);
   const [search, setSearch] = useState("");
+  const { hideCaughtUp, setHideCaughtUp } = useHideCaughtUp();
   // Folders default to collapsed; expansion is session-only by design.
   const [expanded, setExpanded] = useState<Set<FolderId>>(new Set());
   // At most one folder renames at a time, so one shared mutation is enough.
@@ -45,8 +57,21 @@ export function FeedList() {
   }
 
   const searching = search.trim() !== "";
-  const filtered = (feeds ?? []).filter((f) =>
-    f.title.toLowerCase().includes(search.toLowerCase())
+
+  // Radar feeds count as caught up: the sidebar never shows their unread count.
+  // Search and the active feed always show, so neither vanishes.
+  function shouldHideCaughtUpFeed(f: FeedView): boolean {
+    return (
+      hideCaughtUp &&
+      !searching &&
+      (f.display_mode === "radar" || f.unread_count === 0) &&
+      String(f.id) !== feedId
+    );
+  }
+
+  const filtered = (feeds ?? []).filter(
+    (f) =>
+      f.title.toLowerCase().includes(search.toLowerCase()) && !shouldHideCaughtUpFeed(f)
   );
 
   const standalone = filtered.filter((f) => f.folder_id === undefined);
@@ -62,7 +87,7 @@ export function FeedList() {
         .filter((f) => f.folder_id === folder.id && f.display_mode !== "radar")
         .reduce((sum, f) => sum + f.unread_count, 0),
     }))
-    .filter((g) => g.members.length > 0)
+    .filter((g) => g.members.length > 0 || folderId === String(g.folder.id))
     .sort((a, b) => a.folder.name.localeCompare(b.folder.name));
 
   const renderFeed = (f: (typeof filtered)[number]) => (
@@ -79,6 +104,14 @@ export function FeedList() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <button
+          className="sidebar-feeds-filter"
+          aria-pressed={hideCaughtUp}
+          onClick={() => setHideCaughtUp(!hideCaughtUp)}
+          title={hideCaughtUp ? "Hiding caught-up feeds — click to show all" : "Showing all feeds — click to hide caught-up"}
+        >
+          {hideCaughtUp ? <TbEyeOff /> : <TbEye />}
+        </button>
       </div>
 
       <div className="sidebar-feeds-scroll">
@@ -153,7 +186,7 @@ export function FeedList() {
           );
         })}
         {filtered.length === 0 && !isLoading && (
-          <div className="pane-empty">No feeds</div>
+          <div className="pane-empty">{hideCaughtUp && feeds?.length ? "All caught up" : "No feeds"}</div>
         )}
       </div>
 
