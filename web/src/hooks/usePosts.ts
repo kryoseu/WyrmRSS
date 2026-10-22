@@ -26,14 +26,6 @@ function infinitePostsQuery<T>(
   });
 }
 
-export function usePost(id?: PostId) {
-  return useQuery({
-    queryKey: postKeys.byId(id!),
-    queryFn: () => getPost(id!),
-    enabled: id !== undefined,
-  });
-}
-
 // The params are both the request and the cache key, so each filter combination
 // gets its own cached list. `params.page` is ignored: the infinite query owns the cursor.
 export function usePosts(params: ListPosts = {}) {
@@ -56,6 +48,20 @@ export function useBookmarkedPosts(search?: string) {
   );
 }
 
+export function useArchivedPosts({ search }: ArchivedQuery = {}) {
+  return useInfiniteQuery(
+    infinitePostsQuery(postKeys.archived(search), (page) => listArchivedPosts({ page, search })),
+  );
+}
+
+export function usePost(id?: PostId) {
+  return useQuery({
+    queryKey: postKeys.byId(id!),
+    queryFn: () => getPost(id!),
+    enabled: id !== undefined,
+  });
+}
+
 export function useArchivedPost(id?: PostId) {
   return useQuery({
     queryKey: postKeys.archiveById(id!),
@@ -64,9 +70,4 @@ export function useArchivedPost(id?: PostId) {
   });
 }
 
-export function useArchivedPosts({ search }: ArchivedQuery = {}) {
-  return useInfiniteQuery(
-    infinitePostsQuery(postKeys.archived(search), (page) => listArchivedPosts({ page, search })),
-  );
-}
 
