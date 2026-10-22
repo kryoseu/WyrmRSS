@@ -5,14 +5,14 @@ import { useFolders, useUpdateFolder } from "../../hooks/useFolders";
 import { useMarkRead } from "../../hooks/usePostMutations";
 import { FeedItem } from "./FeedItem";
 import { RowMenu } from "../common/RowMenu";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { AddFeedForm } from "./AddFeedForm";
 import { FolderForm } from "../folders/FolderForm";
 import { renameErrorMessage } from "../../api/folders";
 import type { FolderId } from "../../types/FolderId";
 
 export function FeedList() {
-  const { feedId } = useParams();
+  const { feedId, folderId } = useParams();
   const { data: feeds, isLoading } = useFeeds();
   const { data: folders } = useFolders();
 
@@ -89,13 +89,18 @@ export function FeedList() {
           const isOpen = searching || expanded.has(folder.id);
           return (
             <div key={folder.id} className="folder-group">
-              <div className="folder-group-header">
+              <div
+                className={`folder-group-header${folderId === String(folder.id) ? " active" : ""}`}
+              >
                 <button
-                  className="folder-group-toggle"
+                  className="folder-group-chevron"
                   onClick={() => toggleExpanded(folder.id)}
                   aria-expanded={isOpen}
+                  aria-label={isOpen ? `Collapse ${folder.name}` : `Expand ${folder.name}`}
                 >
                   {isOpen ? <TbChevronDown /> : <TbChevronRight />}
+                </button>
+                <Link to={`/folders/${folder.id}`} className="folder-group-toggle">
                   {isOpen ? <TbFolderOpen /> : <TbFolder />}
                   <span className="folder-group-name">{folder.name}</span>
                   {unread > 0 && (
@@ -103,7 +108,7 @@ export function FeedList() {
                       {unread > 999 ? "999+" : unread}
                     </span>
                   )}
-                </button>
+                </Link>
                 <RowMenu
                   label={`Actions for ${folder.name}`}
                   items={[

@@ -1,7 +1,7 @@
 use crate::{
     DatabasePool,
     models::{feed::DisplayMode, post::Post},
-    newtypes::FeedId,
+    newtypes::{FeedId, FolderId},
     schema::{feeds, posts},
     utils::pagination::{PagedResponse, PaginationCursor},
 };
@@ -9,12 +9,23 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
+/// Filters for a cursor-paginated post list, newest first.
+/// With no `feed_id` or `folder_id`, only River-mode feeds are included.
+/// With `folder_id`, all non-Radar feeds in that folder are included.
+/// Both filters combine (AND) when set together.
 #[derive(Default)]
 pub struct PostQuery {
+    /// Restrict to a single feed.
     pub feed_id: Option<FeedId>,
+    /// Restrict to feeds in this folder.
+    pub folder_id: Option<FolderId>,
+    /// `Some(true)` returns only bookmarked posts.
     pub bookmarked: Option<bool>,
+    /// `Some(true)` returns only unread posts.
     pub unread_only: Option<bool>,
+    /// Case-insensitive substring match on title or description.
     pub search: Option<String>,
+    /// Resume after this cursor from a previous page.
     pub cursor: Option<PaginationCursor>,
 }
 
@@ -38,7 +49,16 @@ impl PostQuery {
             query = query.filter(posts::feed_id.eq(feed_id));
         }
 
-        if self.feed_id.is_none() {
+        if let Some(folder_id) = self.folder_id {
+            query = query.filter(
+                posts::feed_id.eq_any(
+                    feeds::table
+                        .filter(feeds::folder_id.eq(folder_id))
+                        .filter(feeds::display_mode.ne(DisplayMode::Radar))
+                        .select(feeds::id),
+                ),
+            );
+        } else if self.feed_id.is_none() {
             query = query.filter(
                 posts::feed_id.eq_any(
                     feeds::table

@@ -17,6 +17,7 @@ use wyrm_utils::result::WyrmResult;
 pub struct ListPosts {
     pub page: Option<PaginationCursor>,
     pub feed_id: Option<FeedId>,
+    pub folder_id: Option<FolderId>,
     pub bookmarked: Option<bool>,
     pub unread_only: Option<bool>,
     pub search: Option<String>,
@@ -65,6 +66,7 @@ pub async fn list(
     let page = PostQuery {
         cursor: query.page,
         feed_id: query.feed_id,
+        folder_id: query.folder_id,
         bookmarked: query.bookmarked,
         unread_only: query.unread_only.or(Some(true)),
         search: query.search,

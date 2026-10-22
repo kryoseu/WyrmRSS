@@ -33,6 +33,8 @@ export default function App() {
                   <Route path="/posts/:postId" element={<PostList />} />
                   <Route path="/feeds/:feedId" element={<PostList />} />
                   <Route path="/feeds/:feedId/posts/:postId" element={<PostList />} />
+                  <Route path="/folders/:folderId" element={<PostList />} />
+                  <Route path="/folders/:folderId/posts/:postId" element={<PostList />} />
                   <Route path="/read-later" element={<BookmarkedPostList />} />
                   <Route path="/read-later/:postId" element={<BookmarkedPostList />} />
                   <Route path="/archive" element={<ArchiveList />} />

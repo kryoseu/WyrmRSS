@@ -303,8 +303,23 @@ body.reader-resizing {
   &:hover {
     background: var(--accent-bg);
 
+    .folder-group-chevron,
     .folder-group-toggle {
       color: var(--text-h);
+    }
+  }
+
+  &.active {
+    background: var(--accent-bg);
+    border-left: 2px solid var(--accent);
+
+    .folder-group-toggle {
+      color: var(--accent);
+    }
+
+    /* Offset the border so the row content doesn't shift. */
+    .folder-group-chevron {
+      padding-left: 10px;
     }
   }
 
@@ -327,22 +342,29 @@ body.reader-resizing {
   }
 }
 
+/* Expand/collapse only; the folder name next to it opens the folder view. */
+.folder-group-chevron {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 6px 0 12px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
 .folder-group-toggle {
   flex: 1;
   display: flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  padding: 9px 12px;
-  background: none;
-  border: none;
+  padding: 9px 12px 9px 0;
   color: var(--text);
   font-size: 0.72rem;
-  font-family: var(--sans);
-  /* Buttons don't inherit the root's 145% like the feed-item links do,
-     which left folder rows a few px shorter. */
-  line-height: inherit;
-  text-align: left;
+  text-decoration: none;
   cursor: pointer;
 }
 
