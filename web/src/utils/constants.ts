@@ -11,6 +11,7 @@ export const DEFAULTS = {
   density: { mobile: "card", desktop: "card" } as Record<"mobile" | "desktop", Density>,
   // Demo visitors share read state, so show everything there.
   unreadOnly: { normal: true, demo: false },
+  hideCaughtUp: false,
 };
 
 export const LAYOUT = {
