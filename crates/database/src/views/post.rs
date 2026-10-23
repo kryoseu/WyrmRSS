@@ -10,7 +10,7 @@ use diesel_async::RunQueryDsl;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 /// Filters for a cursor-paginated post list, newest first.
-/// With no `feed_id` or `folder_id`, only River-mode feeds are included.
+/// With no `feed_id`, `folder_id`, `search` or `bookmarked`, only River-mode feeds are included.
 /// With `folder_id`, all non-Radar feeds in that folder are included.
 /// Both filters combine (AND) when set together.
 #[derive(Default)]
@@ -58,7 +58,8 @@ impl PostQuery {
                         .select(feeds::id),
                 ),
             );
-        } else if self.feed_id.is_none() {
+        } else if self.feed_id.is_none() && self.search.is_none() && self.bookmarked != Some(true) {
+            // Default River view; searches and Read Later include all display modes.
             query = query.filter(
                 posts::feed_id.eq_any(
                     feeds::table
