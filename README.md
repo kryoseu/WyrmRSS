@@ -171,6 +171,10 @@ not read back. They are stored unencrypted in the database.
 | Frontend | React, Vite, React Router v7, TanStack Query |
 | Desktop  | Tauri                                   |
 
+## Credits
+
+Logo by [Pedro Niels](https://www.instagram.com/opedroniels/).
+
 ## Star History
 
 <a href="https://www.star-history.com/?repos=kryoseu%2FWyrmRSS&type=date&legend=top-left">
@@ -184,7 +188,3 @@ not read back. They are stored unencrypted in the database.
 ## License
 
 GPL v3 — see [LICENSE](LICENSE).
-
-## Credits
-
-Logo by [Pedro Niels](https://www.instagram.com/opedroniels/).
