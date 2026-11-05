@@ -6,11 +6,13 @@ import type { DisplayMode } from "../../types/DisplayMode";
 
 interface Props {
   onClose: () => void;
+  initialTitle?: string;
+  initialUrl?: string;
 }
 
-export function AddFeedForm({ onClose }: Props) {
-  const [title, setTitle] = useState("");
-  const [url, setUrl] = useState("");
+export function AddFeedForm({ onClose, initialTitle = "", initialUrl = "" }: Props) {
+  const [title, setTitle] = useState(initialTitle);
+  const [url, setUrl] = useState(initialUrl);
   const [ttl, setTtl] = useState("");
   const [folder, setFolder] = useState("");
   const [filters, setFilters] = useState<string[]>([]);

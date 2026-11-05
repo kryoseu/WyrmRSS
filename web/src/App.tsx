@@ -11,6 +11,7 @@ import { AppLayout } from "./pages/AppLayout";
 import { FeedsPage } from "./pages/FeedsPage";
 import { ReaderPage } from "./pages/ReaderPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { SubscribePage } from "./pages/SubscribePage";
 
 // Always send requests instead of pausing them.
 const qc = new QueryClient({
@@ -41,6 +42,7 @@ export default function App() {
                   <Route path="/archive/:postId" element={<ArchiveList />} />
                 </Route>
                 <Route path="/feeds" element={<FeedsPage />} />
+                <Route path="/subscribe" element={<SubscribePage />} />
                 <Route path="/radar" element={<RadarBoard />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>

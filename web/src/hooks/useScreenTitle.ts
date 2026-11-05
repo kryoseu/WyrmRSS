@@ -3,6 +3,7 @@ import { useFeeds } from "./useFeeds";
 import type { FeedMeta } from "../components/posts/PostItem";
 
 const SECTION_TITLES: [prefix: string, title: string][] = [
+  ["/subscribe", "Add Feed"],
   ["/read-later", "Read Later"],
   ["/archive", "Archive"],
   ["/radar", "Radar"],
