@@ -104,21 +104,14 @@ The following settings are stored in the database and can be changed at runtime 
 
 ## Subscription links
 
-Feed discovery extensions and bookmarklets can open `/subscribe` to prefill the
-Add Feed form. The `url` query parameter supplies the feed URL and the optional
-`title` parameter supplies its title. Encode each parameter with
-`encodeURIComponent` (or construct the query with `URLSearchParams`):
+Extensions and bookmarklets can open `/subscribe` to prefill the Add Feed form
+with a URL-encoded `url` and optional `title`:
 
 ```text
 https://wyrm.example.com/subscribe?url=https%3A%2F%2Fexample.com%2Ffeed.xml&title=Example
 ```
 
-The user can review and edit the details before clicking **Add**; opening a link
-does not create a subscription. Missing parameters leave the corresponding fields
-empty. After adding a feed or cancelling, Wyrm returns to the home page.
-
-Protected instances use the normal API key prompt and remember the subscription
-link while the user connects. Do not put an API key in the subscription URL.
+Nothing is added until the user clicks **Add**. Never put an API key in the link.
 
 ## YouTube
 

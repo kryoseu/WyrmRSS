@@ -18,6 +18,10 @@ export function SubscribePage() {
             initialUrl={params.get("url") ?? ""}
             initialTitle={params.get("title") ?? ""}
             onClose={() => navigate("/", { replace: true })}
+            onCreated={(feed) =>
+              navigate(feed.display_mode === "radar" ? "/radar" : `/feeds/${feed.id}`, {
+                replace: true,
+              })}
           />
         </section>
       </div>
