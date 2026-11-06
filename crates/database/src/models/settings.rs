@@ -61,6 +61,8 @@ pub struct Settings {
     pub expire_unread_after_days: Option<i32>,
     /// Delay before marking post as read.
     pub read_delay_secs: i32,
+    /// RSSHub instance base URL; empty disables rsshub:// subscriptions.
+    pub rsshub_instance: String,
 }
 
 impl Settings {
@@ -100,6 +102,7 @@ pub struct SettingsUpdateForm {
     #[diesel(treat_none_as_null = true)]
     pub expire_unread_after_days: Option<i32>,
     pub read_delay_secs: Option<i32>,
+    pub rsshub_instance: Option<String>,
 }
 
 #[cfg(all(test, feature = "postgres"))]
@@ -131,6 +134,7 @@ mod tests {
                 expire_read_after_days: None,
                 expire_unread_after_days: None,
                 read_delay_secs: None,
+                rsshub_instance: None,
             },
         )
         .await
@@ -150,6 +154,7 @@ mod tests {
                 expire_read_after_days: None,
                 expire_unread_after_days: None,
                 read_delay_secs: None,
+                rsshub_instance: None,
             },
         )
         .await
@@ -169,6 +174,7 @@ mod tests {
                 expire_read_after_days: None,
                 expire_unread_after_days: None,
                 read_delay_secs: None,
+                rsshub_instance: None,
             },
         )
         .await

@@ -53,8 +53,10 @@ pub async fn create(
     // One fetch serves both discovery and the icon lookup below: we try to
     // find a feed from a normal page url (blog homepage, YouTube channel),
     // and if the URL provided already resolves to a feed, we simply pass through.
-    let fetched = fetch_url(&http, &data.url).await?;
-    let url = resolve_feed_url(&data.url, &fetched)?;
+    let instance = ctx.runtime_settings.read()?.rsshub_instance.clone();
+    let submitted_url = wyrm_rss::rsshub::resolve_url(&data.url, &instance)?;
+    let fetched = fetch_url(&http, &submitted_url).await?;
+    let url = resolve_feed_url(&submitted_url, &fetched)?;
     let feed = Feed::create(
         &ctx.db_pool,
         FeedInsertForm {
@@ -95,6 +97,8 @@ pub async fn update(
     let (url, fetched) = match data.url {
         Some(u) if u == feed.url => (Some(u), FetchedUrl::None),
         Some(u) => {
+            let instance = ctx.runtime_settings.read()?.rsshub_instance.clone();
+            let u = wyrm_rss::rsshub::resolve_url(&u, &instance)?;
             let fetched = fetch_url(&http, &u).await?;
             (Some(resolve_feed_url(&u, &fetched)?), fetched)
         }

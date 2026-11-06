@@ -21,6 +21,8 @@ function GeneralForm({ initial }: { initial: Settings }) {
   const [expireUnreadAfterDays, setExpireUnreadAfterDays] = useState(String(initial.expire_unread_after_days ?? ""));
   const [readDelaySecs, setReadDelaySecs] = useState(String(initial.read_delay_secs));
 
+  const [rsshubInstance, setRsshubInstance] = useState(initial.rsshub_instance ?? "");
+
   const update = useUpdateSettings();
 
   function handleSubmit(e: React.FormEvent) {
@@ -36,6 +38,7 @@ function GeneralForm({ initial }: { initial: Settings }) {
       expire_read_after_days: parseInt(expireReadAfterDays),
       expire_unread_after_days: parseInt(expireUnreadAfterDays),
       read_delay_secs: parseInt(readDelaySecs),
+      rsshub_instance: rsshubInstance.trim(),
     });
   }
 
@@ -85,6 +88,21 @@ function GeneralForm({ initial }: { initial: Settings }) {
         <label>Poll interval (s)</label>
         <input type="number" min={60} value={pollInterval} onChange={(e) => setPollInterval(e.target.value)} required />
       </div>
+
+      <h2 className="settings-section-title">RSSHub</h2>
+      <div className="settings-field">
+        <label htmlFor="rsshub-instance">Instance URL</label>
+        <input
+          id="rsshub-instance"
+          type="url"
+          value={rsshubInstance}
+          onChange={(e) => setRsshubInstance(e.target.value)}
+          placeholder="https://rsshub.app"
+        />
+      </div>
+      <p className="settings-hint">
+        Resolve rsshub:// feed links using this instance. Leave blank to disable.
+      </p>
 
       <h2 className="settings-section-title">HTTP</h2>
       <div className="settings-field">

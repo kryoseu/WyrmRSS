@@ -258,3 +258,43 @@ async fn deleting_a_feed_cascades_to_posts() {
         .expect("should count posts");
     assert_eq!(after, 0, "posts should cascade away with their feed");
 }
+
+#[tokio::test]
+async fn rsshub_instance_persists_and_partial_updates_preserve_it() {
+    use database::{
+        models::settings::{Settings, SettingsUpdateForm},
+        utils::settings::RuntimeSettings,
+    };
+
+    fn form(instance: Option<&str>) -> SettingsUpdateForm {
+        SettingsUpdateForm {
+            page_size: None,
+            feed_poll_interval_secs: None,
+            http_timeout: None,
+            http_connect_timeout: None,
+            http_retries: None,
+            http_user_agent: None,
+            read_mode: None,
+            expire_read_after_days: None,
+            expire_unread_after_days: None,
+            read_delay_secs: None,
+            rsshub_instance: instance.map(String::from),
+        }
+    }
+
+    let db = TestDb::new("rsshub").await;
+    assert_eq!(Settings::get(&db.pool).await.unwrap().rsshub_instance, "");
+    Settings::update(&db.pool, form(Some("https://example.com/rsshub")))
+        .await
+        .unwrap();
+    let saved = Settings::get(&db.pool).await.unwrap();
+    assert_eq!(saved.rsshub_instance, "https://example.com/rsshub");
+    assert_eq!(
+        RuntimeSettings::from(&saved).rsshub_instance,
+        saved.rsshub_instance
+    );
+    let unchanged = Settings::update(&db.pool, form(None)).await.unwrap();
+    assert_eq!(unchanged.rsshub_instance, saved.rsshub_instance);
+    let cleared = Settings::update(&db.pool, form(Some(""))).await.unwrap();
+    assert_eq!(cleared.rsshub_instance, "");
+}

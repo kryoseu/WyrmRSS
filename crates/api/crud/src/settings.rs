@@ -21,6 +21,7 @@ pub struct UpdateSettings {
     expire_read_after_days: Option<i32>,
     expire_unread_after_days: Option<i32>,
     read_delay_secs: Option<i32>,
+    rsshub_instance: Option<String>,
 }
 
 pub async fn update(
@@ -42,6 +43,10 @@ pub async fn update(
             expire_read_after_days: data.expire_read_after_days,
             expire_unread_after_days: data.expire_unread_after_days,
             read_delay_secs: data.read_delay_secs,
+            rsshub_instance: data
+                .rsshub_instance
+                .map(|value| wyrm_rss::rsshub::validate_instance(&value))
+                .transpose()?,
         },
     )
     .await?;

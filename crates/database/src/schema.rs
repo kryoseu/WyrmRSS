@@ -128,6 +128,7 @@ diesel::table! {
         expire_read_after_days -> Nullable<Int4>,
         expire_unread_after_days -> Nullable<Int4>,
         read_delay_secs -> Int4,
+        rsshub_instance -> Text,
     }
 }
 

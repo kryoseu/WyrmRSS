@@ -44,4 +44,8 @@ expire_unread_after_days?: number,
 /**
  * Delay before marking post as read.
  */
-read_delay_secs: number, };
+read_delay_secs: number, 
+/**
+ * RSSHub instance base URL; empty disables rsshub:// subscriptions.
+ */
+rsshub_instance: string, };
