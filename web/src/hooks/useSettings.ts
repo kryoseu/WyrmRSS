@@ -22,7 +22,7 @@ export function useDemoMode() {
 export function useUpdateSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: UpdateSettings) => updateSettings(body),
+    mutationFn: (body: Partial<UpdateSettings>) => updateSettings(body),
     onSuccess: (data) => {
       qc.setQueryData(["settings"], data);
     },

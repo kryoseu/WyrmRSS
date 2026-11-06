@@ -120,9 +120,14 @@ empty. After adding a feed or cancelling, Wyrm returns to the home page.
 Protected instances use the normal API key prompt and remember the subscription
 link while the user connects. Do not put an API key in the subscription URL.
 
-## RSSHub
+## Integrations
 
-Set **Settings → General → RSSHub → Instance URL** to your RSSHub instance
+Configure available integrations in **Settings → Integrations**.
+
+### RSSHub
+
+RSSHub generates feeds for websites without native RSS support.
+Set **RSSHub → Instance URL** to your RSSHub instance
 (for example `https://rsshub.app` or `https://example.com/rsshub`). Leave it
 blank to disable RSSHub links. The setting is shared by this WyrmRSS instance
 and takes effect immediately.
@@ -134,8 +139,6 @@ feed URL. Changing the instance setting affects new subscriptions and edited
 URLs; existing feeds keep their saved URLs. Query parameters and fragments are
 preserved. `/subscribe` still requires the normal API-key flow and an explicit
 **Add** confirmation.
-
-This support is pending release; the current v0.35.1 release does not contain it.
 
 ## YouTube
 
