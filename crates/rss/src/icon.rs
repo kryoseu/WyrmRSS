@@ -39,16 +39,7 @@ pub async fn ensure_feed_icon(
     feed: &Feed,
     parsed: &feed_rs::model::Feed,
 ) {
-    let existing = match FeedIcon::get(pool, feed.id).await {
-        Ok(existing) => existing,
-        Err(_) => return,
-    };
-
-    // Found icons are kept until the feed's URL changes (the row is deleted
-    // then); recent misses wait out the retry window.
-    if existing.is_some_and(|icon| {
-        icon.data.is_some() || Utc::now() - icon.checked_at < RETRY_MISSING_AFTER
-    }) {
+    if !needs_feed_icon(pool, feed.id).await {
         return;
     }
 
@@ -60,6 +51,17 @@ pub async fn ensure_feed_icon(
     };
     if let Err(e) = FeedIcon::create(pool, form).await {
         warn!("feed icon: could not store result for {}: {e}", feed.url);
+    }
+}
+
+/// A missing/expired icon needs a parsed body, so polling can bypass validators
+/// for that check instead of suppressing icon retries indefinitely with 304s.
+pub async fn needs_feed_icon(pool: &DatabasePool, feed_id: database::newtypes::FeedId) -> bool {
+    match FeedIcon::get(pool, feed_id).await {
+        Ok(existing) => existing.is_none_or(|icon| {
+            icon.data.is_none() && Utc::now() - icon.checked_at >= RETRY_MISSING_AFTER
+        }),
+        Err(_) => false,
     }
 }
 

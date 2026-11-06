@@ -258,3 +258,102 @@ async fn deleting_a_feed_cascades_to_posts() {
         .expect("should count posts");
     assert_eq!(after, 0, "posts should cascade away with their feed");
 }
+
+#[tokio::test]
+async fn poll_health_roundtrips_recovers_and_resets_on_url_change() {
+    use database::models::{
+        feed::FeedUpdateForm,
+        feed_poll_state::{FeedHealth, FeedPollState},
+    };
+    let db = TestDb::new("poll_health").await;
+    let feed = Feed::create(&db.pool, feed_form("https://example.com/first", None))
+        .await
+        .unwrap();
+    let first = Utc::now() - chrono::TimeDelta::minutes(5);
+    let mut state = FeedPollState {
+        feed_id: feed.id,
+        source_url: feed.url.clone(),
+        filter_signature: FeedPollState::filters_key(&feed),
+        checked_at: first,
+        last_error: None,
+        etag: Some("\"version1\"".into()),
+        last_modified: None,
+    };
+    state.record(&db.pool, true).await.unwrap();
+    state.checked_at = Utc::now();
+    state.last_error = Some("HTTP 503 Service Unavailable".into());
+    state.record(&db.pool, false).await.unwrap();
+    let failed = Feed::get(&db.pool, feed.id).await.unwrap();
+    assert_eq!(failed.last_fetched_at, Some(first));
+    let states = FeedPollState::all_by_feed(&db.pool).await.unwrap();
+    let stored = &states[&feed.id];
+    assert_eq!(stored.etag, state.etag);
+    let health = FeedHealth::for_feed(&failed, Some(stored));
+    assert!(health.last_error.is_some());
+    assert_eq!(health.last_checked_at, Some(state.checked_at));
+    assert_eq!(
+        health.next_check_at,
+        Some(first + chrono::TimeDelta::minutes(i64::from(feed.ttl)))
+    );
+    state.last_error = None;
+    state.record(&db.pool, true).await.unwrap();
+    let recovered = Feed::get(&db.pool, feed.id).await.unwrap();
+    assert_eq!(recovered.last_fetched_at, Some(state.checked_at));
+    let mut changed_filters = recovered.clone();
+    changed_filters.filters = vec![Some("sponsored".into())].into();
+    assert!(!state.matches(&changed_filters));
+    let mut paused = recovered.clone();
+    paused.is_paused = true;
+    assert!(
+        FeedHealth::for_feed(&paused, Some(&state))
+            .next_check_at
+            .is_none()
+    );
+    let updated = Feed::update(
+        &db.pool,
+        FeedUpdateForm {
+            id: feed.id,
+            title: None,
+            url: Some("https://example.com/second".into()),
+            ttl: None,
+            folder: None,
+            filters: None,
+            is_paused: None,
+            last_fetched_at: None,
+            display_mode: None,
+        },
+    )
+    .await
+    .unwrap();
+    assert!(updated.last_fetched_at.is_none());
+    assert!(
+        !FeedPollState::all_by_feed(&db.pool)
+            .await
+            .unwrap()
+            .contains_key(&feed.id)
+    );
+    // An in-flight request for the previous URL must not bring its cache back.
+    state.record(&db.pool, true).await.unwrap();
+    assert!(
+        !FeedPollState::all_by_feed(&db.pool)
+            .await
+            .unwrap()
+            .contains_key(&feed.id)
+    );
+    assert!(
+        Feed::get(&db.pool, feed.id)
+            .await
+            .unwrap()
+            .last_fetched_at
+            .is_none()
+    );
+    state.source_url = updated.url.clone();
+    state.record(&db.pool, true).await.unwrap();
+    Feed::delete(&db.pool, feed.id).await.unwrap();
+    assert!(
+        !FeedPollState::all_by_feed(&db.pool)
+            .await
+            .unwrap()
+            .contains_key(&feed.id)
+    );
+}
