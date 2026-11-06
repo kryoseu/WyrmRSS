@@ -102,6 +102,24 @@ The following settings are stored in the database and can be changed at runtime 
 | `WYRM_BACKEND_URL` | `http://localhost:3001` | Backend URL, must match where the backend is running |
 | `WYRM_API_KEY` | _(none)_ | Bake an API key into the frontend build, skipping the key prompt entirely |
 
+## Subscription links
+
+Feed discovery extensions and bookmarklets can open `/subscribe` to prefill the
+Add Feed form. The `url` query parameter supplies the feed URL and the optional
+`title` parameter supplies its title. Encode each parameter with
+`encodeURIComponent` (or construct the query with `URLSearchParams`):
+
+```text
+https://wyrm.example.com/subscribe?url=https%3A%2F%2Fexample.com%2Ffeed.xml&title=Example
+```
+
+The user can review and edit the details before clicking **Add**; opening a link
+does not create a subscription. Missing parameters leave the corresponding fields
+empty. After adding a feed or cancelling, Wyrm returns to the home page.
+
+Protected instances use the normal API key prompt and remember the subscription
+link while the user connects. Do not put an API key in the subscription URL.
+
 ## YouTube
 
 Wyrm treats YouTube channels as regular RSS feeds. Add a channel using its feed URL:
