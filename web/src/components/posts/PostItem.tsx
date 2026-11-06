@@ -1,7 +1,8 @@
 import { memo, useMemo } from "react";
 import { Link } from "react-router";
+import { isTauri } from "@tauri-apps/api/core";
 import { HiMail, HiMailOpen } from "react-icons/hi";
-import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
+import { TbArchive, TbArchiveOff, TbArrowUpRight, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
 import type { Post } from "../../types/Post";
 import type { FeedId } from "../../types/FeedId";
 import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../../hooks/usePostMutations";
@@ -51,6 +52,24 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
     e.preventDefault();
     e.stopPropagation();
     setBookmarked({ id: post.id, bookmarked: !post.bookmarked });
+  }
+
+  function handleOpenOriginal(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!post.url) return;
+    // The row is already a link, so open through a detached anchor. Desktop
+    // drops target="_blank" so its navigation hook opens the system browser.
+    const link = document.createElement("a");
+    link.href = post.url;
+    if (!isTauri()) {
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+    }
+    link.click();
+    if (!post.is_read && readMode === "on_open") {
+      setRead({ id: post.id, isRead: true });
+    }
   }
 
   function handleArchiveToggle(e: React.MouseEvent) {
@@ -105,6 +124,16 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
         </span>
       ) : (
         title
+      )}
+      {post.url && (
+        <button
+          className="post-item-original"
+          onClick={handleOpenOriginal}
+          aria-label="Open original"
+          title="Open original"
+        >
+          <TbArrowUpRight />
+        </button>
       )}
       <button
         className={`post-item-archive${post.is_archived ? " archived" : ""}`}

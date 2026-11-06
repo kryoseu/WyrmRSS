@@ -1448,6 +1448,7 @@ body.reader-resizing {
      first tap on hover instead of opening the post. */
   @media (hover: hover) {
     &:hover {
+      .post-item-original,
       .post-item-bookmark,
       .post-item-archive,
       .post-item-read {
@@ -1529,6 +1530,7 @@ body.reader-resizing {
   }
 }
 
+.post-item-original,
 .post-item-bookmark,
 .post-item-archive {
   opacity: 0;
@@ -2650,6 +2652,7 @@ body.reader-resizing {
     visibility: hidden;
   }
 
+  .post-item-original,
   .post-item-bookmark:not(.bookmarked),
   .post-item-archive:not(.archived) {
     display: none;
