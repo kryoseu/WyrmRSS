@@ -45,7 +45,7 @@
  
  diesel::table! {
 +    use diesel::sql_types::*;
-+    use crate::models::host_credentials::HostCredentialKindMapping;
++    use crate::models::host_credential::HostCredentialKindMapping;
 +
      host_credentials (id) {
          id -> Integer,
