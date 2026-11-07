@@ -45,20 +45,20 @@ impl FetchedUrl {
 }
 
 /// Fetches a submitted URL once and returns the feed URL to store, plus what was fetched.
+/// `url` must already be normalized (see `FeedUrlResolver::normalize`).
 pub async fn discover_feed(
     http: &HttpClient,
     resolver: &FeedUrlResolver,
     url: &str,
 ) -> WyrmResult<(String, FetchedUrl)> {
-    let url = resolver.normalize(url)?;
-    let fetch_target = resolver.resolve(&url)?;
+    let fetch_target = resolver.resolve(url)?;
     let fetched = fetch_url(http, &fetch_target).await?;
 
-    if resolver.skips_discovery(&url) {
+    if resolver.skips_discovery(url) {
         if fetched.parsed_feed().is_none() {
             return Err(WyrmError::FeedDiscovery(format!("no feed found at {url}")));
         }
-        return Ok((url, fetched));
+        return Ok((url.to_string(), fetched));
     }
     Ok((resolve_feed_url(&fetch_target, &fetched)?, fetched))
 }

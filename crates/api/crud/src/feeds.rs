@@ -51,8 +51,9 @@ pub async fn create(
     let http = ctx.http().await?;
     let url_resolver = ctx.url_resolver()?;
 
+    let url = url_resolver.normalize(&data.url)?;
     // One fetch serves both discovery and the icon lookup below.
-    let (url, fetched) = discover::discover_feed(&http, &url_resolver, &data.url).await?;
+    let (url, fetched) = discover::discover_feed(&http, &url_resolver, &url).await?;
 
     let feed = Feed::create(
         &ctx.db_pool,
@@ -93,12 +94,16 @@ pub async fn update(
     // site happens to be down.
     let feed = Feed::get(&ctx.db_pool, id).await?;
     let (url, fetched) = match data.url {
-        Some(u) if u == feed.url || url_resolver.normalize(&u).is_ok_and(|n| n == feed.url) => {
-            (Some(feed.url.clone()), FetchedUrl::None)
-        }
+        Some(u) if u == feed.url => (Some(feed.url.clone()), FetchedUrl::None),
         Some(u) => {
-            let (url, fetched) = discover::discover_feed(&http, &url_resolver, &u).await?;
-            (Some(url), fetched)
+            let normalized = url_resolver.normalize(&u)?;
+            if normalized == feed.url {
+                (Some(normalized), FetchedUrl::None)
+            } else {
+                let (url, fetched) =
+                    discover::discover_feed(&http, &url_resolver, &normalized).await?;
+                (Some(url), fetched)
+            }
         }
         None => (None, FetchedUrl::None),
     };
