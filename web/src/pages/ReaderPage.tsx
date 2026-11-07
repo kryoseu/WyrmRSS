@@ -5,7 +5,7 @@ import { PostReader } from "../components/posts/PostReader";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useShortcutHandler } from "../hooks/useShortcuts";
 import type { PostId } from "../types/PostId";
-import { LAYOUT } from "../utils/constants";
+import { LAYOUT, STORAGE_KEYS } from "../utils/constants";
 import { listPath } from "../utils/posts";
 
 export type ReaderOutletContext = {
@@ -46,7 +46,12 @@ export function ReaderPage() {
 
   useShortcutHandler("close_reader", closeReader, activePostId !== null);
 
-  const [readerWidth, setReaderWidth] = useState(() => Math.round(window.innerWidth * LAYOUT.readerWidthFraction));
+  const [readerWidth, setReaderWidth] = useState(() => {
+    const saved = Number(localStorage.getItem(STORAGE_KEYS.readerWidth));
+    if (!saved) return Math.round(window.innerWidth * LAYOUT.readerWidthFraction);
+    const maxWidth = Math.round(window.innerWidth * LAYOUT.readerMaxWidthFraction);
+    return Math.min(maxWidth, Math.max(LAYOUT.readerMinWidthPx, saved));
+  });
   const dragStart = useRef<{ x: number; width: number } | null>(null);
 
   function onResizeStart(e: React.PointerEvent) {
@@ -60,13 +65,14 @@ export function ReaderPage() {
   function onResizeMove(e: React.PointerEvent) {
     if (!dragStart.current) return;
     const delta = dragStart.current.x - e.clientX;
-    const maxWidth = Math.round(window.innerWidth * 0.65);
+    const maxWidth = Math.round(window.innerWidth * LAYOUT.readerMaxWidthFraction);
     setReaderWidth(Math.min(maxWidth, Math.max(LAYOUT.readerMinWidthPx, dragStart.current.width + delta)));
   }
 
   function onResizeEnd() {
     dragStart.current = null;
     document.body.classList.remove("reader-resizing");
+    localStorage.setItem(STORAGE_KEYS.readerWidth, String(readerWidth));
   }
 
   const width = isMobile ? undefined : readerWidth;
