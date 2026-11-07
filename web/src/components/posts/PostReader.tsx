@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import YouTube from "react-youtube";
-import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
+import { TbArchive, TbArchiveOff, TbArrowUpRight, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
 import { usePost } from "../../hooks/usePosts";
 import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../../hooks/usePostMutations";
 import { useSettings } from "../../hooks/useSettings";
@@ -131,7 +131,7 @@ export function PostReader({ postId, onClose, width }: Props) {
                 onClick={markReadOnOpenOriginal}
                 onAuxClick={(e) => e.button === 1 && markReadOnOpenOriginal()}
               >
-                ↗
+                <TbArrowUpRight />
               </a>
             )}
           </h1>

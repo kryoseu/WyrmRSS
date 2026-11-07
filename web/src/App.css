@@ -1694,6 +1694,11 @@ body.reader-resizing {
   white-space: nowrap;
 }
 
+/* Centers the icon on the text instead of sitting it on the baseline. */
+.post-reader-original svg {
+  vertical-align: -0.125em;
+}
+
 .post-reader-meta {
   font-size: 0.72rem;
   color: var(--text);
