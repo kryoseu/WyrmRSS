@@ -3,6 +3,7 @@ import { TbToggleLeft, TbToggleRightFilled } from "react-icons/tb";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpdateFeed } from "../../hooks/useFeeds";
 import { useFolders } from "../../hooks/useFolders";
+import { useIntegrationPaused } from "../../hooks/useSettings";
 import { useFeedWebhooks, webhookKeys } from "../../hooks/useWebhooks";
 import { attachWebhook, detachWebhook } from "../../api/webhooks";
 import type { Feed } from "../../types/Feed";
@@ -26,6 +27,7 @@ export function EditFeedForm({ feed, onClose }: Props) {
     feed.filters.filter((f): f is string => f !== null)
   );
   const [paused, setPaused] = useState(feed.is_paused);
+  const pausedBy = useIntegrationPaused(url);
   const [displayMode, setDisplayMode] = useState<DisplayMode>(feed.display_mode);
   const update = useUpdateFeed();
   const qc = useQueryClient();
@@ -135,15 +137,20 @@ export function EditFeedForm({ feed, onClose }: Props) {
       <DisplayModeSelect value={displayMode} onChange={setDisplayMode} />
       <label
         className="feed-paused-option"
-        title="Paused feeds are not polled; existing posts stay"
+        title={
+          pausedBy
+            ? `Paused while the ${pausedBy} integration is off`
+            : "Paused feeds are not polled; existing posts stay"
+        }
       >
         Pause updates
         <input
           type="checkbox"
-          checked={paused}
+          checked={paused || pausedBy !== null}
+          disabled={pausedBy !== null}
           onChange={(e) => setPaused(e.target.checked)}
         />
-        {paused ? <TbToggleRightFilled aria-hidden /> : <TbToggleLeft aria-hidden />}
+        {paused || pausedBy ? <TbToggleRightFilled aria-hidden /> : <TbToggleLeft aria-hidden />}
       </label>
       <div className="url-filters">
         {urlFilters.map((filter, i) => (

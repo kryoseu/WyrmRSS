@@ -1,6 +1,7 @@
 use crate::{
     filter::CompiledFilters,
     http::{HttpClient, HttpConfig},
+    url::FeedUrlResolver,
 };
 use chrono::Utc;
 use database::{
@@ -80,9 +81,11 @@ impl FeedWorker {
 
         let feeds = Feed::get_all(&self.db_pool).await?;
 
+        let resolver = FeedUrlResolver::from(&*self.runtime_settings.read()?);
+
         let due_feeds: Vec<Feed> = feeds
             .into_iter()
-            .filter(|f| f.is_due() && !f.is_paused)
+            .filter(|f| f.is_due() && !f.is_paused && resolver.is_pollable(&f.url))
             .collect();
 
         info!("Processing {} due feeds", due_feeds.len());
@@ -112,6 +115,7 @@ impl FeedWorker {
                 let webhooks = feed_webhooks.get(&feed.id).cloned().unwrap_or_default();
                 let folder = feed_folders.get(&feed.id).map(|f| f.name.clone());
                 let semaphore = semaphore.clone();
+                let resolver = resolver.clone();
                 tokio::spawn(async move {
                     let _permit = semaphore.acquire().await.unwrap();
                     let task = FeedTask {
@@ -119,7 +123,7 @@ impl FeedWorker {
                         webhooks,
                         folder,
                     };
-                    if let Err(e) = process_feed(&pool, &http, &task).await {
+                    if let Err(e) = process_feed(&pool, &http, &resolver, &task).await {
                         error!("Failed to process feed {}: {e}", task.feed.url);
                     }
                 })
@@ -171,16 +175,22 @@ pub struct FeedTask {
 }
 
 /// Fetch -> Parse -> Store -> Update -> Notify
-async fn process_feed(pool: &DatabasePool, http: &HttpClient, task: &FeedTask) -> WyrmResult<()> {
+async fn process_feed(
+    pool: &DatabasePool,
+    http: &HttpClient,
+    resolver: &FeedUrlResolver,
+    task: &FeedTask,
+) -> WyrmResult<()> {
     info!("Processing feed {}", task.feed.title);
 
-    let (bytes, _) = http.fetch(&task.feed.url).await?;
+    let fetch_target = resolver.resolve(&task.feed.url)?;
+    let (bytes, _) = http.fetch(&fetch_target).await?;
 
     let parsed = feed_rs::parser::parse(&bytes[..])?;
 
     // Best-effort: resolves the icon for feeds that never got one (OPML
     // imports, pre-icon feeds) and retries week-old misses.
-    crate::icon::ensure_feed_icon(pool, http, &task.feed, &parsed).await;
+    crate::icon::ensure_feed_icon(pool, http, resolver, &task.feed, &parsed).await;
 
     let filters = CompiledFilters::new(&task.feed.filters);
 

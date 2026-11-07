@@ -4,6 +4,7 @@ import { Credentials } from "../components/settings/Credentials";
 import { Feeds } from "../components/settings/Feeds";
 import { Folders } from "../components/settings/Folders";
 import { General } from "../components/settings/General";
+import { Integrations } from "../components/settings/Integrations";
 import { Opml } from "../components/settings/Opml";
 import { Shortcuts } from "../components/settings/Shortcuts";
 import { Webhooks } from "../components/settings/Webhooks";
@@ -15,6 +16,7 @@ type Tab =
   | "appearance"
   | "shortcuts"
   | "feeds"
+  | "integrations"
   | "credentials"
   | "folders"
   | "webhooks"
@@ -54,6 +56,12 @@ export function SettingsPage() {
           Feeds
         </button>
         <button
+          className={`settings-tab${tab === "integrations" ? " active" : ""}`}
+          onClick={() => setTab("integrations")}
+        >
+          Integrations
+        </button>
+        <button
           className={`settings-tab${tab === "credentials" ? " active" : ""}`}
           onClick={() => setTab("credentials")}
         >
@@ -84,6 +92,7 @@ export function SettingsPage() {
         {tab === "appearance" && <Appearance />}
         {tab === "shortcuts" && !isMobile && <Shortcuts />}
         {tab === "feeds" && <Feeds />}
+        {tab === "integrations" && <Integrations />}
         {tab === "credentials" && <Credentials />}
         {tab === "folders" && <Folders />}
         {tab === "webhooks" && <Webhooks />}

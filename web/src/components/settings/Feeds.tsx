@@ -2,6 +2,7 @@ import { useState } from "react";
 import { TbEdit, TbPlayerPause, TbPlayerPlay, TbPlus, TbTrash } from "react-icons/tb";
 import { useDeleteFeed, useFeeds, useSetFeedPaused } from "../../hooks/useFeeds";
 import { useFolders } from "../../hooks/useFolders";
+import { useIntegrationPaused } from "../../hooks/useSettings";
 import { AddFeedForm } from "../feeds/AddFeedForm";
 import { EditFeedForm } from "../feeds/EditFeedForm";
 import type { Feed } from "../../types/Feed";
@@ -12,10 +13,11 @@ function FeedRow({ feed, folderName }: { feed: Feed; folderName?: string }) {
   const [editing, setEditing] = useState(false);
   const { mutate: deleteFeed } = useDeleteFeed();
   const setPaused = useSetFeedPaused();
+  const pausedBy = useIntegrationPaused(feed.url);
 
   return (
     <>
-      <div className={`settings-table-row${editing ? " editing" : ""}${feed.is_paused ? " paused" : ""}`}>
+      <div className={`settings-table-row${editing ? " editing" : ""}${feed.is_paused || pausedBy ? " paused" : ""}`}>
         <span className="settings-table-title">{feed.title}</span>
         <span className="settings-table-url" title={feed.url}>{feed.url}</span>
         <span className="settings-table-meta settings-table-ttl">{feed.ttl}m</span>
@@ -28,9 +30,14 @@ function FeedRow({ feed, folderName }: { feed: Feed; folderName?: string }) {
           <button
             className="settings-table-btn"
             onClick={() => setPaused.mutate({ id: feed.id, paused: !feed.is_paused })}
-            title={feed.is_paused ? "Resume feed updates" : "Pause feed updates"}
+            disabled={pausedBy !== null}
+            title={
+              pausedBy
+                ? `Paused while the ${pausedBy} integration is off`
+                : feed.is_paused ? "Resume feed updates" : "Pause feed updates"
+            }
           >
-            {feed.is_paused ? <TbPlayerPlay /> : <TbPlayerPause />}
+            {feed.is_paused || pausedBy ? <TbPlayerPlay /> : <TbPlayerPause />}
           </button>
           <button
             className={`settings-table-btn${editing ? " active" : ""}`}
