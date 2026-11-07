@@ -46,6 +46,6 @@ expire_unread_after_days?: number,
  */
 read_delay_secs: number, 
 /**
- * RSSHub instance base URL; empty disables rsshub:// subscriptions.
+ * RSSHub instance base URL; `None` disables rsshub:// subscriptions.
  */
-rsshub_instance: string, };
+rsshub_instance?: string, };

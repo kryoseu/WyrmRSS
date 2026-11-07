@@ -9,7 +9,7 @@ use database::{
 };
 use serde::Deserialize;
 use wyrm_rss::{
-    discover::{FetchedUrl, fetch_url, resolve_feed_url},
+    discover::{self, FetchedUrl},
     icon::ensure_feed_icon,
 };
 use wyrm_utils::result::WyrmResult;
@@ -49,14 +49,11 @@ pub async fn create(
     ctx.deny_in_demo()?;
 
     let http = ctx.http().await?;
+    let url_resolver = ctx.url_resolver()?;
 
-    // One fetch serves both discovery and the icon lookup below: we try to
-    // find a feed from a normal page url (blog homepage, YouTube channel),
-    // and if the URL provided already resolves to a feed, we simply pass through.
-    let instance = ctx.runtime_settings.read()?.rsshub_instance.clone();
-    let submitted_url = wyrm_rss::rsshub::resolve_url(&data.url, &instance)?;
-    let fetched = fetch_url(&http, &submitted_url).await?;
-    let url = resolve_feed_url(&submitted_url, &fetched)?;
+    // One fetch serves both discovery and the icon lookup below.
+    let (url, fetched) = discover::discover_feed(&http, &url_resolver, &data.url).await?;
+
     let feed = Feed::create(
         &ctx.db_pool,
         FeedInsertForm {
@@ -73,7 +70,7 @@ pub async fn create(
     // Resolved here when discovery already parsed the feed, so the icon is
     // stored before the frontend refetches the feed list.
     if let Some(parsed) = fetched.parsed_feed() {
-        ensure_feed_icon(&ctx.db_pool, &http, &feed, parsed).await;
+        ensure_feed_icon(&ctx.db_pool, &http, &url_resolver, &feed, parsed).await;
     }
 
     Ok(Json(feed))
@@ -87,6 +84,7 @@ pub async fn update(
     ctx.deny_in_demo()?;
 
     let http = ctx.http().await?;
+    let url_resolver = ctx.url_resolver()?;
 
     let id = path.into_inner();
     // Only a *changed* URL triggers discovery. The edit form always sends the
@@ -95,12 +93,12 @@ pub async fn update(
     // site happens to be down.
     let feed = Feed::get(&ctx.db_pool, id).await?;
     let (url, fetched) = match data.url {
-        Some(u) if u == feed.url => (Some(u), FetchedUrl::None),
+        Some(u) if u == feed.url || url_resolver.normalize(&u).is_ok_and(|n| n == feed.url) => {
+            (Some(feed.url.clone()), FetchedUrl::None)
+        }
         Some(u) => {
-            let instance = ctx.runtime_settings.read()?.rsshub_instance.clone();
-            let u = wyrm_rss::rsshub::resolve_url(&u, &instance)?;
-            let fetched = fetch_url(&http, &u).await?;
-            (Some(resolve_feed_url(&u, &fetched)?), fetched)
+            let (url, fetched) = discover::discover_feed(&http, &url_resolver, &u).await?;
+            (Some(url), fetched)
         }
         None => (None, FetchedUrl::None),
     };
@@ -128,7 +126,7 @@ pub async fn update(
     if url_changed {
         FeedIcon::delete(&ctx.db_pool, id).await?;
         if let Some(parsed) = fetched.parsed_feed() {
-            ensure_feed_icon(&ctx.db_pool, &http, &feed, parsed).await;
+            ensure_feed_icon(&ctx.db_pool, &http, &url_resolver, &feed, parsed).await;
         }
     }
 

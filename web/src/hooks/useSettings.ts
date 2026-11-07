@@ -19,6 +19,13 @@ export function useDemoMode() {
   return useSettings().data?.run_as_demo ?? false;
 }
 
+/** Name of the integration this feed depends on while it's off (the worker skips it), else null. */
+export function useIntegrationPaused(url: string): string | null {
+  const settings = useSettings().data;
+  if (url.startsWith("rsshub://") && !settings?.rsshub_instance) return "RSSHub";
+  return null;
+}
+
 export function useUpdateSettings() {
   const qc = useQueryClient();
   return useMutation({

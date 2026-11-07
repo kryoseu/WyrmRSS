@@ -4,4 +4,5 @@ pub mod http;
 pub mod icon;
 pub mod opml;
 pub mod rsshub;
+pub mod url;
 pub mod worker;

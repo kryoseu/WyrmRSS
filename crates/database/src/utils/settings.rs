@@ -7,7 +7,7 @@ pub struct RuntimeSettings {
     pub http_connect_timeout: i32,
     pub http_retries: i32,
     pub http_user_agent: Option<String>,
-    pub rsshub_instance: String,
+    pub rsshub_instance: Option<String>,
     pub expire_read_after_days: Option<i32>,
     pub expire_unread_after_days: Option<i32>,
 }

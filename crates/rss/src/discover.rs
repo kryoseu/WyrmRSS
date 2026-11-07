@@ -9,7 +9,7 @@
 //! and pages served without the autodiscovery tag (consent walls, degraded
 //! bot HTML) fall back to scraping the embedded `"channelId"`.
 
-use crate::http::HttpClient;
+use crate::{http::HttpClient, url::FeedUrlResolver};
 use scraper::{Html, Selector};
 use tracing::warn;
 use wyrm_utils::{
@@ -44,9 +44,28 @@ impl FetchedUrl {
     }
 }
 
+/// Fetches a submitted URL once and returns the feed URL to store, plus what was fetched.
+pub async fn discover_feed(
+    http: &HttpClient,
+    resolver: &FeedUrlResolver,
+    url: &str,
+) -> WyrmResult<(String, FetchedUrl)> {
+    let url = resolver.normalize(url)?;
+    let fetch_target = resolver.resolve(&url)?;
+    let fetched = fetch_url(http, &fetch_target).await?;
+
+    if resolver.skips_discovery(&url) {
+        if fetched.parsed_feed().is_none() {
+            return Err(WyrmError::FeedDiscovery(format!("no feed found at {url}")));
+        }
+        return Ok((url, fetched));
+    }
+    Ok((resolve_feed_url(&fetch_target, &fetched)?, fetched))
+}
+
 /// Fetches a submitted URL once and classifies what it serves. Fails only
 /// when the server demands credentials; any other fetch failure is `None`.
-pub async fn fetch_url(http: &HttpClient, url: &str) -> WyrmResult<FetchedUrl> {
+async fn fetch_url(http: &HttpClient, url: &str) -> WyrmResult<FetchedUrl> {
     // `/channel/<id>` URLs resolve directly; skip the network round-trip.
     if youtube_channel_shortcut(url).is_some() {
         return Ok(FetchedUrl::None);
@@ -75,7 +94,7 @@ pub async fn fetch_url(http: &HttpClient, url: &str) -> WyrmResult<FetchedUrl> {
 /// found there. Fails with a client-facing error only on positive evidence:
 /// the page fetched fine and advertises no feed. An unfetched URL passes
 /// through unchanged.
-pub fn resolve_feed_url(url: &str, fetched: &FetchedUrl) -> WyrmResult<String> {
+fn resolve_feed_url(url: &str, fetched: &FetchedUrl) -> WyrmResult<String> {
     if let Some(feed) = youtube_channel_shortcut(url) {
         return Ok(feed);
     }

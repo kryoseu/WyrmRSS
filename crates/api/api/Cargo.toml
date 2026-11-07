@@ -12,6 +12,7 @@ tokio = { workspace = true }
 ts-rs = { workspace = true }
 actix-web = { workspace = true }
 serde = { workspace = true }
+tracing = { workspace = true }
 api_utils = { path = "../utils", default-features = false }
 wyrm_utils = { path = "../../utils" }
 database = { path = "../../database", default-features = false }

@@ -61,8 +61,8 @@ pub struct Settings {
     pub expire_unread_after_days: Option<i32>,
     /// Delay before marking post as read.
     pub read_delay_secs: i32,
-    /// RSSHub instance base URL; empty disables rsshub:// subscriptions.
-    pub rsshub_instance: String,
+    /// RSSHub instance base URL; `None` disables rsshub:// subscriptions.
+    pub rsshub_instance: Option<String>,
 }
 
 impl Settings {
@@ -100,7 +100,7 @@ pub struct SettingsUpdateForm {
     pub expire_read_after_days: Option<Option<i32>>,
     pub expire_unread_after_days: Option<Option<i32>>,
     pub read_delay_secs: Option<i32>,
-    pub rsshub_instance: Option<String>,
+    pub rsshub_instance: Option<Option<String>>,
 }
 
 #[cfg(all(test, feature = "postgres"))]

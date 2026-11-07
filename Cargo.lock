@@ -239,6 +239,7 @@ dependencies = [
  "database",
  "serde",
  "tokio",
+ "tracing",
  "ts-rs",
  "wyrm-rss",
  "wyrm_utils",

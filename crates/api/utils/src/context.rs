@@ -7,6 +7,7 @@ use std::sync::{Arc, RwLock};
 use tokio::sync::mpsc::Sender;
 use wyrm_rss::{
     http::{HttpClient, HttpConfig},
+    url::FeedUrlResolver,
     worker::WorkerCommand,
 };
 use wyrm_utils::result::WyrmResult;
@@ -36,6 +37,11 @@ impl WyrmContext {
             &HttpConfig::from(&*self.runtime_settings.read()?),
             host_credentials,
         )
+    }
+
+    /// Builds a feed URL resolver from the runtime settings.
+    pub fn url_resolver(&self) -> WyrmResult<FeedUrlResolver> {
+        Ok(FeedUrlResolver::from(&*self.runtime_settings.read()?))
     }
 
     /// Deny request if server is running in demo mode.

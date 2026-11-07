@@ -8,6 +8,7 @@ export interface RowMenuItem {
   confirmLabel?: string;
   /** Styles the item as destructive (red hover). */
   danger?: boolean;
+  disabled?: boolean;
   onSelect: () => void;
 }
 
@@ -85,6 +86,7 @@ export function RowMenu({ label, items }: Props) {
               key={item.label}
               role="menuitem"
               className={`row-menu-item${item.danger ? " danger" : ""}`}
+              disabled={item.disabled}
               onClick={(e) => handleItem(e, i)}
             >
               {item.icon}

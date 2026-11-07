@@ -5,7 +5,7 @@ use database::{
     utils::settings::RuntimeSettings,
 };
 use serde::Deserialize;
-use wyrm_rss::worker::WorkerCommand;
+use wyrm_rss::{rsshub, worker::WorkerCommand};
 use wyrm_utils::result::WyrmResult;
 
 #[derive(Deserialize, ts_rs::TS)]
@@ -17,6 +17,7 @@ pub struct UpdateSettings {
     http_timeout: Option<i32>,
     http_connect_timeout: Option<i32>,
     http_retries: Option<i32>,
+    /// Omitted = keep; `null` = clear back to the default; value = set.
     #[serde(default, with = "serde_with::rust::double_option")]
     #[ts(optional, as = "Option<Option<String>>")]
     http_user_agent: Option<Option<String>>,
@@ -27,7 +28,10 @@ pub struct UpdateSettings {
     #[ts(optional, as = "Option<Option<i32>>")]
     expire_unread_after_days: Option<Option<i32>>,
     read_delay_secs: Option<i32>,
-    rsshub_instance: Option<String>,
+    /// Omitted = keep; `null` or blank = clear; value = set.
+    #[serde(default, with = "serde_with::rust::double_option")]
+    #[ts(optional, as = "Option<Option<String>>")]
+    rsshub_instance: Option<Option<String>>,
 }
 
 pub async fn update(
@@ -51,7 +55,10 @@ pub async fn update(
             read_delay_secs: data.read_delay_secs,
             rsshub_instance: data
                 .rsshub_instance
-                .map(|value| wyrm_rss::rsshub::validate_instance(&value))
+                .map(|instance| match instance {
+                    Some(value) => rsshub::validate_instance(&value),
+                    None => Ok(None),
+                })
                 .transpose()?,
         },
     )
