@@ -120,26 +120,6 @@ empty. After adding a feed or cancelling, Wyrm returns to the home page.
 Protected instances use the normal API key prompt and remember the subscription
 link while the user connects. Do not put an API key in the subscription URL.
 
-## Integrations
-
-Configure available integrations in **Settings → Integrations**.
-
-### RSSHub
-
-RSSHub generates feeds for websites without native RSS support.
-Set **RSSHub → Instance URL** to your RSSHub instance
-(for example `https://rsshub.app` or `https://example.com/rsshub`). Leave it
-blank to disable RSSHub links. The setting is shared by this WyrmRSS instance
-and takes effect immediately.
-
-Add `rsshub://github/issue/DIYgod/RSSHub` as a feed URL, or pass an encoded
-`rsshub://` URL to `/subscribe?url=…&title=…`. WyrmRSS resolves the route against
-your configured instance before discovery and stores the resulting HTTP(S)
-feed URL. Changing the instance setting affects new subscriptions and edited
-URLs; existing feeds keep their saved URLs. Query parameters and fragments are
-preserved. `/subscribe` still requires the normal API-key flow and an explicit
-**Add** confirmation.
-
 ## YouTube
 
 Wyrm treats YouTube channels as regular RSS feeds. Add a channel using its feed URL:
@@ -199,6 +179,21 @@ means `https` on port 443; for an `http://` feed enter
 
 Secrets are never returned by the API once saved; they can be replaced but
 not read back. They are stored unencrypted in the database.
+
+## Integrations
+
+Configure available integrations in **Settings → Integrations**.
+
+### RSSHub
+
+[RSSHub](https://docs.rsshub.app) generates feeds for sites without RSS. Set
+your instance URL under **RSSHub** (e.g. `http://localhost:1200`).
+
+Add RSSHub feeds as `rsshub://<route>`, e.g. `rsshub://hackernews`.
+
+- Links to your instance (e.g. from RSSHub Radar) are converted to `rsshub://` automatically.
+- Feeds are fetched from whichever instance is currently set, so switching instances needs no feed edits.
+- Turning the integration off pauses RSSHub feeds until you turn it back on.
 
 ## Stack
 
