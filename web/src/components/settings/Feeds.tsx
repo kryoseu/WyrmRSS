@@ -5,11 +5,11 @@ import { useFolders } from "../../hooks/useFolders";
 import { useIntegrationPaused } from "../../hooks/useSettings";
 import { AddFeedForm } from "../feeds/AddFeedForm";
 import { EditFeedForm } from "../feeds/EditFeedForm";
-import type { Feed } from "../../types/Feed";
+import type { FeedView } from "../../types/FeedView";
+import { FeedHealthStatus } from "../feeds/FeedHealthStatus";
 import { DISPLAY_MODE_LABELS } from "../../utils/displayMode";
-import { formatLastFetched } from "../../utils/utils";
 
-function FeedRow({ feed, folderName }: { feed: Feed; folderName?: string }) {
+function FeedRow({ feed, folderName }: { feed: FeedView; folderName?: string }) {
   const [editing, setEditing] = useState(false);
   const { mutate: deleteFeed } = useDeleteFeed();
   const setPaused = useSetFeedPaused();
@@ -25,7 +25,7 @@ function FeedRow({ feed, folderName }: { feed: Feed; folderName?: string }) {
           {folderName && <span className="feed-item-folder">{folderName}</span>}
         </span>
         <span className="settings-table-meta">{DISPLAY_MODE_LABELS[feed.display_mode]}</span>
-        <span className="settings-table-meta">{formatLastFetched(feed.last_fetched_at)}</span>
+        <FeedHealthStatus feed={feed} />
         <div className="settings-table-actions">
           <button
             className="settings-table-btn"
@@ -114,7 +114,7 @@ export function Feeds() {
             <span className="settings-table-meta">TTL</span>
             <span className="settings-table-badge">Folder</span>
             <span className="settings-table-meta">Display Mode</span>
-            <span className="settings-table-meta">Last fetched</span>
+            <span className="settings-table-meta">Health</span>
             <span className="settings-table-actions" />
           </div>
           {filtered.map((feed) => (

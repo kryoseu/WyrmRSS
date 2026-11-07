@@ -2,7 +2,7 @@ use crate::{
     DatabasePool,
     models::folder::Folder,
     newtypes::{FeedId, Filters, FolderId},
-    schema::feeds,
+    schema::{feed_poll_state, feeds},
 };
 use chrono::{DateTime, Utc};
 use diesel::{
@@ -119,6 +119,25 @@ impl Feed {
                 Some(folder) => Some(Folder::resolve_name_on(conn, folder.as_deref()).await?),
             };
 
+            let url_changed = if let Some(url) = form.url.as_deref() {
+                let current_url: String = feeds::table
+                    .find(form.id)
+                    .select(feeds::url)
+                    .first(conn)
+                    .await?;
+                url != current_url
+            } else {
+                false
+            };
+            if url_changed {
+                diesel::update(feeds::table.find(form.id))
+                    .set(feeds::last_fetched_at.eq(None::<DateTime<Utc>>))
+                    .execute(conn)
+                    .await?;
+                diesel::delete(feed_poll_state::table.find(form.id))
+                    .execute(conn)
+                    .await?;
+            }
             let feed = diesel::update(feeds::table.find(form.id))
                 .set((form, folder_id.map(|f| feeds::folder_id.eq(f))))
                 .get_result::<Self>(conn)
