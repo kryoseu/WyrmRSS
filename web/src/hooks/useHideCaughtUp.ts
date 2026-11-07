@@ -1,17 +1,15 @@
 import { useState } from "react";
-import { DEFAULTS } from "../utils/constants";
-
-const STORAGE_KEY = "wyrm:hide-caught-up";
+import { DEFAULTS, STORAGE_KEYS } from "../utils/constants";
 
 /**
  * Whether the feed list hides feeds with no unread posts.
  * Persisted per device in localStorage, like useUnreadOnly.
  */
 export function useHideCaughtUp() {
-  const [stored, setStored] = useState(() => localStorage.getItem(STORAGE_KEY));
+  const [stored, setStored] = useState(() => localStorage.getItem(STORAGE_KEYS.hideCaughtUp));
 
   const setHideCaughtUp = (value: boolean) => {
-    localStorage.setItem(STORAGE_KEY, String(value));
+    localStorage.setItem(STORAGE_KEYS.hideCaughtUp, String(value));
     setStored(String(value));
   };
 

@@ -3,7 +3,7 @@ import { ThemeContext, type ThemeContextValue } from "./ThemeContext";
 import { PALETTES } from "../hooks/useTheme";
 import type { AccentKey, Density, FontSize, Theme } from "../hooks/useTheme";
 import { useIsMobile } from "../hooks/useIsMobile";
-import { DEFAULTS, LAYOUT } from "../utils/constants";
+import { DEFAULTS, LAYOUT, STORAGE_KEYS } from "../utils/constants";
 
 function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
@@ -20,25 +20,25 @@ function applyAccent(hex: string, isDark: boolean) {
 }
 
 function getInitialTheme(): Theme {
-  const saved = localStorage.getItem("theme");
+  const saved = localStorage.getItem(STORAGE_KEYS.theme);
   if (saved === "light" || saved === "dark") return saved;
   return DEFAULTS.theme;
 }
 
 function getInitialAccent(): AccentKey {
-  const saved = localStorage.getItem("accent");
+  const saved = localStorage.getItem(STORAGE_KEYS.accent);
   if (saved && saved in PALETTES) return saved as AccentKey;
   return DEFAULTS.accent;
 }
 
 function getInitialFontSize(): FontSize {
-  const saved = localStorage.getItem("font-size");
+  const saved = localStorage.getItem(STORAGE_KEYS.fontSize);
   if (saved === "small" || saved === "default" || saved === "large") return saved;
   return DEFAULTS.fontSize;
 }
 
 function getSavedDensity(): Density | null {
-  const saved = localStorage.getItem("post-density");
+  const saved = localStorage.getItem(STORAGE_KEYS.density);
   if (saved === "title" || saved === "card") return saved;
   return null;
 }
@@ -53,13 +53,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem("theme", theme);
+    localStorage.setItem(STORAGE_KEYS.theme, theme);
     applyAccent(PALETTES[accent][theme], theme === "dark");
   }, [theme, accent]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--font-base", LAYOUT.fontSizes[fontSize]);
-    localStorage.setItem("font-size", fontSize);
+    localStorage.setItem(STORAGE_KEYS.fontSize, fontSize);
   }, [fontSize]);
 
   const value: ThemeContextValue = {
@@ -69,14 +69,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     accent,
     setAccent: (key) => {
       setAccentState(key);
-      localStorage.setItem("accent", key);
+      localStorage.setItem(STORAGE_KEYS.accent, key);
     },
     fontSize,
     setFontSize: (size) => setFontSizeState(size),
     density: savedDensity ?? DEFAULTS.density[isMobile ? "mobile" : "desktop"],
     setDensity: (d) => {
       setSavedDensity(d);
-      localStorage.setItem("post-density", d);
+      localStorage.setItem(STORAGE_KEYS.density, d);
     },
   };
 

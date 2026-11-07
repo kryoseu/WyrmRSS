@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useDemoMode } from "./useSettings";
-import { DEFAULTS } from "../utils/constants";
-
-const STORAGE_KEY = "wyrm:unread-only";
+import { DEFAULTS, STORAGE_KEYS } from "../utils/constants";
 
 /**
  * Whether post lists show only unread posts (the default) or everything.
@@ -10,10 +8,10 @@ const STORAGE_KEY = "wyrm:unread-only";
  */
 export function useUnreadOnly() {
   const isDemo = useDemoMode();
-  const [stored, setStored] = useState(() => localStorage.getItem(STORAGE_KEY));
+  const [stored, setStored] = useState(() => localStorage.getItem(STORAGE_KEYS.unreadOnly));
 
   const setUnreadOnly = (value: boolean) => {
-    localStorage.setItem(STORAGE_KEY, String(value));
+    localStorage.setItem(STORAGE_KEYS.unreadOnly, String(value));
     setStored(String(value));
   };
 

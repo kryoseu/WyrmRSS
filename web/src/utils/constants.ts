@@ -14,12 +14,27 @@ export const DEFAULTS = {
   hideCaughtUp: false,
 };
 
+// localStorage keys. Don't rename: existing users' saved values would be lost.
+export const STORAGE_KEYS = {
+  // Also read by the inline script in index.html.
+  theme: "theme",
+  accent: "accent",
+  fontSize: "font-size",
+  density: "post-density",
+  unreadOnly: "wyrm:unread-only",
+  hideCaughtUp: "wyrm:hide-caught-up",
+  demoInstallHintDismissed: "wyrm:demo-install-hint-dismissed",
+  readerWidth: "wyrm:reader-width",
+  apiKey: "WYRM_API_KEY",
+};
+
 export const LAYOUT = {
   // Phone layout at or below this width; not used in CSS.
   mobileBreakpointPx: 768,
   // Reader pane opens at this fraction of the window width.
   readerWidthFraction: 0.4,
   readerMinWidthPx: 280,
+  readerMaxWidthFraction: 0.65,
   fontSizes: { small: "15px", default: "18px", large: "21px" } as Record<FontSize, string>,
   // Pull distance that triggers a refresh; must stay below MAX_PULL (128) in usePullToRefresh.ts.
   pullToRefreshTriggerPx: 100,
