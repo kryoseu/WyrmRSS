@@ -3,14 +3,19 @@ import { useCreateFeed } from "../../hooks/useFeeds";
 import { FolderCombobox } from "../folders/FolderCombobox";
 import { DisplayModeSelect } from "./DisplayModeSelect";
 import type { DisplayMode } from "../../types/DisplayMode";
+import type { Feed } from "../../types/Feed";
 
 interface Props {
   onClose: () => void;
+  // Set by SubscribePage to open the new feed; other callers just close the form.
+  onCreated?: (feed: Feed) => void;
+  initialTitle?: string;
+  initialUrl?: string;
 }
 
-export function AddFeedForm({ onClose }: Props) {
-  const [title, setTitle] = useState("");
-  const [url, setUrl] = useState("");
+export function AddFeedForm({ onClose, onCreated, initialTitle = "", initialUrl = "" }: Props) {
+  const [title, setTitle] = useState(initialTitle);
+  const [url, setUrl] = useState(initialUrl);
   const [ttl, setTtl] = useState("");
   const [folder, setFolder] = useState("");
   const [filters, setFilters] = useState<string[]>([]);
@@ -36,7 +41,7 @@ export function AddFeedForm({ onClose }: Props) {
         filters: filters.map((f) => f.trim()).filter(Boolean),
         display_mode: displayMode,
       },
-      { onSuccess: onClose }
+      { onSuccess: (feed) => (onCreated ? onCreated(feed) : onClose()) }
     );
   }
 

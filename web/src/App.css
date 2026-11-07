@@ -456,13 +456,18 @@ body.reader-resizing {
   text-align: left;
   white-space: nowrap;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--accent-bg);
     color: var(--text-h);
   }
 
   &.danger:hover {
     color: #ef4444;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 }
 
@@ -683,9 +688,14 @@ body.reader-resizing {
     outline: 2px solid var(--accent-border);
     border-radius: 4px;
   }
+
+  &:has(input:disabled) {
+    opacity: 0.5;
+    cursor: default;
+  }
 }
 
-.entity-form .feed-paused-option input[type="checkbox"] {
+.feed-paused-option input[type="checkbox"] {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1133,13 +1143,18 @@ body.reader-resizing {
   border-radius: 4px;
   transition: color 0.15s, background 0.15s;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--accent-bg);
     color: var(--accent);
   }
 
   &.active {
     color: var(--accent);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 }
 
@@ -1448,6 +1463,7 @@ body.reader-resizing {
      first tap on hover instead of opening the post. */
   @media (hover: hover) {
     &:hover {
+      .post-item-original,
       .post-item-bookmark,
       .post-item-archive,
       .post-item-read {
@@ -1529,6 +1545,7 @@ body.reader-resizing {
   }
 }
 
+.post-item-original,
 .post-item-bookmark,
 .post-item-archive {
   opacity: 0;
@@ -2650,6 +2667,7 @@ body.reader-resizing {
     visibility: hidden;
   }
 
+  .post-item-original,
   .post-item-bookmark:not(.bookmarked),
   .post-item-archive:not(.archived) {
     display: none;

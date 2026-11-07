@@ -7,7 +7,7 @@ import { json, noContent } from "../utils/response";
 export const getSettings = (): Promise<SettingsResponse> =>
   fetchWithAuth(ENDPOINTS.settings.get()).then(json<SettingsResponse>);
 
-export const updateSettings = (body: UpdateSettings): Promise<SettingsResponse> =>
+export const updateSettings = (body: Partial<UpdateSettings>): Promise<SettingsResponse> =>
   fetchWithAuth(ENDPOINTS.settings.update(), {
     method: "PUT",
     headers: { "Content-Type": "application/json" },

@@ -1,7 +1,7 @@
 {
   "name": "web",
   "private": true,
-  "version": "0.35.1",
+  "version": "0.36.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,32 +10,32 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.104.2",
-    "@tanstack/react-virtual": "^3.14.19",
+    "@tanstack/react-query": "^5.105.0",
+    "@tanstack/react-virtual": "^3.14.23",
     "@tauri-apps/api": "^2.12.4",
     "dompurify": "^3.4.17",
     "highlight.js": "^11.12.0",
-    "hls.js": "^1.7.3",
+    "hls.js": "^1.7.4",
     "js-beautify": "^2.0.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-icons": "^5.7.0",
-    "react-router": "^8.4.0",
+    "react-router": "^8.5.1",
     "react-youtube": "^10.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/js-beautify": "^1.14.3",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
-    "eslint": "^10.12.0",
+    "eslint": "^10.13.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.13.0",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.71.2",
-    "vite": "^8.3.4"
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.5"
   }
 }

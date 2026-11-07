@@ -15,6 +15,7 @@ use database::{
     newtypes::FolderId,
 };
 use std::{collections::HashMap, time::Duration};
+use tracing::warn;
 use wyrm_rss::{
     opml::{Opml, Outline},
     worker::WorkerCommand,
@@ -32,23 +33,33 @@ pub async fn get(ctx: Data<WyrmContext>) -> WyrmResult<Json<SettingsResponse>> {
     }))
 }
 
-/// Imports feeds from a raw OPML request body. Duplicate URLs are skipped;
-/// all other errors propagate. Triggers a best-effort poll after import and
-/// waits for it (bounded by one http timeout) before responding.
+/// Imports feeds from a raw OPML request body. Duplicate and invalid URLs are
+/// skipped; all other errors propagate. Triggers a best-effort poll after import
+/// and waits for it (bounded by one http timeout) before responding.
 pub async fn import(body: web::Bytes, ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
     ctx.deny_in_demo()?;
 
     let opml = Opml::from_xml(body.as_ref())?;
+    let url_resolver = ctx.url_resolver()?;
+
+    let normalize_or_skip = |url: &str| {
+        url_resolver
+            .normalize(url)
+            .inspect_err(|e| warn!("OPML import: skipping {url}: {e}"))
+            .ok()
+    };
 
     for outline in &opml.body.outlines {
         // standalone leaf feed
         if let Some(url) = &outline.xml_url {
-            create_feed(&ctx, outline.name(), url, None).await?;
+            if let Some(url) = normalize_or_skip(url) {
+                create_feed(&ctx, outline.name(), &url, None).await?;
+            }
         // folder - children are feeds, each resolves/creates the folder by name
         } else {
             for child in &outline.children {
-                if let Some(url) = &child.xml_url {
-                    create_feed(&ctx, child.name(), url, Some(outline.name())).await?;
+                if let Some(url) = child.xml_url.as_deref().and_then(normalize_or_skip) {
+                    create_feed(&ctx, child.name(), &url, Some(outline.name())).await?;
                 }
             }
         }
@@ -70,6 +81,8 @@ pub async fn import(body: web::Bytes, ctx: Data<WyrmContext>) -> WyrmResult<Http
 /// Exports all feeds as an OPML file. Feeds in a folder are grouped under a
 /// folder outline; standalone feeds are top-level outlines.
 pub async fn export(ctx: Data<WyrmContext>) -> WyrmResult<XmlResponse> {
+    let url_resolver = ctx.url_resolver()?;
+
     let feeds = Feed::get_all(&ctx.db_pool).await?;
     let folders = Folder::get_all(&ctx.db_pool).await?;
     let folder_names: HashMap<FolderId, String> =
@@ -85,12 +98,13 @@ pub async fn export(ctx: Data<WyrmContext>) -> WyrmResult<XmlResponse> {
         }
     }
 
-    // Converts a feed into a leaf OPML outline for export.
+    // Leaf OPML outline; resolves url (e.g rsshub:// via the instance),
+    // else keeps the stored URL.
     let feed_into_outline = |feed: Feed| Outline {
         text: feed.title.clone(),
         title: feed.title,
         kind: Some("rss".to_string()),
-        xml_url: Some(feed.url),
+        xml_url: Some(url_resolver.resolve(&feed.url).unwrap_or(feed.url)),
         ..Default::default()
     };
 
@@ -110,7 +124,7 @@ pub async fn export(ctx: Data<WyrmContext>) -> WyrmResult<XmlResponse> {
     })
 }
 
-/// Creates a feed, silently skipping it if the URL already exists.
+/// Creates a feed, skipping it if it already exists.
 async fn create_feed(
     ctx: &WyrmContext,
     title: &str,

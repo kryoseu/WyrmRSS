@@ -1,5 +1,5 @@
 use actix_web::{HttpRequest, HttpResponse, Responder};
-use database::models::{post::Post, settings::Settings};
+use database::models::settings::Settings;
 use serde::Serialize;
 
 #[derive(Serialize, ts_rs::TS)]
@@ -9,13 +9,6 @@ pub struct SettingsResponse {
     #[ts(flatten)]
     pub settings: Settings,
     pub run_as_demo: bool,
-}
-
-#[derive(Serialize, ts_rs::TS)]
-#[ts(export)]
-pub struct UpdatePostResponse {
-    pub post: Post,
-    pub feed_unread_count: i64,
 }
 
 pub struct XmlResponse {

@@ -1,0 +1,1 @@
+ALTER TABLE settings ADD COLUMN rsshub_instance TEXT DEFAULT NULL;
