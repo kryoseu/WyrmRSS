@@ -61,6 +61,8 @@ pub struct Settings {
     pub expire_unread_after_days: Option<i32>,
     /// Delay before marking post as read.
     pub read_delay_secs: i32,
+    /// RSSHub instance base URL; `None` disables rsshub:// subscriptions.
+    pub rsshub_instance: Option<String>,
 }
 
 impl Settings {
@@ -92,14 +94,13 @@ pub struct SettingsUpdateForm {
     pub http_timeout: Option<i32>,
     pub http_connect_timeout: Option<i32>,
     pub http_retries: Option<i32>,
-    #[diesel(treat_none_as_null = true)]
-    pub http_user_agent: Option<String>,
+    // Outer None preserves a nullable setting; Some(None) explicitly clears it.
+    pub http_user_agent: Option<Option<String>>,
     pub read_mode: Option<ReadMode>,
-    #[diesel(treat_none_as_null = true)]
-    pub expire_read_after_days: Option<i32>,
-    #[diesel(treat_none_as_null = true)]
-    pub expire_unread_after_days: Option<i32>,
+    pub expire_read_after_days: Option<Option<i32>>,
+    pub expire_unread_after_days: Option<Option<i32>>,
     pub read_delay_secs: Option<i32>,
+    pub rsshub_instance: Option<Option<String>>,
 }
 
 #[cfg(all(test, feature = "postgres"))]
@@ -126,17 +127,18 @@ mod tests {
                 http_timeout: None,
                 http_connect_timeout: None,
                 http_retries: None,
-                http_user_agent: Some("wyrm-test/1.0".to_string()),
+                http_user_agent: Some(Some("wyrm-test/1.0".to_string())),
                 read_mode: Some(ReadMode::Disabled),
                 expire_read_after_days: None,
                 expire_unread_after_days: None,
                 read_delay_secs: None,
+                rsshub_instance: None,
             },
         )
         .await
         .expect("update should succeed");
 
-        // `http_user_agent` uses `treat_none_as_null`, so `None` clears it.
+        // An explicit inner `None` clears the nullable user agent.
         let cleared = Settings::update(
             &pool,
             SettingsUpdateForm {
@@ -145,11 +147,12 @@ mod tests {
                 http_timeout: None,
                 http_connect_timeout: None,
                 http_retries: None,
-                http_user_agent: None,
+                http_user_agent: Some(None),
                 read_mode: None,
                 expire_read_after_days: None,
                 expire_unread_after_days: None,
                 read_delay_secs: None,
+                rsshub_instance: None,
             },
         )
         .await
@@ -164,11 +167,12 @@ mod tests {
                 http_timeout: Some(original.http_timeout),
                 http_connect_timeout: Some(original.http_connect_timeout),
                 http_retries: Some(original.http_retries),
-                http_user_agent: original.http_user_agent.clone(),
+                http_user_agent: Some(original.http_user_agent.clone()),
                 read_mode: Some(original.read_mode.clone()),
                 expire_read_after_days: None,
                 expire_unread_after_days: None,
                 read_delay_secs: None,
+                rsshub_instance: None,
             },
         )
         .await
@@ -183,7 +187,7 @@ mod tests {
             updated.feed_poll_interval_secs,
             original.feed_poll_interval_secs
         );
-        // `None` on a `treat_none_as_null` column writes NULL...
+        // An explicit inner `None` writes NULL...
         assert_eq!(cleared.http_user_agent, None);
         // ...but a plain `None` field is still left untouched.
         assert_eq!(cleared.page_size, original.page_size + 1);

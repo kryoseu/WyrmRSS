@@ -190,6 +190,21 @@ means `https` on port 443; for an `http://` feed enter
 Secrets are never returned by the API once saved; they can be replaced but
 not read back. They are stored unencrypted in the database.
 
+## Integrations
+
+Configure available integrations in **Settings → Integrations**.
+
+### RSSHub
+
+[RSSHub](https://docs.rsshub.app) generates feeds for sites without RSS. Set
+your instance URL under **RSSHub** (e.g. `http://localhost:1200`).
+
+Add RSSHub feeds as `rsshub://<route>`, e.g. `rsshub://hackernews`.
+
+- Links to your instance (e.g. from RSSHub Radar) are converted to `rsshub://` automatically.
+- Feeds are fetched from whichever instance is currently set, so switching instances needs no feed edits.
+- Turning the integration off pauses RSSHub feeds until you turn it back on.
+
 ## Stack
 
 | Layer    | Technology                              |

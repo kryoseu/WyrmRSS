@@ -357,3 +357,64 @@ async fn poll_health_roundtrips_recovers_and_resets_on_url_change() {
             .contains_key(&feed.id)
     );
 }
+
+#[tokio::test]
+async fn rsshub_instance_persists_and_partial_updates_preserve_it() {
+    use database::{
+        models::settings::{Settings, SettingsUpdateForm},
+        utils::settings::RuntimeSettings,
+    };
+
+    fn form(instance: Option<Option<&str>>) -> SettingsUpdateForm {
+        SettingsUpdateForm {
+            page_size: None,
+            feed_poll_interval_secs: None,
+            http_timeout: None,
+            http_connect_timeout: None,
+            http_retries: None,
+            http_user_agent: None,
+            read_mode: None,
+            expire_read_after_days: None,
+            expire_unread_after_days: None,
+            read_delay_secs: None,
+            rsshub_instance: instance.map(|value| value.map(String::from)),
+        }
+    }
+
+    let db = TestDb::new("rsshub").await;
+    assert_eq!(Settings::get(&db.pool).await.unwrap().rsshub_instance, None);
+    let mut seeded = form(None);
+    seeded.http_user_agent = Some(Some("custom-agent".into()));
+    seeded.expire_read_after_days = Some(Some(30));
+    seeded.expire_unread_after_days = Some(Some(90));
+    Settings::update(&db.pool, seeded).await.unwrap();
+    Settings::update(&db.pool, form(Some(Some("https://example.com/rsshub"))))
+        .await
+        .unwrap();
+    let saved = Settings::get(&db.pool).await.unwrap();
+    assert_eq!(
+        saved.rsshub_instance.as_deref(),
+        Some("https://example.com/rsshub")
+    );
+    assert_eq!(saved.http_user_agent.as_deref(), Some("custom-agent"));
+    assert_eq!(saved.expire_read_after_days, Some(30));
+    assert_eq!(saved.expire_unread_after_days, Some(90));
+    assert_eq!(
+        RuntimeSettings::from(&saved).rsshub_instance,
+        saved.rsshub_instance
+    );
+    let mut unrelated = form(None);
+    unrelated.page_size = Some(saved.page_size + 1);
+    let unchanged = Settings::update(&db.pool, unrelated).await.unwrap();
+    assert_eq!(unchanged.rsshub_instance, saved.rsshub_instance);
+    let cleared = Settings::update(&db.pool, form(Some(None))).await.unwrap();
+    assert_eq!(cleared.rsshub_instance, None);
+    let mut clear_nullable = form(None);
+    clear_nullable.http_user_agent = Some(None);
+    clear_nullable.expire_read_after_days = Some(None);
+    clear_nullable.expire_unread_after_days = Some(None);
+    let cleared = Settings::update(&db.pool, clear_nullable).await.unwrap();
+    assert_eq!(cleared.http_user_agent, None);
+    assert_eq!(cleared.expire_read_after_days, None);
+    assert_eq!(cleared.expire_unread_after_days, None);
+}

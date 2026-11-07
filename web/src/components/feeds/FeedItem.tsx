@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { TbAlertTriangle, TbChecks, TbPencil, TbPlayerPause, TbPlayerPlay, TbX } from "react-icons/tb";
 import { useDeleteFeed, useSetFeedPaused } from "../../hooks/useFeeds";
 import { useMarkRead } from "../../hooks/usePostMutations";
+import { useIntegrationPaused } from "../../hooks/useSettings";
 import type { FeedView } from "../../types/FeedView";
 import { EditFeedForm } from "./EditFeedForm";
 import { RowMenu } from "../common/RowMenu";
@@ -16,6 +17,7 @@ export function FeedItem({ feed, active }: Props) {
   const deleteFeed = useDeleteFeed();
   const setPaused = useSetFeedPaused();
   const markRead = useMarkRead();
+  const pausedBy = useIntegrationPaused(feed.url);
   const [editing, setEditing] = useState(false);
 
   if (editing) {
@@ -25,7 +27,7 @@ export function FeedItem({ feed, active }: Props) {
   return (
     <Link
       to={`/feeds/${feed.id}`}
-      className={`feed-item${active ? " active" : ""}${feed.is_paused ? " paused" : ""}`}
+      className={`feed-item${active ? " active" : ""}${feed.is_paused || pausedBy ? " paused" : ""}`}
     >
       <span className="feed-item-title">{feed.title}</span>
       {feed.health?.last_error && (
@@ -39,8 +41,9 @@ export function FeedItem({ feed, active }: Props) {
         label={`Actions for ${feed.title}`}
         items={[
           {
-            icon: feed.is_paused ? <TbPlayerPlay /> : <TbPlayerPause />,
-            label: feed.is_paused ? "Resume feed" : "Pause feed",
+            icon: feed.is_paused || pausedBy ? <TbPlayerPlay /> : <TbPlayerPause />,
+            label: pausedBy ? `Paused: ${pausedBy} is off` : feed.is_paused ? "Resume feed" : "Pause feed",
+            disabled: pausedBy !== null,
             onSelect: () => setPaused.mutate({ id: feed.id, paused: !feed.is_paused }),
           },
           {

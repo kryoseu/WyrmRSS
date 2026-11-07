@@ -8,7 +8,7 @@
 //! Every candidate is fetched and validated before it is stored,
 //! so a 404 page served for a missing favicon never ends up in the database.
 
-use crate::http::HttpClient;
+use crate::{http::HttpClient, url::FeedUrlResolver};
 use chrono::{Duration, Utc};
 use database::{
     DatabasePool,
@@ -36,6 +36,7 @@ const RETRY_MISSING_AFTER: Duration = Duration::days(7);
 pub async fn ensure_feed_icon(
     pool: &DatabasePool,
     http: &HttpClient,
+    resolver: &FeedUrlResolver,
     feed: &Feed,
     parsed: &feed_rs::model::Feed,
 ) {
@@ -43,7 +44,15 @@ pub async fn ensure_feed_icon(
         return;
     }
 
-    let (data, content_type) = resolve_icon(http, &feed.url, parsed).await.unzip();
+    let feed_url = match resolver.resolve(&feed.url) {
+        Ok(url) => url,
+        Err(e) => {
+            warn!("feed icon: could not resolve {}: {e}", feed.url);
+            return;
+        }
+    };
+
+    let (data, content_type) = resolve_icon(http, &feed_url, parsed).await.unzip();
     let form = FeedIconInsertForm {
         feed_id: feed.id,
         data,

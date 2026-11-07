@@ -1,6 +1,7 @@
 use crate::{
     filter::CompiledFilters,
     http::{FeedResponse, HttpClient, HttpConfig},
+    url::FeedUrlResolver,
 };
 use chrono::Utc;
 use database::{
@@ -82,10 +83,11 @@ impl FeedWorker {
         let feeds = Feed::get_all(&self.db_pool).await?;
 
         let mut poll_states = FeedPollState::all_by_feed(&self.db_pool).await?;
+        let resolver = FeedUrlResolver::from(&*self.runtime_settings.read()?);
 
         let due_feeds: Vec<Feed> = feeds
             .into_iter()
-            .filter(|f| f.is_due() && !f.is_paused)
+            .filter(|f| f.is_due() && !f.is_paused && resolver.is_pollable(&f.url))
             .collect();
 
         info!("Processing {} due feeds", due_feeds.len());
@@ -112,12 +114,13 @@ impl FeedWorker {
             .map(|feed| {
                 let poll_state = poll_states
                     .remove(&feed.id)
-                    .filter(|state| state.matches(&feed));
+                    .filter(|state| state.source_url == feed.url);
                 let http = http.clone();
                 let pool = self.db_pool.clone();
                 let webhooks = feed_webhooks.get(&feed.id).cloned().unwrap_or_default();
                 let folder = feed_folders.get(&feed.id).map(|f| f.name.clone());
                 let semaphore = semaphore.clone();
+                let resolver = resolver.clone();
                 tokio::spawn(async move {
                     let _permit = semaphore.acquire().await.unwrap();
                     let task = FeedTask {
@@ -126,7 +129,7 @@ impl FeedWorker {
                         webhooks,
                         folder,
                     };
-                    if let Err(e) = process_feed(&pool, &http, &task).await {
+                    if let Err(e) = process_feed(&pool, &http, &resolver, &task).await {
                         error!("Failed to process feed {}: {e}", task.feed.url);
                     }
                 })
@@ -179,7 +182,12 @@ pub struct FeedTask {
 }
 
 /// Fetch -> Parse -> Store -> Update -> Notify
-async fn process_feed(pool: &DatabasePool, http: &HttpClient, task: &FeedTask) -> WyrmResult<()> {
+async fn process_feed(
+    pool: &DatabasePool,
+    http: &HttpClient,
+    resolver: &FeedUrlResolver,
+    task: &FeedTask,
+) -> WyrmResult<()> {
     info!("Processing feed {}", task.feed.title);
 
     let mut state = task.poll_state.clone().unwrap_or_else(|| FeedPollState {
@@ -191,7 +199,7 @@ async fn process_feed(pool: &DatabasePool, http: &HttpClient, task: &FeedTask) -
         etag: None,
         last_modified: None,
     });
-    let result = fetch_and_store(pool, http, task, &mut state).await;
+    let result = fetch_and_store(pool, http, resolver, task, &mut state).await;
     state.checked_at = Utc::now();
     state.last_error = result.as_ref().err().map(poll_error_message);
     state.record(pool, result.is_ok()).await?;
@@ -224,23 +232,33 @@ fn poll_error_message(error: &wyrm_utils::error::WyrmError) -> String {
 async fn fetch_and_store(
     pool: &DatabasePool,
     http: &HttpClient,
+    resolver: &FeedUrlResolver,
     task: &FeedTask,
     state: &mut FeedPollState,
 ) -> WyrmResult<()> {
-    let refresh_icon = (state.etag.is_some() || state.last_modified.is_some())
-        && crate::icon::needs_feed_icon(pool, task.feed.id).await;
+    let fetch_target = resolver.resolve(&task.feed.url)?;
+    // The same RSSHub route can resolve to a different server after a settings change.
+    let signature = if crate::rsshub::is_rsshub_url(&task.feed.url) {
+        serde_json::to_string(&(&fetch_target, &task.feed.filters))
+            .expect("RSSHub target and filters serialize as strings")
+    } else {
+        FeedPollState::filters_key(&task.feed)
+    };
+    let use_validators = state.filter_signature == signature
+        && (state.etag.is_some() || state.last_modified.is_some())
+        && !crate::icon::needs_feed_icon(pool, task.feed.id).await;
     let response = http
         .fetch_feed(
-            &task.feed.url,
-            if refresh_icon {
-                None
-            } else {
+            &fetch_target,
+            if use_validators {
                 state.etag.as_deref()
-            },
-            if refresh_icon {
-                None
             } else {
+                None
+            },
+            if use_validators {
                 state.last_modified.as_deref()
+            } else {
+                None
             },
         )
         .await?;
@@ -264,7 +282,7 @@ async fn fetch_and_store(
 
     // Best-effort: resolves the icon for feeds that never got one (OPML
     // imports, pre-icon feeds) and retries week-old misses.
-    crate::icon::ensure_feed_icon(pool, http, &task.feed, &parsed).await;
+    crate::icon::ensure_feed_icon(pool, http, resolver, &task.feed, &parsed).await;
 
     let filters = CompiledFilters::new(&task.feed.filters);
 
@@ -300,6 +318,7 @@ async fn fetch_and_store(
 
     // Commit validators only after parsing and storage succeed. A bad 200 response
     // must not make the next request skip a body we never successfully processed.
+    state.filter_signature = signature;
     state.etag = etag;
     state.last_modified = last_modified;
 
@@ -383,15 +402,25 @@ mod tests {
         http: &HttpClient,
         id: database::newtypes::FeedId,
     ) -> WyrmResult<()> {
+        poll_with_resolver(pool, http, &FeedUrlResolver::default(), id).await
+    }
+
+    async fn poll_with_resolver(
+        pool: &DatabasePool,
+        http: &HttpClient,
+        resolver: &FeedUrlResolver,
+        id: database::newtypes::FeedId,
+    ) -> WyrmResult<()> {
         let feed = Feed::get(pool, id).await.unwrap();
         let poll_state = FeedPollState::all_by_feed(pool)
             .await
             .unwrap()
             .remove(&id)
-            .filter(|s| s.matches(&feed));
+            .filter(|state| state.source_url == feed.url);
         process_feed(
             pool,
             http,
+            resolver,
             &FeedTask {
                 feed,
                 poll_state,
@@ -400,6 +429,66 @@ mod tests {
             },
         )
         .await
+    }
+
+    #[tokio::test]
+    async fn changing_rsshub_instance_fetches_without_old_validators() {
+        let rss = r#"<rss version="2.0"><channel><title>Fixture</title><link>https://example.com</link><description>test</description></channel></rss>"#;
+        let (first_url, first_server) = serve(vec![
+            response("200 OK", "ETag: \"v1\"\r\n", rss),
+            response("304 Not Modified", "", ""),
+        ])
+        .await;
+        let (second_url, second_server) = serve(vec![response("200 OK", "", rss)]).await;
+        let db = TestDb::new().await;
+        let feed = Feed::create(
+            &db.pool,
+            FeedInsertForm {
+                title: "Fixture".into(),
+                url: "rsshub://feed".into(),
+                ttl: 60,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        FeedIcon::create(
+            &db.pool,
+            FeedIconInsertForm {
+                feed_id: feed.id,
+                data: Some(vec![1]),
+                content_type: Some("image/png".into()),
+            },
+        )
+        .await
+        .unwrap();
+        let settings = database::models::settings::Settings::get(&db.pool)
+            .await
+            .unwrap();
+        let mut runtime = RuntimeSettings::from(&settings);
+        let http = HttpClient::new(&HttpConfig::from(&runtime), vec![]).unwrap();
+        runtime.rsshub_instance = Some(first_url.strip_suffix("/feed").unwrap().into());
+        let resolver = FeedUrlResolver::from(&runtime);
+        poll_with_resolver(&db.pool, &http, &resolver, feed.id)
+            .await
+            .unwrap();
+        poll_with_resolver(&db.pool, &http, &resolver, feed.id)
+            .await
+            .unwrap();
+        assert!(
+            first_server.await.unwrap()[1]
+                .to_lowercase()
+                .contains("if-none-match: \"v1\"")
+        );
+
+        runtime.rsshub_instance = Some(second_url.strip_suffix("/feed").unwrap().into());
+        let resolver = FeedUrlResolver::from(&runtime);
+        poll_with_resolver(&db.pool, &http, &resolver, feed.id)
+            .await
+            .unwrap();
+        let request = &second_server.await.unwrap()[0];
+        assert!(request.starts_with("GET /feed HTTP/"));
+        assert!(!request.to_lowercase().contains("if-none-match:"));
     }
 
     #[tokio::test]
