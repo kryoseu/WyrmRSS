@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { AccentKey, Density, FontSize, Theme } from "../hooks/useTheme";
+import type { AccentKey, Density, FontSize, SnippetLines, Theme } from "../hooks/useTheme";
 
 export interface ThemeContextValue {
   theme: Theme;
@@ -11,6 +11,10 @@ export interface ThemeContextValue {
   setFontSize: (size: FontSize) => void;
   density: Density;
   setDensity: (d: Density) => void;
+  snippetLines: SnippetLines;
+  setSnippetLines: (lines: SnippetLines) => void;
+  hideThumbnails: boolean;
+  setHideThumbnails: (hide: boolean) => void;
 }
 
 export const ThemeContext = createContext<ThemeContextValue | null>(null);

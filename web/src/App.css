@@ -727,7 +727,7 @@ body.reader-resizing {
 
 .btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-contrast, #fff);
 
   &:hover:not(:disabled) {
     opacity: 0.85;
@@ -896,6 +896,22 @@ body.reader-resizing {
   }
 }
 
+/* The text-input rule above stretches inputs; reset for checkboxes. */
+.settings-field input[type="checkbox"] {
+  flex: none;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--accent);
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-border);
+  }
+}
+
 .settings-form-actions {
   display: flex;
   align-items: center;
@@ -949,7 +965,7 @@ body.reader-resizing {
 
   &.active {
     background: var(--accent);
-    color: #fff;
+    color: var(--accent-contrast, #fff);
   }
 }
 
@@ -1670,9 +1686,18 @@ body.reader-resizing {
 }
 
 
+@keyframes post-reader-in {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
 .post-reader {
   padding: 32px 40px;
   max-width: 640px;
+  animation: post-reader-in 0.15s ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .post-reader-title {
@@ -1692,6 +1717,11 @@ body.reader-resizing {
   text-decoration: none;
   font-weight: 400;
   white-space: nowrap;
+}
+
+/* Centers the icon on the text instead of sitting it on the baseline. */
+.post-reader-original svg {
+  vertical-align: -0.125em;
 }
 
 .post-reader-meta {
@@ -1726,10 +1756,28 @@ body.reader-resizing {
 .post-reader-meta a {
   color: var(--accent);
   text-decoration: none;
+}
 
-  &:hover {
-    text-decoration: underline;
+/* Faint resting underline; a solid one grows over it from the left on hover.
+   The feed link underlines its inner span so the "·" separator stays out. */
+.post-reader-meta a > span,
+.post-reader-body a {
+  --link-line-faint: color-mix(in srgb, currentColor 25%, transparent);
+  color: var(--accent);
+  text-decoration: none;
+  background:
+    linear-gradient(currentColor, currentColor) no-repeat 0 100% / 0 1px,
+    linear-gradient(var(--link-line-faint), var(--link-line-faint)) no-repeat 0 100% / 100% 1px;
+  transition: background-size 0.2s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
+}
+
+.post-reader-meta a:is(:hover, :focus-visible) > span,
+.post-reader-body a:is(:hover, :focus-visible) {
+  background-size: 100% 1px, 100% 1px;
 }
 
 /* Reddit videos are often portrait; cap height so they don't fill the pane. */
@@ -1745,7 +1793,8 @@ body.reader-resizing {
 .post-reader-body {
   font-size: 0.83rem;
   line-height: 1.7;
-  color: var(--text);
+  /* Brighter than --text for readability, still softer than headings. */
+  color: color-mix(in srgb, var(--text) 60%, var(--text-h));
 
   /* Kept below .post-reader-title, since content often repeats it as an h1. */
   h1, h2, h3, h4 {
@@ -1763,8 +1812,9 @@ body.reader-resizing {
     margin: 0 0 1em;
   }
 
-  a {
-    color: var(--accent);
+  /* Image links shouldn't get a line under the image. */
+  a:has(img) {
+    background: none;
   }
 
   /* height: auto keeps width/height attributes from stretching scaled media. */
@@ -2145,7 +2195,7 @@ body.reader-resizing {
 
   /* Briefly filled after a blocked write, so the message gets noticed. */
   &.restricted {
-    color: #fff;
+    color: var(--accent-contrast, #fff);
     background: var(--accent);
   }
 }
@@ -2226,7 +2276,7 @@ body.reader-resizing {
   padding: 6px 12px;
   font-size: inherit;
   font-family: var(--sans);
-  color: #fff;
+  color: var(--accent-contrast, #fff);
   background: var(--accent);
   border: none;
   border-radius: 5px;
@@ -2405,18 +2455,23 @@ body.reader-resizing {
 
 /* Card density: two-line titles, a snippet, and a feed · time line. */
 .post-item--card {
+  --card-thumb-size: 64px;
   padding: 12px;
   gap: 9px;
 
+  /* At least as tall as the thumbnail: title aligns with its top, meta with its bottom. */
   .post-item-main {
     flex: 1;
     min-width: 0;
+    min-height: var(--card-thumb-size);
+    align-self: center;
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
 
   .post-item-title {
+    flex: none;
     white-space: normal;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -2428,17 +2483,143 @@ body.reader-resizing {
     color: var(--text);
     opacity: 0.7;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: var(--snippet-lines, 1);
+    -webkit-box-orient: vertical;
   }
 
   .post-item-meta {
+    margin-top: auto;
     font-size: 0.67rem;
     color: var(--text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
+
+/* No thumbnail: size the card to its text, as before thumbnails. */
+.post-item--card.post-item--no-thumb .post-item-main {
+  min-height: 0;
+  align-self: auto;
+}
+
+/* Card thumbnail; the feed icon sits underneath until the image loads. */
+.post-item-thumb {
+  position: relative;
+  width: var(--card-thumb-size);
+  height: var(--card-thumb-size);
+  flex-shrink: 0;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--accent-bg);
+
+  .post-item-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .post-item-feed {
+    background: none;
+  }
+
+  /* Outline drawn over the image so its edge stays visible. */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px var(--accent-border);
+    pointer-events: none;
+  }
+}
+
+.post-item-thumb-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+
+  &.loaded {
+    opacity: 1;
+  }
+}
+
+/* Feed icon in the corner of a loaded image. */
+.post-item-thumb-badge {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  z-index: 1;
+  display: flex;
+  padding: 1px;
+  border-radius: 4px;
+  /* Fixed light backing in both themes */
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(6px);
+
+  .post-item-icon {
+    width: 15px;
+    height: 15px;
+    opacity: 1;
+    filter: none;
+  }
+
+  .post-item-feed {
+    background: var(--accent-bg);
+  }
+}
+
+.layout--mobile .post-item-thumb {
+  margin-right: 3px;
+
+  /* Keeps the badge in proportion to the smaller tile. */
+  .post-item-thumb-badge .post-item-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Tighter card spacing on phones, where width is scarce. */
+.layout--mobile .post-item--card {
+  --card-thumb-size: 56px;
+  padding: 10px;
+  gap: 6px;
+
+  /* The unread envelope in the top-right replaces the read-toggle column. */
+  .post-item-read {
+    display: none;
+  }
+
+  .post-item-main {
+    position: relative;
+  }
+
+  .post-item-title {
+    padding-right: 16px;
+  }
+}
+
+/* Same envelope as the read toggle, aligned with the title's first line. */
+.post-item-unread-mark {
+  display: none;
+  position: absolute;
+  top: 5px;
+  right: 0;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.layout--mobile .post-item-unread-mark {
+  display: flex;
 }
 
 /* Pull-to-refresh indicator: pinned at the top of the list, revealed as

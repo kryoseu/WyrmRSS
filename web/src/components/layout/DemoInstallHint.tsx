@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { TbDeviceMobile, TbX } from "react-icons/tb";
 import { useDemoMode } from "../../hooks/useSettings";
-
-const DISMISSED_KEY = "wyrm:demo-install-hint-dismissed";
+import { STORAGE_KEYS } from "../../utils/constants";
 
 // Chrome-only event, not in TypeScript's DOM lib.
 interface BeforeInstallPromptEvent extends Event {
@@ -19,7 +18,7 @@ window.addEventListener("beforeinstallprompt", (e) => {
 
 function isDismissed(): boolean {
   try {
-    return localStorage.getItem(DISMISSED_KEY) === "1";
+    return localStorage.getItem(STORAGE_KEYS.demoInstallHintDismissed) === "1";
   } catch {
     return false;
   }
@@ -61,7 +60,7 @@ export function DemoInstallHint({ mobile }: { mobile: boolean }) {
   function dismiss() {
     setDismissed(true);
     try {
-      localStorage.setItem(DISMISSED_KEY, "1");
+      localStorage.setItem(STORAGE_KEYS.demoInstallHintDismissed, "1");
     } catch {
       // Private mode: the hint just comes back next visit.
     }

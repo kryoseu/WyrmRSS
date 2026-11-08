@@ -13,7 +13,7 @@ use diesel::prelude::*;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use feed_rs::model::Entry;
 use serde::{Deserialize, Serialize};
-use wyrm_utils::{error::WyrmError, result::WyrmResult};
+use wyrm_utils::{error::WyrmError, result::WyrmResult, thumbnail::extract_thumbnail_url};
 
 #[serde_with::skip_serializing_none]
 #[derive(Serialize, Deserialize, Queryable, Selectable)]
@@ -33,6 +33,8 @@ pub struct Post {
     /// Link to the original post. Forms the `(feed_id, url)` uniqueness
     /// constraint used to dedupe on re-fetch.
     pub url: Option<String>,
+    /// The URL to fetch the post thumbnail
+    pub thumbnail_url: Option<String>,
     /// Comma-separated author list, each formatted as `name (email)` (or just
     /// `name`); `None` if the entry lists no authors.
     pub authors: Option<String>,
@@ -175,6 +177,7 @@ impl Post {
         let mut conn = pool.get().await?;
         diesel::update(posts::table.find(form.id))
             .set(form)
+            .returning(Post::as_select())
             .get_result::<Self>(&mut conn)
             .await
             .map_err(WyrmError::from)
@@ -184,6 +187,7 @@ impl Post {
         let mut conn = pool.get().await?;
         diesel::update(posts::table.find(post_id))
             .set(posts::is_read.eq(diesel::dsl::not(posts::is_read)))
+            .returning(Post::as_select())
             .get_result::<Self>(&mut conn)
             .await
             .map_err(WyrmError::from)
@@ -248,6 +252,7 @@ impl Post {
         conn.transaction(async |conn| {
             let post: Self = diesel::update(posts::table.find(form.id))
                 .set(form)
+                .returning(Post::as_select())
                 .get_result(conn)
                 .await?;
 
@@ -320,6 +325,7 @@ pub struct PostInsertForm {
     pub feed_id: FeedId,
     pub title: Option<String>,
     pub url: Option<String>,
+    pub thumbnail_url: Option<String>,
     pub authors: Option<String>,
     pub published_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,
@@ -330,16 +336,20 @@ pub struct PostInsertForm {
 
 impl PostInsertForm {
     pub fn from_entry(entry: Entry, feed_id: FeedId) -> Self {
+        let thumbnail_url = extract_thumbnail_url(&entry);
+
         let media_description = entry
             .media
             .into_iter()
             .next()
             .and_then(|m| m.description)
             .map(|d| d.content);
+
         Self {
             feed_id,
             title: entry.title.map(|t| t.content),
             url: entry.links.into_iter().next().map(|l| l.href),
+            thumbnail_url,
             authors: if entry.authors.is_empty() {
                 None
             } else {
@@ -382,6 +392,7 @@ macro_rules! test_post {
                 feed_id: $feed_id,
                 title: Some("test post".to_string()),
                 url: Some(url.clone()),
+                thumbnail_url: None,
                 authors: None,
                 published_at: Some(chrono::Utc::now()),
                 updated_at: None,
@@ -507,6 +518,7 @@ mod tests {
                     feed_id: $feed_id,
                     title: Some("test post".to_string()),
                     url: Some($url.to_string()),
+                    thumbnail_url: None,
                     authors: None,
                     published_at: Some(Utc::now()),
                     updated_at: None,
@@ -529,6 +541,7 @@ mod tests {
                     feed_id: feed.id,
                     title: Some("Get Me".to_string()),
                     url: Some(url.clone()),
+                    thumbnail_url: None,
                     authors: None,
                     published_at: Some("2026-01-02T03:04:05Z".parse::<DateTime<Utc>>().unwrap()),
                     updated_at: None,

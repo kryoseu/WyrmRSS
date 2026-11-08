@@ -1,13 +1,33 @@
 import { useTheme, PALETTES } from "../../hooks/useTheme";
-import type { AccentKey, Density, FontSize, Theme } from "../../hooks/useTheme";
+import type { AccentKey, Density, FontSize, SnippetLines, Theme } from "../../hooks/useTheme";
 
 const DENSITY_OPTIONS: { value: Density; label: string }[] = [
   { value: "title", label: "Title only" },
   { value: "card", label: "Card" },
 ];
 
+const SNIPPET_LINE_OPTIONS: { value: SnippetLines; label: string }[] = [
+  { value: 0, label: "Off" },
+  { value: 1, label: "1" },
+  { value: 2, label: "2" },
+  { value: 3, label: "3" },
+];
+
 export function Appearance() {
-  const { theme, setTheme, accent, setAccent, fontSize, setFontSize, density, setDensity } = useTheme();
+  const {
+    theme,
+    setTheme,
+    accent,
+    setAccent,
+    fontSize,
+    setFontSize,
+    density,
+    setDensity,
+    snippetLines,
+    setSnippetLines,
+    hideThumbnails,
+    setHideThumbnails,
+  } = useTheme();
 
   return (
     <div className="settings-section">
@@ -73,6 +93,32 @@ export function Appearance() {
           ))}
         </div>
       </div>
+      {density === "card" && (
+        <div className="settings-field">
+          <label>Hide thumbnails</label>
+          <input
+            type="checkbox"
+            checked={hideThumbnails}
+            onChange={(e) => setHideThumbnails(e.target.checked)}
+          />
+        </div>
+      )}
+      {density === "card" && (
+        <div className="settings-field">
+          <label>Snippet lines</label>
+          <div className="segmented">
+            {SNIPPET_LINE_OPTIONS.map(({ value, label }) => (
+              <button
+                key={value}
+                className={`segmented-btn${snippetLines === value ? " active" : ""}`}
+                onClick={() => setSnippetLines(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <p className="settings-hint">Changes apply immediately and are saved on this device.</p>
     </div>
   );

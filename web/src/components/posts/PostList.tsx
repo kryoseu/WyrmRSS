@@ -119,7 +119,8 @@ export function PostList() {
             post={post}
             to={pathFor(post)}
             active={activePostId === post.id}
-            feed={feedIdNum === undefined ? feedMap.get(post.feed_id) : undefined}
+            feed={feedMap.get(post.feed_id)}
+            showFeed={feedIdNum === undefined}
           />
         )}
       />
