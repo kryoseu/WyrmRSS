@@ -6569,6 +6569,7 @@ dependencies = [
  "quick-xml 0.42.0",
  "reqwest",
  "reqwest-middleware",
+ "scraper",
  "serde",
  "serde_json",
  "smart-default",

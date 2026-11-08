@@ -13,6 +13,7 @@ import { initials } from "../../utils/posts";
 import { plainTextSnippet } from "../../utils/radar";
 import { CONTENT } from "../../utils/constants";
 import { formatLastFetched } from "../../utils/utils";
+import { PostThumbnail } from "./PostThumbnail";
 
 export interface FeedMeta {
   id: FeedId;
@@ -25,20 +26,24 @@ interface Props {
   to: string;
   active: boolean;
   feed?: FeedMeta;
+  /** Show the feed's name and list-mode icon; off in single-feed views. */
+  showFeed?: boolean;
 }
 
-export const PostItem = memo(function PostItem({ post, to, active, feed }: Props) {
+export const PostItem = memo(function PostItem({ post, to, active, feed, showFeed = true }: Props) {
   const { mutate: setRead } = useSetPostRead();
   const { mutate: setBookmarked } = useSetPostBookmarked();
   const { mutate: archivePost } = useArchivePost();
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
   const iconUrl = useFeedIcon(feed);
-  const card = useTheme().density === "card";
+  const { density, snippetLines } = useTheme();
+  const card = density === "card";
+  const showSnippet = card && snippetLines > 0;
   const snippet = useMemo(() => {
     const html = post.description ?? post.content;
-    return card && html ? plainTextSnippet(html, CONTENT.cardSnippetLength) : "";
-  }, [card, post.description, post.content]);
+    return showSnippet && html ? plainTextSnippet(html, CONTENT.cardSnippetLength) : "";
+  }, [showSnippet, post.description, post.content]);
   const readMode = settings?.read_mode;
   const isRead = readMode === "disabled" ? true : post.is_read;
 
@@ -93,6 +98,14 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
 
   const title = <span className="post-item-title">{post.title ?? "Untitled"}</span>;
 
+  const feedBadge =
+    feed &&
+    (iconUrl ? (
+      <img className="post-item-icon" src={iconUrl} alt="" loading="lazy" />
+    ) : (
+      <span className="post-item-feed">{initials(feed.name)}</span>
+    ));
+
   return (
     <Link
       to={to}
@@ -107,18 +120,27 @@ export const PostItem = memo(function PostItem({ post, to, active, feed }: Props
           {mailIcon}
         </button>
       )}
-      {feed &&
-        (iconUrl ? (
-          <img className="post-item-icon" src={iconUrl} alt="" loading="lazy" />
-        ) : (
-          <span className="post-item-feed">{initials(feed.name)}</span>
-        ))}
+      {card ? (
+        <PostThumbnail
+          key={post.thumbnail_url}
+          url={post.thumbnail_url}
+          fallback={feedBadge}
+          badge={showFeed ? feedBadge : undefined}
+        />
+      ) : (
+        showFeed && feedBadge
+      )}
       {card ? (
         <span className="post-item-main">
+          {!isRead && (
+            <span className="post-item-unread-mark" aria-label="Unread">
+              <HiMail />
+            </span>
+          )}
           {title}
           {snippet && <span className="post-item-snippet">{snippet}</span>}
           <span className="post-item-meta">
-            {feed && `${feed.name} · `}
+            {feed && showFeed && `${feed.name} · `}
             {formatLastFetched(post.published_at)}
           </span>
         </span>

@@ -2410,18 +2410,23 @@ body.reader-resizing {
 
 /* Card density: two-line titles, a snippet, and a feed · time line. */
 .post-item--card {
+  --card-thumb-size: 64px;
   padding: 12px;
   gap: 9px;
 
+  /* At least as tall as the thumbnail: title aligns with its top, meta with its bottom. */
   .post-item-main {
     flex: 1;
     min-width: 0;
+    min-height: var(--card-thumb-size);
+    align-self: center;
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
 
   .post-item-title {
+    flex: none;
     white-space: normal;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -2433,17 +2438,137 @@ body.reader-resizing {
     color: var(--text);
     opacity: 0.7;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: var(--snippet-lines, 1);
+    -webkit-box-orient: vertical;
   }
 
   .post-item-meta {
+    margin-top: auto;
     font-size: 0.67rem;
     color: var(--text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
+
+/* Card thumbnail; the feed icon sits underneath until the image loads. */
+.post-item-thumb {
+  position: relative;
+  width: var(--card-thumb-size);
+  height: var(--card-thumb-size);
+  flex-shrink: 0;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--accent-bg);
+
+  .post-item-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .post-item-feed {
+    background: none;
+  }
+
+  /* Outline drawn over the image so its edge stays visible. */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px var(--accent-border);
+    pointer-events: none;
+  }
+}
+
+.post-item-thumb-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+
+  &.loaded {
+    opacity: 1;
+  }
+}
+
+/* Feed icon in the corner of a loaded image. */
+.post-item-thumb-badge {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  z-index: 1;
+  display: flex;
+  padding: 2px;
+  border-radius: 4px;
+  /* Fixed light backing in both themes */
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(6px);
+
+  .post-item-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 1;
+    filter: none;
+  }
+
+  .post-item-feed {
+    background: var(--accent-bg);
+  }
+}
+
+.layout--mobile .post-item-thumb {
+  margin-right: 3px;
+
+  /* Keeps the badge in proportion to the smaller tile. */
+  .post-item-thumb-badge .post-item-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Tighter card spacing on phones, where width is scarce. */
+.layout--mobile .post-item--card {
+  --card-thumb-size: 56px;
+  padding: 10px;
+  gap: 6px;
+
+  /* The unread envelope in the top-right replaces the read-toggle column. */
+  .post-item-read {
+    display: none;
+  }
+
+  .post-item-main {
+    position: relative;
+  }
+
+  .post-item-title {
+    padding-right: 16px;
+  }
+}
+
+/* Same envelope as the read toggle, aligned with the title's first line. */
+.post-item-unread-mark {
+  display: none;
+  position: absolute;
+  top: 5px;
+  right: 0;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.layout--mobile .post-item-unread-mark {
+  display: flex;
 }
 
 /* Pull-to-refresh indicator: pinned at the top of the list, revealed as

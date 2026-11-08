@@ -13,6 +13,8 @@ export type AccentKey = keyof typeof PALETTES;
 export type Theme = "light" | "dark";
 export type FontSize = "small" | "default" | "large";
 export type Density = "title" | "card";
+/** Card snippet line count; 0 hides the snippet. */
+export type SnippetLines = 0 | 1 | 2 | 3;
 
 export function useTheme() {
   const ctx = useContext(ThemeContext);
