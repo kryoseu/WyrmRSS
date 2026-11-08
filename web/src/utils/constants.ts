@@ -9,7 +9,10 @@ export const DEFAULTS = {
   accent: "orange" as AccentKey,
   fontSize: "default" as FontSize,
   density: { mobile: "card", desktop: "card" } as Record<"mobile" | "desktop", Density>,
+  // Only available in card mode
   snippetLines: 1 as SnippetLines,
+  // Only available in card mode
+  hideThumbnails: false,
   // Demo visitors share read state, so show everything there.
   unreadOnly: { normal: true, demo: false },
   hideCaughtUp: false,
@@ -23,6 +26,7 @@ export const STORAGE_KEYS = {
   fontSize: "font-size",
   density: "post-density",
   snippetLines: "wyrm:snippet-lines",
+  hideThumbnails: "wyrm:hide-thumbnails",
   unreadOnly: "wyrm:unread-only",
   hideCaughtUp: "wyrm:hide-caught-up",
   demoInstallHintDismissed: "wyrm:demo-install-hint-dismissed",
