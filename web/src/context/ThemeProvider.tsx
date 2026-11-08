@@ -17,6 +17,10 @@ function applyAccent(hex: string, isDark: boolean) {
   root.style.setProperty("--accent", hex);
   root.style.setProperty("--accent-bg", `rgba(${r}, ${g}, ${b}, ${alpha})`);
   root.style.setProperty("--accent-border", `rgba(${r}, ${g}, ${b}, 0.5)`);
+  // Dark text on very light accents (e.g. slate in dark mode), white otherwise.
+  // https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color
+  const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  root.style.setProperty("--accent-contrast", brightness > 0.75 ? "#16171d" : "#fff");
 }
 
 function getInitialTheme(): Theme {
