@@ -115,7 +115,8 @@ export function PostReader({ postId, onClose, width }: Props) {
   return (
     <ReaderPane width={width} onClose={onClose} actions={actions} isLoading={isLoading} notFound={!isLoading && !post} notFoundMessage="Post not found">
       {post && (
-        <div className="post-reader">
+        // Keyed so the open animation replays when switching between cached posts.
+        <div className="post-reader" key={post.id}>
           <h1 className="post-reader-title">
             {post.title ?? "Untitled"}
             {post.url && (
