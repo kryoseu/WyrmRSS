@@ -1670,9 +1670,18 @@ body.reader-resizing {
 }
 
 
+@keyframes post-reader-in {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
 .post-reader {
   padding: 32px 40px;
   max-width: 640px;
+  animation: post-reader-in 0.15s ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .post-reader-title {
