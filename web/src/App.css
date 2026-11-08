@@ -896,6 +896,22 @@ body.reader-resizing {
   }
 }
 
+/* The text-input rule above stretches inputs; reset for checkboxes. */
+.settings-field input[type="checkbox"] {
+  flex: none;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--accent);
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-border);
+  }
+}
+
 .settings-form-actions {
   display: flex;
   align-items: center;
@@ -2482,6 +2498,12 @@ body.reader-resizing {
   }
 }
 
+/* No thumbnail: size the card to its text, as before thumbnails. */
+.post-item--card.post-item--no-thumb .post-item-main {
+  min-height: 0;
+  align-self: auto;
+}
+
 /* Card thumbnail; the feed icon sits underneath until the image loads. */
 .post-item-thumb {
   position: relative;
@@ -2537,15 +2559,15 @@ body.reader-resizing {
   bottom: 3px;
   z-index: 1;
   display: flex;
-  padding: 2px;
+  padding: 1px;
   border-radius: 4px;
   /* Fixed light backing in both themes */
   background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(6px);
 
   .post-item-icon {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
     opacity: 1;
     filter: none;
   }

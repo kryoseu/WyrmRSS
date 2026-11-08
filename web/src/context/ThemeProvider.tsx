@@ -53,6 +53,12 @@ function getInitialSnippetLines(): SnippetLines {
   return DEFAULTS.snippetLines;
 }
 
+function getInitialHideThumbnails(): boolean {
+  const saved = localStorage.getItem(STORAGE_KEYS.hideThumbnails);
+  if (saved === null) return DEFAULTS.hideThumbnails;
+  return saved === "true";
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(getInitialTheme);
   const [accent, setAccentState] = useState<AccentKey>(getInitialAccent);
@@ -60,6 +66,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Unset until the user picks one, so each device keeps its own default.
   const [savedDensity, setSavedDensity] = useState<Density | null>(getSavedDensity);
   const [snippetLines, setSnippetLinesState] = useState<SnippetLines>(getInitialSnippetLines);
+  const [hideThumbnails, setHideThumbnailsState] = useState(getInitialHideThumbnails);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -97,6 +104,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setSnippetLines: (lines) => {
       setSnippetLinesState(lines);
       localStorage.setItem(STORAGE_KEYS.snippetLines, String(lines));
+    },
+    hideThumbnails,
+    setHideThumbnails: (hide) => {
+      setHideThumbnailsState(hide);
+      localStorage.setItem(STORAGE_KEYS.hideThumbnails, String(hide));
     },
   };
 

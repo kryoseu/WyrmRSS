@@ -25,6 +25,8 @@ export function Appearance() {
     setDensity,
     snippetLines,
     setSnippetLines,
+    hideThumbnails,
+    setHideThumbnails,
   } = useTheme();
 
   return (
@@ -91,6 +93,16 @@ export function Appearance() {
           ))}
         </div>
       </div>
+      {density === "card" && (
+        <div className="settings-field">
+          <label>Hide thumbnails</label>
+          <input
+            type="checkbox"
+            checked={hideThumbnails}
+            onChange={(e) => setHideThumbnails(e.target.checked)}
+          />
+        </div>
+      )}
       {density === "card" && (
         <div className="settings-field">
           <label>Snippet lines</label>

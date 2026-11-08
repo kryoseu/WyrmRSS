@@ -13,6 +13,8 @@ export interface ThemeContextValue {
   setDensity: (d: Density) => void;
   snippetLines: SnippetLines;
   setSnippetLines: (lines: SnippetLines) => void;
+  hideThumbnails: boolean;
+  setHideThumbnails: (hide: boolean) => void;
 }
 
 export const ThemeContext = createContext<ThemeContextValue | null>(null);

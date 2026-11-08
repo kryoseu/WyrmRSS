@@ -37,8 +37,9 @@ export const PostItem = memo(function PostItem({ post, to, active, feed, showFee
   const { mutate: unarchivePost } = useUnarchivePost();
   const { data: settings } = useSettings();
   const iconUrl = useFeedIcon(feed);
-  const { density, snippetLines } = useTheme();
+  const { density, snippetLines, hideThumbnails } = useTheme();
   const card = density === "card";
+  const showThumbnail = card && !hideThumbnails;
   const showSnippet = card && snippetLines > 0;
   const snippet = useMemo(() => {
     const html = post.description ?? post.content;
@@ -109,7 +110,7 @@ export const PostItem = memo(function PostItem({ post, to, active, feed, showFee
   return (
     <Link
       to={to}
-      className={`post-item${card ? " post-item--card" : ""}${active ? " active" : ""}${isRead ? " read" : ""}`}
+      className={`post-item${card ? " post-item--card" : ""}${card && hideThumbnails ? " post-item--no-thumb" : ""}${active ? " active" : ""}${isRead ? " read" : ""}`}
     >
       {readMode !== "disabled" && (
         <button
@@ -120,7 +121,7 @@ export const PostItem = memo(function PostItem({ post, to, active, feed, showFee
           {mailIcon}
         </button>
       )}
-      {card ? (
+      {showThumbnail ? (
         <PostThumbnail
           key={post.thumbnail_url}
           url={post.thumbnail_url}
