@@ -727,7 +727,7 @@ body.reader-resizing {
 
 .btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-contrast, #fff);
 
   &:hover:not(:disabled) {
     opacity: 0.85;
@@ -949,7 +949,7 @@ body.reader-resizing {
 
   &.active {
     background: var(--accent);
-    color: #fff;
+    color: var(--accent-contrast, #fff);
   }
 }
 
@@ -2150,7 +2150,7 @@ body.reader-resizing {
 
   /* Briefly filled after a blocked write, so the message gets noticed. */
   &.restricted {
-    color: #fff;
+    color: var(--accent-contrast, #fff);
     background: var(--accent);
   }
 }
@@ -2231,7 +2231,7 @@ body.reader-resizing {
   padding: 6px 12px;
   font-size: inherit;
   font-family: var(--sans);
-  color: #fff;
+  color: var(--accent-contrast, #fff);
   background: var(--accent);
   border: none;
   border-radius: 5px;
