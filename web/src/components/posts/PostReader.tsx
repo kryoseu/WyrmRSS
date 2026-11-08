@@ -138,7 +138,11 @@ export function PostReader({ postId, onClose, width }: Props) {
           <div className="post-reader-meta">
             {post.authors && <span className="post-reader-authors">{post.authors}</span>}
             {folder && <span>{folder.name}</span>}
-            {feed && <Link to={`/feeds/${feed.id}`}>{feed.title}</Link>}
+            {feed && (
+              <Link to={`/feeds/${feed.id}`}>
+                <span>{feed.title}</span>
+              </Link>
+            )}
             {date && <span>{date}</span>}
           </div>
           {youtubeId && (

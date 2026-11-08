@@ -1731,10 +1731,28 @@ body.reader-resizing {
 .post-reader-meta a {
   color: var(--accent);
   text-decoration: none;
+}
 
-  &:hover {
-    text-decoration: underline;
+/* Faint resting underline; a solid one grows over it from the left on hover.
+   The feed link underlines its inner span so the "·" separator stays out. */
+.post-reader-meta a > span,
+.post-reader-body a {
+  --link-line-faint: color-mix(in srgb, currentColor 25%, transparent);
+  color: var(--accent);
+  text-decoration: none;
+  background:
+    linear-gradient(currentColor, currentColor) no-repeat 0 100% / 0 1px,
+    linear-gradient(var(--link-line-faint), var(--link-line-faint)) no-repeat 0 100% / 100% 1px;
+  transition: background-size 0.2s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
+}
+
+.post-reader-meta a:is(:hover, :focus-visible) > span,
+.post-reader-body a:is(:hover, :focus-visible) {
+  background-size: 100% 1px, 100% 1px;
 }
 
 /* Reddit videos are often portrait; cap height so they don't fill the pane. */
@@ -1750,7 +1768,8 @@ body.reader-resizing {
 .post-reader-body {
   font-size: 0.83rem;
   line-height: 1.7;
-  color: var(--text);
+  /* Brighter than --text for readability, still softer than headings. */
+  color: color-mix(in srgb, var(--text) 60%, var(--text-h));
 
   /* Kept below .post-reader-title, since content often repeats it as an h1. */
   h1, h2, h3, h4 {
@@ -1768,8 +1787,9 @@ body.reader-resizing {
     margin: 0 0 1em;
   }
 
-  a {
-    color: var(--accent);
+  /* Image links shouldn't get a line under the image. */
+  a:has(img) {
+    background: none;
   }
 
   /* height: auto keeps width/height attributes from stretching scaled media. */
