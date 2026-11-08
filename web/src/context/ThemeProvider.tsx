@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ThemeContext, type ThemeContextValue } from "./ThemeContext";
 import { PALETTES } from "../hooks/useTheme";
-import type { AccentKey, Density, FontSize, Theme } from "../hooks/useTheme";
+import type { AccentKey, Density, FontSize, SnippetLines, Theme } from "../hooks/useTheme";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { DEFAULTS, LAYOUT, STORAGE_KEYS } from "../utils/constants";
 
@@ -43,12 +43,19 @@ function getSavedDensity(): Density | null {
   return null;
 }
 
+function getInitialSnippetLines(): SnippetLines {
+  const saved = localStorage.getItem(STORAGE_KEYS.snippetLines);
+  if (saved === "0" || saved === "1" || saved === "2" || saved === "3") return Number(saved) as SnippetLines;
+  return DEFAULTS.snippetLines;
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(getInitialTheme);
   const [accent, setAccentState] = useState<AccentKey>(getInitialAccent);
   const [fontSize, setFontSizeState] = useState<FontSize>(getInitialFontSize);
   // Unset until the user picks one, so each device keeps its own default.
   const [savedDensity, setSavedDensity] = useState<Density | null>(getSavedDensity);
+  const [snippetLines, setSnippetLinesState] = useState<SnippetLines>(getInitialSnippetLines);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -61,6 +68,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.style.setProperty("--font-base", LAYOUT.fontSizes[fontSize]);
     localStorage.setItem(STORAGE_KEYS.fontSize, fontSize);
   }, [fontSize]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--snippet-lines", String(snippetLines));
+  }, [snippetLines]);
 
   const value: ThemeContextValue = {
     theme,
@@ -77,6 +88,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setDensity: (d) => {
       setSavedDensity(d);
       localStorage.setItem(STORAGE_KEYS.density, d);
+    },
+    snippetLines,
+    setSnippetLines: (lines) => {
+      setSnippetLinesState(lines);
+      localStorage.setItem(STORAGE_KEYS.snippetLines, String(lines));
     },
   };
 

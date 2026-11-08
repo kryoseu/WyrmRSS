@@ -25,6 +25,10 @@ title?: string,
  */
 url?: string, 
 /**
+ * The URL to fetch the post thumbnail
+ */
+thumbnail_url?: string, 
+/**
  * Comma-separated author list, each formatted as `name (email)` (or just
  * `name`); `None` if the entry lists no authors.
  */

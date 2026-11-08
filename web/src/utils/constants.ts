@@ -1,4 +1,4 @@
-import type { AccentKey, Density, FontSize, Theme } from "../hooks/useTheme";
+import type { AccentKey, Density, FontSize, SnippetLines, Theme } from "../hooks/useTheme";
 
 // Values that change app behavior, kept in one place for easy tuning.
 
@@ -9,6 +9,7 @@ export const DEFAULTS = {
   accent: "orange" as AccentKey,
   fontSize: "default" as FontSize,
   density: { mobile: "card", desktop: "card" } as Record<"mobile" | "desktop", Density>,
+  snippetLines: 1 as SnippetLines,
   // Demo visitors share read state, so show everything there.
   unreadOnly: { normal: true, demo: false },
   hideCaughtUp: false,
@@ -21,6 +22,7 @@ export const STORAGE_KEYS = {
   accent: "accent",
   fontSize: "font-size",
   density: "post-density",
+  snippetLines: "wyrm:snippet-lines",
   unreadOnly: "wyrm:unread-only",
   hideCaughtUp: "wyrm:hide-caught-up",
   demoInstallHintDismissed: "wyrm:demo-install-hint-dismissed",
@@ -42,7 +44,7 @@ export const LAYOUT = {
 
 export const CONTENT = {
   // Max characters of plain-text preview.
-  cardSnippetLength: 160,
+  cardSnippetLength: 450,
   radarSnippetLength: 140,
   // Radar feeds with at least this many unread get a full card, up to the cap.
   radarFeaturedMinUnread: 10,

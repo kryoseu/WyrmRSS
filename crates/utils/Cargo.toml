@@ -22,3 +22,4 @@ reqwest = { workspace = true }
 reqwest-middleware = { workspace = true }
 feed-rs = { workspace = true }
 quick-xml = { workspace = true }
+scraper = { workspace = true }
