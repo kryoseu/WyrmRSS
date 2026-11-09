@@ -7,12 +7,15 @@ export const PALETTES = {
   blue:   { light: "#2563eb", dark: "#60a5fa" },
   green:  { light: "#16a34a", dark: "#4ade80" },
   rose:   { light: "#e11d48", dark: "#fb7185" },
+  slate:  { light: "#475569", dark: "#dbe4ee" },
 } as const;
 
 export type AccentKey = keyof typeof PALETTES;
 export type Theme = "light" | "dark";
 export type FontSize = "small" | "default" | "large";
 export type Density = "title" | "card";
+/** Card snippet line count; 0 hides the snippet. */
+export type SnippetLines = 0 | 1 | 2 | 3;
 
 export function useTheme() {
   const ctx = useContext(ThemeContext);

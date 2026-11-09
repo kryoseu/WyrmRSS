@@ -103,6 +103,7 @@ diesel::table! {
         is_read -> Bool,
         is_archived -> Bool,
         created_at -> TimestamptzSqlite,
+        thumbnail_url -> Nullable<Text>,
     }
 }
 

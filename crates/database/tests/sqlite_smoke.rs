@@ -95,6 +95,7 @@ fn post_form(feed_id: FeedId, url: &str) -> PostInsertForm {
         feed_id,
         title: Some(format!("post {url}")),
         url: Some(url.to_string()),
+        thumbnail_url: None,
         authors: None,
         // left to the column default, which is the case that forces the
         // row-by-row insert path on sqlite

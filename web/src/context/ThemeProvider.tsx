@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ThemeContext, type ThemeContextValue } from "./ThemeContext";
 import { PALETTES } from "../hooks/useTheme";
-import type { AccentKey, Density, FontSize, Theme } from "../hooks/useTheme";
+import type { AccentKey, Density, FontSize, SnippetLines, Theme } from "../hooks/useTheme";
 import { useIsMobile } from "../hooks/useIsMobile";
-import { DEFAULTS, LAYOUT } from "../utils/constants";
+import { DEFAULTS, LAYOUT, STORAGE_KEYS } from "../utils/constants";
 
 function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
@@ -17,30 +17,46 @@ function applyAccent(hex: string, isDark: boolean) {
   root.style.setProperty("--accent", hex);
   root.style.setProperty("--accent-bg", `rgba(${r}, ${g}, ${b}, ${alpha})`);
   root.style.setProperty("--accent-border", `rgba(${r}, ${g}, ${b}, 0.5)`);
+  // Dark text on very light accents (e.g. slate in dark mode), white otherwise.
+  // https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color
+  const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  root.style.setProperty("--accent-contrast", brightness > 0.75 ? "#16171d" : "#fff");
 }
 
 function getInitialTheme(): Theme {
-  const saved = localStorage.getItem("theme");
+  const saved = localStorage.getItem(STORAGE_KEYS.theme);
   if (saved === "light" || saved === "dark") return saved;
   return DEFAULTS.theme;
 }
 
 function getInitialAccent(): AccentKey {
-  const saved = localStorage.getItem("accent");
+  const saved = localStorage.getItem(STORAGE_KEYS.accent);
   if (saved && saved in PALETTES) return saved as AccentKey;
   return DEFAULTS.accent;
 }
 
 function getInitialFontSize(): FontSize {
-  const saved = localStorage.getItem("font-size");
+  const saved = localStorage.getItem(STORAGE_KEYS.fontSize);
   if (saved === "small" || saved === "default" || saved === "large") return saved;
   return DEFAULTS.fontSize;
 }
 
 function getSavedDensity(): Density | null {
-  const saved = localStorage.getItem("post-density");
+  const saved = localStorage.getItem(STORAGE_KEYS.density);
   if (saved === "title" || saved === "card") return saved;
   return null;
+}
+
+function getInitialSnippetLines(): SnippetLines {
+  const saved = localStorage.getItem(STORAGE_KEYS.snippetLines);
+  if (saved === "0" || saved === "1" || saved === "2" || saved === "3") return Number(saved) as SnippetLines;
+  return DEFAULTS.snippetLines;
+}
+
+function getInitialHideThumbnails(): boolean {
+  const saved = localStorage.getItem(STORAGE_KEYS.hideThumbnails);
+  if (saved === null) return DEFAULTS.hideThumbnails;
+  return saved === "true";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -49,18 +65,24 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [fontSize, setFontSizeState] = useState<FontSize>(getInitialFontSize);
   // Unset until the user picks one, so each device keeps its own default.
   const [savedDensity, setSavedDensity] = useState<Density | null>(getSavedDensity);
+  const [snippetLines, setSnippetLinesState] = useState<SnippetLines>(getInitialSnippetLines);
+  const [hideThumbnails, setHideThumbnailsState] = useState(getInitialHideThumbnails);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem("theme", theme);
+    localStorage.setItem(STORAGE_KEYS.theme, theme);
     applyAccent(PALETTES[accent][theme], theme === "dark");
   }, [theme, accent]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--font-base", LAYOUT.fontSizes[fontSize]);
-    localStorage.setItem("font-size", fontSize);
+    localStorage.setItem(STORAGE_KEYS.fontSize, fontSize);
   }, [fontSize]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--snippet-lines", String(snippetLines));
+  }, [snippetLines]);
 
   const value: ThemeContextValue = {
     theme,
@@ -69,14 +91,24 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     accent,
     setAccent: (key) => {
       setAccentState(key);
-      localStorage.setItem("accent", key);
+      localStorage.setItem(STORAGE_KEYS.accent, key);
     },
     fontSize,
     setFontSize: (size) => setFontSizeState(size),
     density: savedDensity ?? DEFAULTS.density[isMobile ? "mobile" : "desktop"],
     setDensity: (d) => {
       setSavedDensity(d);
-      localStorage.setItem("post-density", d);
+      localStorage.setItem(STORAGE_KEYS.density, d);
+    },
+    snippetLines,
+    setSnippetLines: (lines) => {
+      setSnippetLinesState(lines);
+      localStorage.setItem(STORAGE_KEYS.snippetLines, String(lines));
+    },
+    hideThumbnails,
+    setHideThumbnails: (hide) => {
+      setHideThumbnailsState(hide);
+      localStorage.setItem(STORAGE_KEYS.hideThumbnails, String(hide));
     },
   };
 

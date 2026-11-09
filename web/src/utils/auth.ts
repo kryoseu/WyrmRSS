@@ -1,15 +1,16 @@
 import { ENDPOINTS } from "./api";
+import { STORAGE_KEYS } from "./constants";
 
 export function getApiKey(): string | null {
-  return import.meta.env.WYRM_API_KEY || localStorage.getItem("WYRM_API_KEY");
+  return import.meta.env.WYRM_API_KEY || localStorage.getItem(STORAGE_KEYS.apiKey);
 }
 
 export function setApiKey(key: string): void {
-  localStorage.setItem("WYRM_API_KEY", key);
+  localStorage.setItem(STORAGE_KEYS.apiKey, key);
 }
 
 export function clearApiKey(): void {
-  localStorage.removeItem("WYRM_API_KEY");
+  localStorage.removeItem(STORAGE_KEYS.apiKey);
 }
 
 // A reverse proxy answers with these when the backend behind it is down.

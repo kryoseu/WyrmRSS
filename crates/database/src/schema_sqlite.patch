@@ -81,7 +81,7 @@
      }
  }
  
-@@ -89,18 +95,21 @@
+@@ -89,19 +95,22 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -96,6 +96,7 @@
          is_archived -> Bool,
 -        created_at -> Timestamp,
 +        created_at -> TimestamptzSqlite,
+         thumbnail_url -> Nullable<Text>,
      }
  }
  
@@ -106,7 +107,7 @@
      settings (is_singleton) {
          is_singleton -> Bool,
          page_size -> Integer,
-@@ -109,7 +118,7 @@
+@@ -110,7 +119,7 @@
          http_connect_timeout -> Integer,
          http_retries -> Integer,
          http_user_agent -> Nullable<Text>,
@@ -115,7 +116,7 @@
          expire_read_after_days -> Nullable<Integer>,
          expire_unread_after_days -> Nullable<Integer>,
          read_delay_secs -> Integer,
-@@ -124,13 +133,16 @@
+@@ -126,13 +135,16 @@
  }
  
  diesel::table! {

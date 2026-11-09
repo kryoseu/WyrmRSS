@@ -116,6 +116,7 @@ mod tests {
             is_read: false,
             is_archived: false,
             created_at: Utc::now(),
+            thumbnail_url: None,
         }
     }
 

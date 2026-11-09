@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import YouTube from "react-youtube";
-import { TbArchive, TbArchiveOff, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
+import { TbArchive, TbArchiveOff, TbArrowUpRight, TbBookmark, TbBookmarkFilled } from "react-icons/tb";
 import { usePost } from "../../hooks/usePosts";
 import { useArchivePost, useUnarchivePost, useSetPostRead, useSetPostBookmarked } from "../../hooks/usePostMutations";
 import { useSettings } from "../../hooks/useSettings";
@@ -115,7 +115,8 @@ export function PostReader({ postId, onClose, width }: Props) {
   return (
     <ReaderPane width={width} onClose={onClose} actions={actions} isLoading={isLoading} notFound={!isLoading && !post} notFoundMessage="Post not found">
       {post && (
-        <div className="post-reader">
+        // Keyed so the open animation replays when switching between cached posts.
+        <div className="post-reader" key={post.id}>
           <h1 className="post-reader-title">
             {post.title ?? "Untitled"}
             {post.url && (
@@ -131,14 +132,18 @@ export function PostReader({ postId, onClose, width }: Props) {
                 onClick={markReadOnOpenOriginal}
                 onAuxClick={(e) => e.button === 1 && markReadOnOpenOriginal()}
               >
-                ↗
+                <TbArrowUpRight />
               </a>
             )}
           </h1>
           <div className="post-reader-meta">
             {post.authors && <span className="post-reader-authors">{post.authors}</span>}
             {folder && <span>{folder.name}</span>}
-            {feed && <Link to={`/feeds/${feed.id}`}>{feed.title}</Link>}
+            {feed && (
+              <Link to={`/feeds/${feed.id}`}>
+                <span>{feed.title}</span>
+              </Link>
+            )}
             {date && <span>{date}</span>}
           </div>
           {youtubeId && (

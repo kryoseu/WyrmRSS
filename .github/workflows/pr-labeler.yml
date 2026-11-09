@@ -1,0 +1,58 @@
+name: PR Labeler
+
+# Labels PRs from their title prefix (feat:, fix(web):, ...) so release notes
+# group by category, see .github/release.yml.
+# pull_request_target so fork PRs can be labeled; safe because no PR code is
+# checked out and the title is only read through env.
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label:
+    # Skip body-only edits.
+    if: github.event.action != 'edited' || github.event.changes.title
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Label from title prefix
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          type_labels=(feature bug enhancement refactor chore ci)
+
+          # "feat(web)!: x" -> "feat"
+          prefix=$(printf '%s' "$PR_TITLE" | sed -nE 's/^([a-z]+)(\([^)]*\))?!?:.*/\1/p')
+
+          case "$prefix" in
+            feat) label=feature ;;
+            fix) label=bug ;;
+            enhancement) label=enhancement ;;
+            refactor) label=refactor ;;
+            chore|build) label=chore ;;
+            ci) label=ci ;;
+            *) label="" ;;
+          esac
+
+          if [[ -z "$label" ]]; then
+            echo "No recognized prefix in title, leaving labels alone."
+            exit 0
+          fi
+
+          # Drop a stale type label if the title's prefix changed.
+          for other in "${type_labels[@]}"; do
+            if [[ "$other" != "$label" ]] && jq -e --arg name "$other" 'any(. == $name)' <<<"$PR_LABELS" >/dev/null; then
+              gh api -X DELETE "repos/$GH_REPO/issues/$PR_NUMBER/labels/$other" >/dev/null
+            fi
+          done
+
+          gh api "repos/$GH_REPO/issues/$PR_NUMBER/labels" -f "labels[]=$label" >/dev/null
+          echo "Labeled #$PR_NUMBER as '$label'."
