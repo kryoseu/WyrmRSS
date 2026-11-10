@@ -12,11 +12,17 @@ interface AuthOptions {
 export function AuthGate({ children }: { children: React.ReactNode }) {
   // Preserve immediate access for open instances; a protected API returning
   // 401 locks the gate and prompts for the configured sign-in methods.
-  const [locked, setLocked] = useState(() => new URLSearchParams(location.search).has("auth_error"));
-  const [error, setError] = useState<string | null>(() =>
-    new URLSearchParams(location.search).has("auth_error")
-      ? "Sign-in failed. Check that your account is allowed, then try again."
-      : null);
+  const [locked, setLocked] = useState(false);
+  const [error, setError] = useState<string | null>(() => {
+    const callbackError = new URLSearchParams(location.search).get("auth_error");
+    if (callbackError === "oidc") {
+      return "Sign-in failed. Check that your account is allowed, then try again.";
+    }
+    if (callbackError === "oidc_unavailable") {
+      return "The identity provider is unavailable. Try again in a moment.";
+    }
+    return null;
+  });
   const [options, setOptions] = useState<AuthOptions>({
     oidc_enabled: false, api_key_enabled: true, oidc_session: false,
   });

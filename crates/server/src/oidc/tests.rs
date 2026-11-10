@@ -11,6 +11,8 @@ use openidconnect::{
 const SESSION_COOKIE: &str = "__Host-wyrm_session";
 const LOGIN_COOKIE: &str = "__Host-wyrm_oidc_login";
 
+mod provider;
+
 fn configured_auth() -> Auth {
     let issuer = IssuerUrl::new("https://id.example.com".into()).unwrap();
     let metadata = CoreProviderMetadata::new(
@@ -26,12 +28,17 @@ fn configured_auth() -> Auth {
     Auth {
         api_key: Some("api-secret".into()),
         oidc: Some(Oidc {
-            client: CoreClient::from_provider_metadata(
-                metadata,
-                ClientId::new("wyrm".into()),
-                None,
-            )
-            .set_redirect_uri(redirect.clone()),
+            discovery: AsyncMutex::new(DiscoveryCache {
+                client: Some(
+                    CoreClient::from_provider_metadata(
+                        metadata,
+                        ClientId::new("wyrm".into()),
+                        None,
+                    )
+                    .set_redirect_uri(redirect.clone()),
+                ),
+                refresh_at: Instant::now() + DISCOVERY_TTL,
+            }),
             http: reqwest::Client::new(),
             issuer,
             client_id: "wyrm".into(),
@@ -40,7 +47,8 @@ fn configured_auth() -> Auth {
             origin: "https://rss.example.com".into(),
             secure: true,
             allowed_subjects: vec!["owner".into()],
-            pending: Mutex::new(HashMap::new()),
+            login_key: Key::generate(),
+            started_at: Instant::now(),
             sessions: Mutex::new(HashMap::new()),
         }),
     }
@@ -53,7 +61,7 @@ async fn defaults_preserve_open_access_and_api_key_only_access() {
             api_key: key.clone(),
             ..Default::default()
         };
-        let auth = web::Data::new(Auth::new(&config).await.unwrap());
+        let auth = web::Data::new(Auth::new(&config).unwrap());
         assert!(auth.oidc.is_none());
         let app = test::init_service(
             App::new()
@@ -102,7 +110,7 @@ async fn partial_configuration_fails_closed() {
         oidc_client_id: Some("wyrm".into()),
         ..Default::default()
     };
-    assert!(Auth::new(&config).await.is_err());
+    assert!(Auth::new(&config).is_err());
 }
 
 #[actix_web::test]
@@ -278,15 +286,30 @@ async fn login_uses_pkce_bound_state_secure_cookies_and_local_redirects() {
         .cookies()
         .find(|c| c.name() == LOGIN_COOKIE)
         .unwrap();
-    assert_eq!(login_cookie.value(), params["state"]);
+    assert_ne!(login_cookie.value(), params["state"]);
     assert_eq!(login_cookie.http_only(), Some(true));
     assert_eq!(login_cookie.secure(), Some(true));
     assert_eq!(login_cookie.path(), Some("/"));
     assert_eq!(login_cookie.same_site(), Some(SameSite::Lax));
+    let oidc = auth.oidc.as_ref().unwrap();
+    let pending = oidc
+        .open_login(login_cookie.clone().into_owned(), &params["state"])
+        .expect("the cookie contains the pending login");
+    assert_eq!(pending.return_to, "/");
+    assert_eq!(pending.nonce.secret(), &params["nonce"]);
     assert_eq!(
-        auth.oidc.as_ref().unwrap().pending.lock().unwrap()[&params["state"]].return_to,
-        "/"
+        PkceCodeChallenge::from_code_verifier_sha256(&pending.verifier).as_str(),
+        params["code_challenge"]
     );
+    assert!(
+        oidc.open_login(login_cookie.clone().into_owned(), "different-state")
+            .is_none()
+    );
+    let mut tampered = login_cookie.clone().into_owned();
+    let mut value = tampered.value().as_bytes().to_vec();
+    value[0] = if value[0] == b'A' { b'B' } else { b'A' };
+    tampered.set_value(String::from_utf8(value).unwrap());
+    assert!(oidc.open_login(tampered, &params["state"]).is_none());
     let callback_url = format!(
         "/api/v1/auth/callback?state={}&error=access_denied",
         params["state"]
@@ -300,11 +323,6 @@ async fn login_uses_pkce_bound_state_secure_cookies_and_local_redirects() {
         response.headers().get(header::LOCATION).unwrap(),
         "/?auth_error=oidc"
     );
-    assert_eq!(
-        auth.oidc.as_ref().unwrap().pending.lock().unwrap().len(),
-        1,
-        "unbound callback cannot consume another browser's login"
-    );
     let response = test::call_service(
         &app,
         test::TestRequest::get()
@@ -317,40 +335,56 @@ async fn login_uses_pkce_bound_state_secure_cookies_and_local_redirects() {
         response.headers().get(header::LOCATION).unwrap(),
         "/?auth_error=oidc"
     );
-    assert!(
-        auth.oidc
-            .as_ref()
-            .unwrap()
-            .pending
-            .lock()
-            .unwrap()
-            .is_empty()
-    );
+    let expired = response
+        .response()
+        .cookies()
+        .find(|c| c.name() == LOGIN_COOKIE)
+        .unwrap();
+    assert_eq!(expired.max_age(), Some(CookieDuration::ZERO));
 }
 
 #[actix_web::test]
-async fn expired_pending_login_is_consumed_without_contacting_provider() {
+async fn expired_pending_login_is_rejected_even_if_the_browser_still_sends_it() {
     let auth = configured_auth();
     let oidc = auth.oidc.as_ref().unwrap();
-    oidc.pending.lock().unwrap().insert(
-        "state".into(),
-        PendingLogin {
+    let cookie = oidc
+        .seal_login(&PendingLogin {
+            state: CsrfToken::new("state".into()),
             nonce: Nonce::new_random(),
             verifier: PkceCodeVerifier::new("verifier".into()),
-            expires: Instant::now() - Duration::from_secs(1),
+            expires_at: 0,
             return_to: "/".into(),
-        },
-    );
-    let req = test::TestRequest::get()
-        .cookie(Cookie::new(LOGIN_COOKIE, "state"))
-        .to_http_request();
-    let query = CallbackQuery {
-        state: Some("state".into()),
-        code: Some("code".into()),
-        error: None,
-    };
-    assert!(complete_login(&req, &query, oidc).await.is_err());
-    assert!(oidc.pending.lock().unwrap().is_empty());
+        })
+        .unwrap();
+    assert!(oidc.open_login(cookie, "state").is_none());
+}
+
+#[actix_web::test]
+async fn abandoned_logins_do_not_block_new_attempts() {
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(configured_auth()))
+            .wrap(from_fn(middleware))
+            .configure(configure),
+    )
+    .await;
+    // Fill the old global limit, then start one more login from a fresh browser.
+    for _ in 0..1025 {
+        let response = test::call_service(
+            &app,
+            test::TestRequest::get()
+                .uri("/api/v1/auth/login")
+                .to_request(),
+        )
+        .await;
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        assert!(
+            response
+                .response()
+                .cookies()
+                .any(|c| c.name() == LOGIN_COOKIE)
+        );
+    }
 }
 
 #[actix_web::test]

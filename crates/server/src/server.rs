@@ -13,7 +13,7 @@ use wyrm_utils::{
 pub async fn start_server() -> WyrmResult<()> {
     info!("Loading settings");
     let startup_conf = WyrmStartupConfig::load()?;
-    let auth = web::Data::new(crate::oidc::Auth::new(&startup_conf).await?);
+    let auth = web::Data::new(crate::oidc::Auth::new(&startup_conf)?);
 
     info!("Establishing database connection for migrations");
     let mut db_sync_conn = database::establish_sync_connection(&startup_conf)?;

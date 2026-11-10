@@ -4,7 +4,7 @@ use actix_web::{
     HttpRequest,
     HttpResponse,
     body::MessageBody,
-    cookie::{Cookie, SameSite, time::Duration as CookieDuration},
+    cookie::{Cookie, CookieJar, Key, SameSite, time::Duration as CookieDuration},
     dev::{ServiceRequest, ServiceResponse},
     error::{ErrorForbidden, ErrorServiceUnavailable, ErrorUnauthorized},
     http::{Method, header},
@@ -28,17 +28,22 @@ use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
     reqwest,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     sync::Mutex,
     time::{Duration, Instant},
 };
+use tokio::sync::Mutex as AsyncMutex;
 use wyrm_utils::{config::WyrmStartupConfig, error::WyrmError, result::WyrmResult};
 
 const LOGIN_TTL: Duration = Duration::from_secs(600);
 const SESSION_TTL: Duration = Duration::from_secs(12 * 60 * 60);
-const STORE_LIMIT: usize = 1024;
+const SESSION_LIMIT: usize = 1024;
+// Leave room for JSON escaping and cookie encryption within browser size limits.
+const RETURN_PATH_LIMIT: usize = 1024;
+const DISCOVERY_TTL: Duration = Duration::from_secs(300);
+const DISCOVERY_RETRY: Duration = Duration::from_secs(5);
 type Client = CoreClient<
     EndpointSet,
     EndpointNotSet,
@@ -54,7 +59,7 @@ pub struct Auth {
 }
 
 struct Oidc {
-    client: Client,
+    discovery: AsyncMutex<DiscoveryCache>,
     http: reqwest::Client,
     issuer: IssuerUrl,
     client_id: String,
@@ -63,18 +68,60 @@ struct Oidc {
     origin: String,
     secure: bool,
     allowed_subjects: Vec<String>,
-    pending: Mutex<HashMap<String, PendingLogin>>,
+    login_key: Key,
+    started_at: Instant,
     sessions: Mutex<HashMap<String, Instant>>,
 }
 
+struct DiscoveryCache {
+    client: Option<Client>,
+    refresh_at: Instant,
+}
+
+#[derive(Deserialize, Serialize)]
 struct PendingLogin {
+    state: CsrfToken,
     nonce: Nonce,
     verifier: PkceCodeVerifier,
-    expires: Instant,
+    expires_at: u64,
     return_to: String,
 }
 
 impl Oidc {
+    async fn discover_client(&self) -> Result<Client, Error> {
+        discover(
+            &self.issuer,
+            &self.client_id,
+            self.client_secret.as_deref(),
+            &self.redirect,
+            &self.http,
+        )
+        .await
+    }
+
+    async fn authorization_client(&self) -> Result<Client, Error> {
+        // One request refreshes discovery at a time. Back off after errors so a
+        // burst of sign-in attempts cannot keep retrying an unavailable issuer.
+        let mut cache = self.discovery.lock().await;
+        if Instant::now() < cache.refresh_at {
+            return cache
+                .client
+                .clone()
+                .ok_or_else(|| ErrorServiceUnavailable("Identity provider discovery unavailable"));
+        }
+        let result = self.discover_client().await;
+        cache.client = result.as_ref().ok().cloned();
+        let delay = match &result {
+            Ok(_) => DISCOVERY_TTL,
+            Err(error) => {
+                tracing::warn!(%error, "OIDC discovery failed");
+                DISCOVERY_RETRY
+            }
+        };
+        cache.refresh_at = Instant::now() + delay;
+        result
+    }
+
     fn session_cookie_name(&self) -> &'static str {
         if self.secure {
             "__Host-wyrm_session"
@@ -89,6 +136,25 @@ impl Oidc {
         } else {
             "wyrm_oidc_login"
         }
+    }
+
+    fn seal_login(&self, pending: &PendingLogin) -> Result<Cookie<'static>, Error> {
+        let payload = serde_json::to_string(pending)
+            .map_err(|_| ErrorServiceUnavailable("Login unavailable"))?;
+        let name = self.login_cookie_name();
+        let mut jar = CookieJar::new();
+        jar.private_mut(&self.login_key)
+            .add(cookie(name, payload, LOGIN_TTL, self));
+        Ok(jar.get(name).expect("login cookie was just added").clone())
+    }
+
+    fn open_login(&self, cookie: Cookie<'static>, state: &str) -> Option<PendingLogin> {
+        let jar = CookieJar::new();
+        let cookie = jar.private(&self.login_key).decrypt(cookie)?;
+        let pending: PendingLogin = serde_json::from_str(cookie.value()).ok()?;
+        (pending.expires_at > self.started_at.elapsed().as_secs()
+            && pending.state == CsrfToken::new(state.to_owned()))
+        .then_some(pending)
     }
 }
 
@@ -113,7 +179,7 @@ fn validate_url(value: &str) -> WyrmResult<reqwest::Url> {
 }
 
 impl Auth {
-    pub async fn new(config: &WyrmStartupConfig) -> WyrmResult<Self> {
+    pub fn new(config: &WyrmStartupConfig) -> WyrmResult<Self> {
         let options = [
             &config.oidc_issuer_url,
             &config.oidc_client_id,
@@ -155,17 +221,11 @@ impl Auth {
                 .map_err(|_| invalid_config("invalid redirect URL"))?;
             let client_id = required(&config.oidc_client_id)?;
             let client_secret = config.oidc_client_secret.clone();
-            let client = discover(
-                &issuer,
-                &client_id,
-                client_secret.as_deref(),
-                &redirect,
-                &http,
-            )
-            .await
-            .map_err(|_| invalid_config("provider discovery failed"))?;
             Some(Oidc {
-                client,
+                discovery: AsyncMutex::new(DiscoveryCache {
+                    client: None,
+                    refresh_at: Instant::now(),
+                }),
                 http,
                 issuer,
                 client_id,
@@ -174,7 +234,9 @@ impl Auth {
                 origin: redirect_url.origin().ascii_serialization(),
                 secure: redirect_url.scheme() == "https",
                 allowed_subjects,
-                pending: Mutex::new(HashMap::new()),
+                login_key: Key::try_generate()
+                    .ok_or_else(|| invalid_config("could not generate a login cookie key"))?,
+                started_at: Instant::now(),
                 sessions: Mutex::new(HashMap::new()),
             })
         } else {
@@ -331,9 +393,14 @@ async fn login(
         .oidc
         .as_ref()
         .ok_or_else(|| actix_web::error::ErrorNotFound("OIDC disabled"))?;
+    let Ok(client) = oidc.authorization_client().await else {
+        return Ok(HttpResponse::SeeOther()
+            .insert_header((header::LOCATION, "/?auth_error=oidc_unavailable"))
+            .insert_header((header::CACHE_CONTROL, "no-store"))
+            .finish());
+    };
     let (challenge, verifier) = PkceCodeChallenge::new_random_sha256();
-    let (url, state, nonce) = oidc
-        .client
+    let (url, state, nonce) = client
         .authorize_url(
             CoreAuthenticationFlow::AuthorizationCode,
             CsrfToken::new_random,
@@ -341,36 +408,23 @@ async fn login(
         )
         .set_pkce_challenge(challenge)
         .url();
-    let mut pending = oidc
-        .pending
-        .lock()
-        .map_err(|_| ErrorServiceUnavailable("Login unavailable"))?;
-    pending.retain(|_, login| login.expires > Instant::now());
-    if pending.len() >= STORE_LIMIT {
-        return Err(ErrorServiceUnavailable("Too many pending logins"));
-    }
-    pending.insert(
-        state.secret().clone(),
-        PendingLogin {
-            nonce,
-            verifier,
-            expires: Instant::now() + LOGIN_TTL,
-            return_to: query
-                .return_to
-                .clone()
-                .filter(|path| local_path(path))
-                .unwrap_or_else(|| "/".into()),
-        },
-    );
+    // An abandoned login occupies only its browser's cookie. The server keeps
+    // no pending entries that unauthenticated callers could fill up.
+    let pending = PendingLogin {
+        state,
+        nonce,
+        verifier,
+        expires_at: oidc.started_at.elapsed().as_secs() + LOGIN_TTL.as_secs(),
+        return_to: query
+            .into_inner()
+            .return_to
+            .filter(|path| path.len() <= RETURN_PATH_LIMIT && local_path(path))
+            .unwrap_or_else(|| "/".into()),
+    };
     Ok(HttpResponse::SeeOther()
         .insert_header((header::LOCATION, url.as_str()))
         .insert_header((header::CACHE_CONTROL, "no-store"))
-        .cookie(cookie(
-            oidc.login_cookie_name(),
-            state.secret().clone(),
-            LOGIN_TTL,
-            oidc,
-        ))
+        .cookie(oidc.seal_login(&pending)?)
         .finish())
 }
 
@@ -428,17 +482,11 @@ async fn complete_login(
 ) -> Result<(String, String), Error> {
     let denied = || ErrorUnauthorized("OIDC login failed");
     let state = query.state.as_ref().ok_or_else(denied)?;
-    let browser_state = req.cookie(oidc.login_cookie_name()).ok_or_else(denied)?;
-    if CsrfToken::new(state.clone()) != CsrfToken::new(browser_state.value().to_owned()) {
-        return Err(denied());
-    }
+    let cookie = req.cookie(oidc.login_cookie_name()).ok_or_else(denied)?;
     let pending = oidc
-        .pending
-        .lock()
-        .map_err(|_| denied())?
-        .remove(state)
+        .open_login(cookie.into_owned(), state)
         .ok_or_else(denied)?;
-    if pending.expires <= Instant::now() || query.error.is_some() {
+    if query.error.is_some() {
         return Err(denied());
     }
     let code = query
@@ -447,14 +495,9 @@ async fn complete_login(
         .filter(|s| !s.is_empty())
         .ok_or_else(denied)?;
     // Refresh discovery/JWKS for each completed login to support provider key rotation.
-    let client = discover(
-        &oidc.issuer,
-        &oidc.client_id,
-        oidc.client_secret.as_deref(),
-        &oidc.redirect,
-        &oidc.http,
-    )
-    .await?;
+    let client = oidc.discover_client().await?;
+    // The provider enforces single-use authorization codes. The callback also
+    // clears the browser's login cookie when it returns.
     let tokens = client
         .exchange_code(AuthorizationCode::new(code))
         .map_err(|_| denied())?
@@ -476,7 +519,7 @@ async fn complete_login(
     let token = CsrfToken::new_random().secret().clone();
     let mut sessions = oidc.sessions.lock().map_err(|_| denied())?;
     sessions.retain(|_, expires| *expires > Instant::now());
-    if sessions.len() >= STORE_LIMIT {
+    if sessions.len() >= SESSION_LIMIT {
         return Err(ErrorServiceUnavailable("Too many sessions"));
     }
     sessions.insert(token.clone(), Instant::now() + SESSION_TTL);

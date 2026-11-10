@@ -32,9 +32,11 @@ subject identifiers (`sub` claims), rather than email addresses.
    `WYRM_OIDC_CLIENT_SECRET`, `WYRM_OIDC_REDIRECT_URL`, and
    `WYRM_OIDC_ALLOWED_SUBJECTS`. These are backend settings; do not put client
    secrets in frontend build configuration.
-5. Restart the server. Partial configuration, an empty allowlist, or failed
-   provider discovery prevents startup. With OIDC enabled and no API key, access
-   requires an OIDC session. With both configured, either method grants access.
+5. Restart the server. Partial configuration or an empty allowlist prevents
+   startup. The server discovers the provider when a user starts OIDC sign-in.
+   With both methods configured, API keys grant access even when the provider
+   is unavailable. With OIDC enabled and no API key, access requires an OIDC
+   session.
 
 Serve the web app and `/api` through the same public origin. Forward all
 `/api/v1/auth/*` routes, including the public login, callback, and configuration
@@ -55,6 +57,7 @@ on the backend. Session-authenticated writes require the `x-wyrm-csrf: 1` header
 which the web app sends automatically. API-key clients only need `x-api-key`.
 Provider signing keys are rediscovered on completed logins to support rotation.
 
-Sessions and pending logins are held in memory, with bounded stores. Restarting
-the server invalidates them, including when changing allowed subjects. Run one
-server instance or use sticky routing; sessions are not shared across replicas.
+Each browser keeps its pending login in an encrypted cookie. The server holds
+active sessions in memory. Restarting the server invalidates both, including
+when changing allowed subjects. Run one server instance or use sticky routing
+so the same replica handles the login and subsequent requests.
