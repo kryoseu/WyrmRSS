@@ -1,9 +1,9 @@
 # Optional OpenID Connect sign-in
 
-OIDC adds browser sign-in to the self-hosted server. Leave all OIDC settings unset
-to retain the existing behavior: open access without an API key, or API-key-only
-access with `WYRM_API_KEY`. The native desktop app continues to use its generated
-API key.
+OIDC adds browser sign-in to the self-hosted server and is disabled by default.
+With OIDC disabled, setting `WYRM_API_KEY` requires clients to supply that key.
+If the key is also unset, the server allows unauthenticated access. The native
+desktop app uses its generated API key.
 
 All authenticated users share the same feeds, settings, and read state. OIDC does
 not create separate accounts. Access is restricted to explicitly allowed provider
