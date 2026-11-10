@@ -23,6 +23,9 @@ export async function fetchWithAuth(url: string, init: RequestInit = {}): Promis
   const key = getApiKey();
   const headers = new Headers(init.headers);
   if (key) headers.set("x-api-key", `${key}`);
+  if (!["GET", "HEAD", "OPTIONS"].includes((init.method ?? "GET").toUpperCase())) {
+    headers.set("x-wyrm-csrf", "1");
+  }
   let res: Response;
   try {
     res = await fetch(url, { ...init, headers });

@@ -1,3 +1,4 @@
+mod oidc;
 mod server;
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
 use wyrm_utils::result::WyrmResult;

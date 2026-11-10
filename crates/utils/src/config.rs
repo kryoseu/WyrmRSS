@@ -22,6 +22,13 @@ pub struct WyrmStartupConfig {
     pub port: u16,
     /// API key
     pub api_key: Option<String>,
+    /// OIDC issuer, client credentials, and externally reachable callback URL.
+    pub oidc_issuer_url: Option<String>,
+    pub oidc_client_id: Option<String>,
+    pub oidc_client_secret: Option<String>,
+    pub oidc_redirect_url: Option<String>,
+    /// Comma-separated OIDC subject identifiers allowed to access this instance.
+    pub oidc_allowed_subjects: Option<String>,
     /// Whether or not this server is running in demo mode.
     /// Demo mode means certain APIs are restricted.
     /// Used for https://demo.wyrmrss.com

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
+import { AuthContext } from "../../context/AuthContext";
 import { useSettings, useUpdateSettings } from "../../hooks/useSettings";
 import type { Settings } from "../../types/Settings";
 import type { ReadMode } from "../../types/ReadMode";
@@ -123,6 +124,20 @@ function GeneralForm({ initial }: { initial: Settings }) {
 
 export function General() {
   const { data } = useSettings();
+  const { oidcSession, signOut } = useContext(AuthContext);
+  const [signOutError, setSignOutError] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   if (!data) return null;
-  return <GeneralForm initial={data} />;
+  return <>
+    <GeneralForm initial={data} />
+    {oidcSession && <section className="settings-section">
+      <h2 className="settings-section-title">Account</h2>
+      <button className="btn" disabled={signingOut} onClick={async () => {
+        setSigningOut(true);
+        setSignOutError(false);
+        try { await signOut(); } catch { setSignOutError(true); setSigningOut(false); }
+      }}>{signingOut ? "Signing out…" : "Sign out"}</button>
+      {signOutError && <p role="alert">Sign-out failed. Please try again.</p>}
+    </section>}
+  </>;
 }
