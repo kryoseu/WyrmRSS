@@ -46,7 +46,7 @@ fn configured_auth() -> Auth {
             redirect,
             origin: "https://rss.example.com".into(),
             secure: true,
-            allowed_subjects: vec!["owner".into()],
+            allowed_subjects: Some(vec!["owner".into()]),
             login_key: Key::generate(),
             started_at: Instant::now(),
             sessions: Mutex::new(HashMap::new()),
@@ -111,6 +111,33 @@ async fn partial_configuration_fails_closed() {
         ..Default::default()
     };
     assert!(Auth::new(&config).is_err());
+}
+
+#[actix_web::test]
+async fn subject_filtering_is_optional_and_explicit_lists_are_validated() {
+    let mut config = WyrmStartupConfig {
+        oidc_issuer_url: Some("https://id.example.com".into()),
+        oidc_client_id: Some("wyrm".into()),
+        oidc_redirect_url: Some("https://rss.example.com/api/v1/auth/callback".into()),
+        ..Default::default()
+    };
+    for (configured, expected) in [
+        (None, None),
+        (
+            Some(" owner, guest, "),
+            Some(vec!["owner".into(), "guest".into()]),
+        ),
+    ] {
+        config.oidc_allowed_subjects = configured.map(String::from);
+        assert_eq!(
+            Auth::new(&config).unwrap().oidc.unwrap().allowed_subjects,
+            expected
+        );
+    }
+    for empty in ["", " ", ", ,"] {
+        config.oidc_allowed_subjects = Some(empty.into());
+        assert!(Auth::new(&config).is_err());
+    }
 }
 
 #[actix_web::test]
@@ -206,6 +233,7 @@ async fn api_key_is_independent_of_oidc_and_sessions_require_csrf() {
 async fn oidc_only_is_protected_and_expired_sessions_are_rejected() {
     let mut auth = configured_auth();
     auth.api_key = None;
+    auth.oidc.as_mut().unwrap().allowed_subjects = None;
     auth.oidc
         .as_ref()
         .unwrap()

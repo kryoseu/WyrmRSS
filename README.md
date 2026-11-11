@@ -78,7 +78,7 @@ Startup settings can be configured via environment variables (prefixed `WYRM_`) 
 | `WYRM_OIDC_CLIENT_ID` | _(none)_ | Registered OIDC client ID |
 | `WYRM_OIDC_CLIENT_SECRET` | _(none)_ | OIDC client secret; omit for public clients |
 | `WYRM_OIDC_REDIRECT_URL` | _(none)_ | Public callback URL, ending in `/api/v1/auth/callback` |
-| `WYRM_OIDC_ALLOWED_SUBJECTS` | _(none)_ | Comma-separated allowed `sub` claim values |
+| `WYRM_OIDC_ALLOWED_SUBJECTS` | _(none)_ | Optional comma-separated `sub` allowlist; unset allows any user authenticated by the provider |
 
 > [!NOTE]
 > Setting `WYRM_API_KEY` on the backend is enough to restrict access. Setting it on the frontend too skips the in-app key prompt. When both API-key and OIDC settings are absent, the API remains open.

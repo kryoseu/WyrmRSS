@@ -67,7 +67,7 @@ struct Oidc {
     redirect: RedirectUrl,
     origin: String,
     secure: bool,
-    allowed_subjects: Vec<String>,
+    allowed_subjects: Option<Vec<String>>,
     login_key: Key,
     started_at: Instant,
     sessions: Mutex<HashMap<String, Instant>>,
@@ -189,8 +189,12 @@ impl Auth {
         ];
         let oidc = if options.iter().any(|value| value.is_some()) {
             let required = |value: &Option<String>| {
-                value.clone().filter(|s| !s.trim().is_empty())
-                .ok_or_else(|| invalid_config("issuer URL, client ID, redirect URL, and allowed subjects are required"))
+                value
+                    .clone()
+                    .filter(|s| !s.trim().is_empty())
+                    .ok_or_else(|| {
+                        invalid_config("issuer URL, client ID, and redirect URL are required")
+                    })
             };
             let issuer_value = required(&config.oidc_issuer_url)?;
             validate_url(&issuer_value)?;
@@ -201,15 +205,24 @@ impl Auth {
                     "redirect URL path must be /api/v1/auth/callback",
                 ));
             }
-            let allowed_subjects: Vec<String> = required(&config.oidc_allowed_subjects)?
-                .split(',')
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-                .map(String::from)
-                .collect();
-            if allowed_subjects.is_empty() {
-                return Err(invalid_config("at least one allowed subject is required"));
-            }
+            let allowed_subjects = config
+                .oidc_allowed_subjects
+                .as_deref()
+                .map(|value| {
+                    let subjects: Vec<String> = value
+                        .split(',')
+                        .map(str::trim)
+                        .filter(|s| !s.is_empty())
+                        .map(String::from)
+                        .collect();
+                    if subjects.is_empty() {
+                        return Err(invalid_config(
+                            "configured subject allowlist must not be empty",
+                        ));
+                    }
+                    Ok(subjects)
+                })
+                .transpose()?;
             let http = reqwest::Client::builder()
                 .redirect(reqwest::redirect::Policy::none())
                 .timeout(Duration::from_secs(15))
@@ -509,11 +522,11 @@ async fn complete_login(
     let claims = id_token
         .claims(&client.id_token_verifier(), &pending.nonce)
         .map_err(|_| denied())?;
-    if !oidc
-        .allowed_subjects
-        .iter()
-        .any(|subject| subject == claims.subject().as_str())
-    {
+    if oidc.allowed_subjects.as_ref().is_some_and(|subjects| {
+        !subjects
+            .iter()
+            .any(|subject| subject == claims.subject().as_str())
+    }) {
         return Err(denied());
     }
     let token = CsrfToken::new_random().secret().clone();

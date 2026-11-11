@@ -99,6 +99,15 @@ async fn token(
 
 #[actix_web::test]
 async fn api_keys_survive_discovery_failure_and_signed_login_recovers() {
+    check_signed_login(Some("owner")).await;
+}
+
+#[actix_web::test]
+async fn signed_login_accepts_any_subject_when_filtering_is_omitted() {
+    check_signed_login(None).await;
+}
+
+async fn check_signed_login(allowed_subjects: Option<&str>) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let provider = web::Data::new(Provider {
         issuer: format!("http://{}", listener.local_addr().unwrap()),
@@ -133,7 +142,7 @@ async fn api_keys_survive_discovery_failure_and_signed_login_recovers() {
             oidc_issuer_url: Some(provider.issuer.clone()),
             oidc_client_id: Some("wyrm".into()),
             oidc_redirect_url: Some(REDIRECT_URI.into()),
-            oidc_allowed_subjects: Some("owner".into()),
+            oidc_allowed_subjects: allowed_subjects.map(String::from),
             ..WyrmStartupConfig::default()
         })
         .expect("an unavailable issuer must not prevent startup"),
@@ -225,7 +234,7 @@ async fn api_keys_survive_discovery_failure_and_signed_login_recovers() {
             .response()
             .cookies()
             .find(|cookie| cookie.name() == "wyrm_session");
-        if subject == "unlisted" {
+        if allowed_subjects.is_some() && subject == "unlisted" {
             assert_eq!(
                 response.headers().get(header::LOCATION).unwrap(),
                 "/?auth_error=oidc"
@@ -238,7 +247,7 @@ async fn api_keys_survive_discovery_failure_and_signed_login_recovers() {
             "/settings"
         );
         let session = session
-            .expect("a signed token for the owner creates a session")
+            .expect("a signed token for an allowed user creates a session")
             .into_owned();
         let request = test::TestRequest::get()
             .uri("/private")

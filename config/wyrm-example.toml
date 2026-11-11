@@ -11,4 +11,4 @@ database_pool_size = 25                                         # default 30
 # oidc_client_id = "wyrm"
 # oidc_client_secret = "replace-me"  # omit for a public client
 # oidc_redirect_url = "https://rss.example.com/api/v1/auth/callback"
-# oidc_allowed_subjects = "provider-subject-id-1,provider-subject-id-2"
+# oidc_allowed_subjects = "provider-subject-id-1,provider-subject-id-2" # optional, restricts who can sign in
