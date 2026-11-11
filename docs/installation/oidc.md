@@ -12,7 +12,7 @@ subject identifiers (`sub` claims), rather than email addresses.
 1. Register a client with your provider supporting discovery, the authorization
    code grant, and PKCE with S256. Confidential clients use `client_secret_basic`;
    public clients omit the secret.
-2. Register the exact redirect URI
+2. Register the callback URL on the same HTTPS origin as the web app, such as
    `https://rss.example.com/api/v1/auth/callback`. Wyrm requests the `openid` scope.
 3. Obtain the allowed users' subject identifiers from the provider. With pairwise
    subjects, use the subject issued specifically to this client.
@@ -37,27 +37,3 @@ subject identifiers (`sub` claims), rather than email addresses.
    With both methods configured, API keys grant access even when the provider
    is unavailable. With OIDC enabled and no API key, access requires an OIDC
    session.
-
-Serve the web app and `/api` through the same public origin. Forward all
-`/api/v1/auth/*` routes, including the public login, callback, and configuration
-endpoints, to the backend. Use HTTPS; HTTP is accepted only for loopback URLs
-during local development. For `pnpm dev`, register the frontend callback, e.g.
-`http://localhost:5173/api/v1/auth/callback`, so its `/api` proxy receives the
-callback and the session cookie belongs to the frontend origin.
-
-The login screen offers **Sign in with OpenID Connect**, plus the API-key form
-when a key is configured. The original local page is restored after sign-in.
-Failed or denied sign-in returns to a retryable login screen. To end an OIDC
-session, use **Settings → General → Account → Sign out**. This ends the Wyrm
-session; it does not sign you out of the identity provider.
-
-Login attempts expire after 10 minutes. Browser sessions expire after 12 hours
-and use HttpOnly, SameSite=Lax cookies, with Secure enabled on HTTPS. Tokens stay
-on the backend. Session-authenticated writes require the `x-wyrm-csrf: 1` header,
-which the web app sends automatically. API-key clients only need `x-api-key`.
-Provider signing keys are rediscovered on completed logins to support rotation.
-
-Each browser keeps its pending login in an encrypted cookie. The server holds
-active sessions in memory. Restarting the server invalidates both, including
-when changing allowed subjects. Run one server instance or use sticky routing
-so the same replica handles the login and subsequent requests.
