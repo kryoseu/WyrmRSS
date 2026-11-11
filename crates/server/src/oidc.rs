@@ -90,14 +90,29 @@ struct PendingLogin {
 
 impl Oidc {
     async fn discover_client(&self) -> Result<Client, Error> {
-        discover(
-            &self.issuer,
-            &self.client_id,
-            self.client_secret.as_deref(),
-            &self.redirect,
-            &self.http,
+        let metadata = CoreProviderMetadata::discover_async(self.issuer.clone(), &self.http)
+            .await
+            .map_err(|_| ErrorServiceUnavailable("Identity provider discovery failed"))?;
+        if metadata.token_endpoint().is_none() {
+            return Err(ErrorServiceUnavailable(
+                "Identity provider has no token endpoint",
+            ));
+        }
+        // Discovered endpoints also need transport protection, especially for the client secret.
+        for url in [
+            metadata.authorization_endpoint().url(),
+            metadata.token_endpoint().unwrap().url(),
+            metadata.jwks_uri().url(),
+        ] {
+            validate_url(url.as_str())
+                .map_err(|_| ErrorServiceUnavailable("Insecure identity provider endpoint"))?;
+        }
+        Ok(CoreClient::from_provider_metadata(
+            metadata,
+            ClientId::new(self.client_id.clone()),
+            self.client_secret.clone().map(ClientSecret::new),
         )
-        .await
+        .set_redirect_uri(self.redirect.clone()))
     }
 
     async fn authorization_client(&self) -> Result<Client, Error> {
@@ -286,38 +301,6 @@ impl Auth {
             })
         })
     }
-}
-
-async fn discover(
-    issuer: &IssuerUrl,
-    id: &str,
-    secret: Option<&str>,
-    redirect: &RedirectUrl,
-    http: &reqwest::Client,
-) -> Result<Client, Error> {
-    let metadata = CoreProviderMetadata::discover_async(issuer.clone(), http)
-        .await
-        .map_err(|_| ErrorServiceUnavailable("Identity provider discovery failed"))?;
-    if metadata.token_endpoint().is_none() {
-        return Err(ErrorServiceUnavailable(
-            "Identity provider has no token endpoint",
-        ));
-    }
-    // Discovered endpoints also need transport protection, especially for the client secret.
-    for url in [
-        metadata.authorization_endpoint().url(),
-        metadata.token_endpoint().unwrap().url(),
-        metadata.jwks_uri().url(),
-    ] {
-        validate_url(url.as_str())
-            .map_err(|_| ErrorServiceUnavailable("Insecure identity provider endpoint"))?;
-    }
-    Ok(CoreClient::from_provider_metadata(
-        metadata,
-        ClientId::new(id.to_owned()),
-        secret.map(|s| ClientSecret::new(s.to_owned())),
-    )
-    .set_redirect_uri(redirect.clone()))
 }
 
 fn check_csrf(req: &HttpRequest, oidc: &Oidc) -> Result<(), Error> {
