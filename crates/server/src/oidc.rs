@@ -44,6 +44,7 @@ const SESSION_LIMIT: usize = 1024;
 const RETURN_PATH_LIMIT: usize = 1024;
 const DISCOVERY_TTL: Duration = Duration::from_secs(300);
 const DISCOVERY_RETRY: Duration = Duration::from_secs(5);
+const OIDC_HTTP_TIMEOUT: Duration = Duration::from_secs(15);
 type Client = CoreClient<
     EndpointSet,
     EndpointNotSet,
@@ -225,7 +226,7 @@ impl Auth {
                 .transpose()?;
             let http = reqwest::Client::builder()
                 .redirect(reqwest::redirect::Policy::none())
-                .timeout(Duration::from_secs(15))
+                .timeout(OIDC_HTTP_TIMEOUT)
                 .build()
                 .map_err(|_| invalid_config("could not create HTTP client"))?;
             let issuer =

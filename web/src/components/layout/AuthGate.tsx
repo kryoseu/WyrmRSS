@@ -1,6 +1,7 @@
 import { type SubmitEvent, useEffect, useRef, useState } from "react";
 import { clearApiKey, fetchWithAuth, setApiKey, verifyApiKey } from "../../utils/auth";
 import { ENDPOINTS } from "../../utils/api";
+import { AUTH } from "../../utils/constants";
 import { AuthContext } from "../../context/AuthContext";
 
 interface AuthOptions {
@@ -14,7 +15,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   // 401 locks the gate and prompts for the configured sign-in methods.
   const [locked, setLocked] = useState(false);
   const [error, setError] = useState<string | null>(() => {
-    const callbackError = new URLSearchParams(location.search).get("auth_error");
+    const callbackError = new URLSearchParams(location.search).get(AUTH.errorParam);
     if (callbackError === "oidc") {
       return "Sign-in failed. Check that your account is allowed, then try again.";
     }
@@ -46,15 +47,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       void refreshOptions();
     };
     const url = new URL(location.href);
-    if (url.searchParams.has("auth_error")) {
-      url.searchParams.delete("auth_error");
+    if (url.searchParams.has(AUTH.errorParam)) {
+      url.searchParams.delete(AUTH.errorParam);
       history.replaceState(null, "", url);
     }
     void refreshOptions();
-    window.addEventListener("wyrm:unauthorized", handle);
+    window.addEventListener(AUTH.unauthorizedEvent, handle);
     return () => {
       active = false;
-      window.removeEventListener("wyrm:unauthorized", handle);
+      window.removeEventListener(AUTH.unauthorizedEvent, handle);
     };
   }, []);
 
