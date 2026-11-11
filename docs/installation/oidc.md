@@ -31,8 +31,9 @@ subject identifiers (`sub` claims).
    `WYRM_OIDC_CLIENT_SECRET`, `WYRM_OIDC_REDIRECT_URL`, and
    `WYRM_OIDC_ALLOWED_SUBJECTS`. These are backend settings; do not put client
    secrets in frontend build configuration.
-4. Restart the server. Partial configuration or an explicitly empty allowlist
-   prevents startup. The server discovers the provider when a user starts OIDC sign-in.
+4. Restart the server. The issuer URL, client ID, and callback URL are required.
+   If you configure a subject allowlist, it must contain at least one subject.
+   The server discovers the provider when a user starts OIDC sign-in.
    With both methods configured, API keys grant access even when the provider
    is unavailable. With OIDC enabled and no API key, access requires an OIDC
    session.
