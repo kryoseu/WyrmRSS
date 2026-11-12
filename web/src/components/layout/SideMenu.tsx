@@ -1,57 +1,70 @@
 import { NavLink } from "react-router";
+import { TbContrast, TbContrastFilled, TbLayoutNavbarCollapse, TbLayoutNavbarExpand } from "react-icons/tb";
 import { useTheme, PALETTES } from "../../hooks/useTheme";
 import type { AccentKey } from "../../hooks/useTheme";
 import { FeedList } from "../feeds/FeedList";
 
 export function SideMenu() {
-  const { theme, toggleTheme, accent, setAccent } = useTheme();
+  const {
+    theme,
+    toggleTheme,
+    accent,
+    setAccent,
+    highContrast,
+    toggleHighContrast,
+    navCollapsed,
+    toggleNavCollapsed,
+    customLogo,
+  } = useTheme();
 
   return (
     <div className="sidebar">
       <div className="sidebar-brand">
         <img
           className="sidebar-logo"
-          src={theme === "light" ? "/l-o-dark.svg" : "/l-o-light.svg"}
+          src={customLogo ?? (theme === "light" ? "/l-o-dark.svg" : "/l-o-light.svg")}
           alt="Wyrm-RSS"
         />
       </div>
 
-      <nav className="sidebar-nav">
-        <NavLink
-          to="/"
-          end
-          className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
-        >
-          Home
-        </NavLink>
-        <NavLink
-          to="/settings"
-          className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
-        >
-          Settings
-        </NavLink>
-        <NavLink
-          to="/read-later"
-          end
-          className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
-        >
-          Read Later
-        </NavLink>
-        <NavLink
-          to="/archive"
-          end
-          className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
-        >
-          Archive
-        </NavLink>
-        <NavLink
-          to="/radar"
-          end
-          className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
-        >
-          Radar
-        </NavLink>
-      </nav>
+      {!navCollapsed && (
+        <nav className="sidebar-nav">
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+          >
+            Home
+          </NavLink>
+          <NavLink
+            to="/settings"
+            className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+          >
+            Settings
+          </NavLink>
+          <NavLink
+            to="/read-later"
+            end
+            className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+          >
+            Read Later
+          </NavLink>
+          <NavLink
+            to="/archive"
+            end
+            className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+          >
+            Archive
+          </NavLink>
+          <NavLink
+            to="/radar"
+            end
+            className={({ isActive }) => `sidebar-nav-item${isActive ? " active" : ""}`}
+          >
+            Radar
+          </NavLink>
+        </nav>
+      )}
 
       <FeedList />
 
@@ -67,6 +80,24 @@ export function SideMenu() {
             />
           ))}
         </div>
+        <button
+          className={`sidebar-footer-btn${navCollapsed ? " active" : ""}`}
+          onClick={toggleNavCollapsed}
+          title={navCollapsed ? "Expand menu" : "Collapse menu"}
+          aria-label={navCollapsed ? "Expand menu" : "Collapse menu"}
+          aria-pressed={navCollapsed}
+        >
+          {navCollapsed ? <TbLayoutNavbarExpand /> : <TbLayoutNavbarCollapse />}
+        </button>
+        <button
+          className={`sidebar-footer-btn${highContrast ? " active" : ""}`}
+          onClick={toggleHighContrast}
+          title={highContrast ? "Disable high contrast" : "Enable high contrast"}
+          aria-label={highContrast ? "Disable high contrast" : "Enable high contrast"}
+          aria-pressed={highContrast}
+        >
+          {highContrast ? <TbContrastFilled /> : <TbContrast />}
+        </button>
         <button
           className="theme-toggle"
           onClick={toggleTheme}
