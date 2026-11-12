@@ -1,5 +1,5 @@
 import { NavLink } from "react-router";
-import { TbContrast, TbContrastFilled, TbLayoutNavbarCollapse, TbLayoutNavbarExpand } from "react-icons/tb";
+import { TbContrast, TbContrastFilled } from "react-icons/tb";
 import { useTheme, PALETTES } from "../../hooks/useTheme";
 import type { AccentKey } from "../../hooks/useTheme";
 import { FeedList } from "../feeds/FeedList";
@@ -13,7 +13,6 @@ export function SideMenu() {
     highContrast,
     toggleHighContrast,
     navCollapsed,
-    toggleNavCollapsed,
     customLogo,
   } = useTheme();
 
@@ -66,7 +65,7 @@ export function SideMenu() {
         </nav>
       )}
 
-      <FeedList />
+      <FeedList showNavControls />
 
       <div className="sidebar-footer">
         <div className="accent-picker">
@@ -80,15 +79,6 @@ export function SideMenu() {
             />
           ))}
         </div>
-        <button
-          className={`sidebar-footer-btn${navCollapsed ? " active" : ""}`}
-          onClick={toggleNavCollapsed}
-          title={navCollapsed ? "Expand menu" : "Collapse menu"}
-          aria-label={navCollapsed ? "Expand menu" : "Collapse menu"}
-          aria-pressed={navCollapsed}
-        >
-          {navCollapsed ? <TbLayoutNavbarExpand /> : <TbLayoutNavbarCollapse />}
-        </button>
         <button
           className={`sidebar-footer-btn${highContrast ? " active" : ""}`}
           onClick={toggleHighContrast}
