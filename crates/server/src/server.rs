@@ -1,5 +1,6 @@
 use actix_web::{App, HttpServer, dev::ServerHandle, middleware::from_fn, web};
 use api_utils::context::WyrmContext;
+use auth::Auth;
 use database::{models::settings::Settings, utils::settings::RuntimeSettings};
 use std::sync::{Arc, RwLock};
 use tracing::info;
@@ -13,7 +14,7 @@ use wyrm_utils::{
 pub async fn start_server() -> WyrmResult<()> {
     info!("Loading settings");
     let startup_conf = WyrmStartupConfig::load()?;
-    let auth = web::Data::new(crate::oidc::Auth::new(&startup_conf)?);
+    let auth = web::Data::new(Auth::new(&startup_conf)?);
 
     info!("Establishing database connection for migrations");
     let mut db_sync_conn = database::establish_sync_connection(&startup_conf)?;
@@ -57,7 +58,7 @@ pub async fn start_server() -> WyrmResult<()> {
 fn spin_up_http_server(
     startup_conf: WyrmStartupConfig,
     ctx: web::Data<WyrmContext>,
-    auth: web::Data<crate::oidc::Auth>,
+    auth: web::Data<Auth>,
 ) -> WyrmResult<ServerHandle> {
     let bind = startup_conf.bind;
     let port = startup_conf.port;
@@ -67,8 +68,8 @@ fn spin_up_http_server(
             .app_data(ctx.clone())
             .app_data(auth.clone())
             .app_data(session_pool.clone())
-            .wrap(from_fn(crate::oidc::middleware))
-            .configure(crate::oidc::configure)
+            .wrap(from_fn(auth::middleware::middleware))
+            .configure(api_routes::auth::server_config)
             .configure(api_routes::config)
     })
     .bind((bind, port))

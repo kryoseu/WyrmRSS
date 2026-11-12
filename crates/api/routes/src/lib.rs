@@ -1,6 +1,6 @@
 use actix_web::web;
 
-mod auth;
+pub mod auth;
 mod feeds;
 mod folders;
 mod host_credentials;

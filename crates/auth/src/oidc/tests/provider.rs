@@ -1,4 +1,5 @@
 use super::*;
+use crate::tests::session_pool;
 use actix_web::HttpServer;
 use chrono::{TimeDelta, Utc};
 use openidconnect::{
@@ -12,7 +13,10 @@ use openidconnect::{
 };
 use std::{
     net::TcpListener,
-    sync::atomic::{AtomicBool, Ordering},
+    sync::{
+        Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 // Test-only signing key for the loopback issuer.

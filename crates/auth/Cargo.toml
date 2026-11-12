@@ -1,0 +1,25 @@
+[package]
+name = "auth"
+version.workspace = true
+edition.workspace = true
+description.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+actix-web = { workspace = true, features = ["secure-cookies"] }
+chrono = { workspace = true }
+database = { path = "../database", default-features = false }
+openidconnect = { version = "4.1.0", features = ["timing-resistant-secret-traits"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+wyrm_utils = { path = "../utils" }
+
+[features]
+default = ["postgres"]
+postgres = ["database/postgres"]
+sqlite = ["database/sqlite"]

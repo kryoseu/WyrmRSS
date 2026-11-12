@@ -9,19 +9,15 @@ rust-version.workspace = true
 
 [dependencies]
 tokio = { workspace = true }
-actix-web = { workspace = true, features = ["secure-cookies"] }
+actix-web = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-api_routes = { path = "../api/routes", default-features = false }
+api_routes = { path = "../api/routes", default-features = false, features = ["auth"] }
+auth = { path = "../auth", default-features = false }
 api_utils = { path = "../api/utils", default-features = false }
 database = { path = "../database", default-features = false }
 wyrm_utils = { path = "../utils" }
 wyrm-rss = { path = "../rss", default-features = false }
-openidconnect = { version = "4.1.0", features = ["timing-resistant-secret-traits"] }
-serde = { workspace = true }
-serde_json = { workspace = true }
-chrono = { workspace = true }
-sha2 = { workspace = true }
 
 # Backend selection for the whole tree lands here. `cargo run` keeps postgres;
 # the desktop build uses `--no-default-features --features sqlite`. Not
@@ -30,12 +26,14 @@ sha2 = { workspace = true }
 default = ["postgres"]
 postgres = [
   "database/postgres",
+  "auth/postgres",
   "api_routes/postgres",
   "api_utils/postgres",
   "wyrm-rss/postgres",
 ]
 sqlite = [
   "database/sqlite",
+  "auth/sqlite",
   "api_routes/sqlite",
   "api_utils/sqlite",
   "wyrm-rss/sqlite",

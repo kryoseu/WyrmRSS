@@ -1,18 +1,22 @@
 use super::*;
+#[cfg(feature = "postgres")]
+use crate::{
+    middleware::middleware,
+    tests::{SESSION_COOKIE, configure, configured_auth, session_pool},
+};
+#[cfg(feature = "postgres")]
+use actix_web::{App, http::StatusCode, middleware::from_fn, test};
 
-// The database crate's setup_test_db helper is private to its own unit tests.
-// Server tests use the same configured PostgreSQL database and migrate once.
-pub(super) async fn session_pool() -> web::Data<DatabasePool> {
-    static MIGRATED: std::sync::Once = std::sync::Once::new();
-    let config = WyrmStartupConfig::load().unwrap();
-    MIGRATED.call_once(|| {
-        let mut conn = database::establish_sync_connection(&config).unwrap();
-        database::run_migrations(&mut conn).unwrap();
-    });
-    web::Data::new(database::create_pool(&config).await.unwrap())
+#[actix_web::test]
+async fn token_hash_is_sha256() {
+    assert_eq!(
+        token_hash("abc"),
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    );
 }
 
 #[actix_web::test]
+#[cfg(feature = "postgres")]
 async fn activity_renews_cookie_and_survives_auth_restart() {
     let pool = session_pool().await;
     let token = CsrfToken::new_random().secret().clone();

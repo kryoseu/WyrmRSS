@@ -303,6 +303,9 @@ dependencies = [
  "actix-web",
  "api_api",
  "api_crud",
+ "auth",
+ "serde_json",
+ "wyrm_utils",
 ]
 
 [[package]]
@@ -352,6 +355,22 @@ name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
+
+[[package]]
+name = "auth"
+version = "0.37.0"
+dependencies = [
+ "actix-web",
+ "chrono",
+ "database",
+ "openidconnect",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tokio",
+ "tracing",
+ "wyrm_utils",
+]
 
 [[package]]
 name = "autocfg"
@@ -3711,12 +3730,8 @@ dependencies = [
  "actix-web",
  "api_routes",
  "api_utils",
- "chrono",
+ "auth",
  "database",
- "openidconnect",
- "serde",
- "serde_json",
- "sha2 0.11.0",
  "tokio",
  "tracing",
  "tracing-subscriber",
