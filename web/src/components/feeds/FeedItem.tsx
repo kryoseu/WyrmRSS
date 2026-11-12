@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { TbChecks, TbPencil, TbPlayerPause, TbPlayerPlay, TbX } from "react-icons/tb";
+import { TbAlertTriangle, TbChecks, TbPencil, TbPlayerPause, TbPlayerPlay, TbX } from "react-icons/tb";
 import { useDeleteFeed, useSetFeedPaused } from "../../hooks/useFeeds";
 import { useMarkRead } from "../../hooks/usePostMutations";
 import { useIntegrationPaused } from "../../hooks/useSettings";
@@ -30,6 +30,13 @@ export function FeedItem({ feed, active }: Props) {
       className={`feed-item${active ? " active" : ""}${feed.is_paused || pausedBy ? " paused" : ""}`}
     >
       <span className="feed-item-title">{feed.title}</span>
+      {feed.health?.last_error && (
+        <span className="feed-health-warning" role="img"
+          aria-label={`Refresh failed: ${feed.health.last_error}`}
+          title={`Refresh failed: ${feed.health.last_error}`}>
+          <TbAlertTriangle />
+        </span>
+      )}
       <RowMenu
         label={`Actions for ${feed.title}`}
         items={[

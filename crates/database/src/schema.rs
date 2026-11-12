@@ -36,6 +36,18 @@ diesel::table! {
 }
 
 diesel::table! {
+    feed_poll_state (feed_id) {
+        feed_id -> Int4,
+        source_url -> Text,
+        filter_signature -> Text,
+        checked_at -> Timestamptz,
+        last_error -> Nullable<Text>,
+        etag -> Nullable<Text>,
+        last_modified -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
     feed_webhooks (feed_id, webhook_id) {
         feed_id -> Int4,
         webhook_id -> Int4,
@@ -156,6 +168,7 @@ diesel::table! {
 
 diesel::joinable!(expired_posts -> feeds (feed_id));
 diesel::joinable!(feed_icons -> feeds (feed_id));
+diesel::joinable!(feed_poll_state -> feeds (feed_id));
 diesel::joinable!(feed_webhooks -> feeds (feed_id));
 diesel::joinable!(feed_webhooks -> webhooks (webhook_id));
 diesel::joinable!(feeds -> folders (folder_id));
@@ -164,6 +177,7 @@ diesel::joinable!(posts -> feeds (feed_id));
 diesel::allow_tables_to_appear_in_same_query!(
     expired_posts,
     feed_icons,
+    feed_poll_state,
     feed_webhooks,
     feeds,
     folders,

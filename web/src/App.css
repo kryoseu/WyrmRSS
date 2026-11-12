@@ -3025,3 +3025,54 @@ kbd {
 .shortcut-footer-hint {
   margin-top: 8px;
 }
+
+/* Feed diagnostics use the full row width rather than widening the table. */
+.feed-health {
+  min-width: 0;
+  font: inherit;
+  font-size: 0.68rem;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.feed-health--error,
+.feed-health-warning {
+  color: var(--accent);
+}
+
+.feed-health-warning {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.feeds-table .settings-table-row > .settings-table-actions {
+  grid-column: 7;
+  grid-row: 1;
+}
+
+.feed-health-details {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  margin: 4px 0;
+  font-size: 0.68rem;
+  overflow-wrap: anywhere;
+}
+
+.feed-health-details dt { font-weight: 600; }
+.feed-health-details dd { margin: 0; min-width: 0; }
+
+.layout--mobile .feed-health { order: 3; }
+.layout--mobile .feed-health-details {
+  order: 4;
+  flex-basis: 100%;
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+.layout--mobile .feed-health-details dt:not(:first-child) { margin-top: 6px; }

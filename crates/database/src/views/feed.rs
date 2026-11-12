@@ -1,6 +1,9 @@
 use crate::{
     DatabasePool,
-    models::feed::Feed,
+    models::{
+        feed::Feed,
+        feed_poll_state::{FeedHealth, FeedPollState},
+    },
     newtypes::FeedId,
     schema::{feed_icons, feeds, posts},
 };
@@ -18,6 +21,7 @@ pub struct FeedView {
     pub unread_count: i64,
     /// Whether `GET /feeds/{id}/icon` will serve an image.
     pub has_icon: bool,
+    pub health: FeedHealth,
 }
 
 /// List of feeds with post unread count
@@ -43,10 +47,13 @@ pub async fn list(pool: &DatabasePool) -> WyrmResult<Vec<FeedView>> {
         .into_iter()
         .collect();
 
+    drop(conn);
+    let poll_states = FeedPollState::all_by_feed(pool).await?;
     Ok(rows
         .into_iter()
         .map(|(feed, unread_count)| FeedView {
             has_icon: icon_ids.contains(&feed.id),
+            health: FeedHealth::for_feed(&feed, poll_states.get(&feed.id)),
             feed,
             unread_count,
         })

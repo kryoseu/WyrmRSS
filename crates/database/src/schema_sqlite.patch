@@ -16,7 +16,16 @@
      }
  }
  
-@@ -25,17 +25,20 @@
+@@ -22,7 +22,7 @@
+         feed_id -> Integer,
+         source_url -> Text,
+         filter_signature -> Text,
+-        checked_at -> Timestamp,
++        checked_at -> TimestamptzSqlite,
+         last_error -> Nullable<Text>,
+         etag -> Nullable<Text>,
+         last_modified -> Nullable<Text>,
+@@ -37,17 +37,20 @@
  }
  
  diesel::table! {
@@ -40,7 +49,7 @@
      }
  }
  
-@@ -47,13 +50,16 @@
+@@ -59,13 +62,16 @@
  }
  
  diesel::table! {
@@ -59,7 +68,7 @@
      }
  }
  
-@@ -63,10 +69,10 @@
+@@ -75,10 +81,10 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -72,7 +81,7 @@
      }
  }
  
-@@ -77,19 +83,22 @@
+@@ -89,19 +95,22 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -98,7 +107,7 @@
      settings (is_singleton) {
          is_singleton -> Bool,
          page_size -> Integer,
-@@ -98,7 +107,7 @@
+@@ -110,7 +119,7 @@
          http_connect_timeout -> Integer,
          http_retries -> Integer,
          http_user_agent -> Nullable<Text>,
@@ -107,7 +116,7 @@
          expire_read_after_days -> Nullable<Integer>,
          expire_unread_after_days -> Nullable<Integer>,
          read_delay_secs -> Integer,
-@@ -114,13 +123,16 @@
+@@ -126,13 +135,16 @@
  }
  
  diesel::table! {
