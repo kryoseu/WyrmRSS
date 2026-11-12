@@ -13,6 +13,9 @@ export const DEFAULTS = {
   snippetLines: 1 as SnippetLines,
   // Only available in card mode
   hideThumbnails: false,
+  highContrast: false,
+  navCollapsed: false,
+  siteTitle: "Wyrm",
   // Demo visitors share read state, so show everything there.
   unreadOnly: { normal: true, demo: false },
   hideCaughtUp: false,
@@ -27,11 +30,22 @@ export const STORAGE_KEYS = {
   density: "post-density",
   snippetLines: "wyrm:snippet-lines",
   hideThumbnails: "wyrm:hide-thumbnails",
+  // Also read by the inline script in index.html.
+  highContrast: "wyrm:high-contrast",
+  navCollapsed: "wyrm:nav-collapsed",
+  // Also read by the inline script in index.html.
+  siteTitle: "wyrm:site-title",
+  customLogo: "wyrm:custom-logo",
   unreadOnly: "wyrm:unread-only",
   hideCaughtUp: "wyrm:hide-caught-up",
   demoInstallHintDismissed: "wyrm:demo-install-hint-dismissed",
   readerWidth: "wyrm:reader-width",
   apiKey: "WYRM_API_KEY",
+};
+
+export const BRANDING = {
+  // Uploaded logos are stored as data URLs in localStorage (~5 MB quota).
+  maxLogoBytes: 512 * 1024,
 };
 
 export const LAYOUT = {
