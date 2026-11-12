@@ -8,6 +8,9 @@ import {
   TbEyeOff,
   TbFolder,
   TbFolderOpen,
+  TbHome,
+  TbLayoutNavbarCollapse,
+  TbLayoutNavbarExpand,
 } from "react-icons/tb";
 import { useFeeds } from "../../hooks/useFeeds";
 import { useHideCaughtUp } from "../../hooks/useHideCaughtUp";
@@ -15,14 +18,18 @@ import { useFolders, useUpdateFolder } from "../../hooks/useFolders";
 import { useMarkRead } from "../../hooks/usePostMutations";
 import { FeedItem } from "./FeedItem";
 import { RowMenu } from "../common/RowMenu";
-import { Link, useParams } from "react-router";
+import { Link, NavLink, useParams } from "react-router";
+import { useTheme } from "../../hooks/useTheme";
 import { AddFeedForm } from "./AddFeedForm";
 import { FolderForm } from "../folders/FolderForm";
 import { renameErrorMessage } from "../../api/folders";
 import type { FolderId } from "../../types/FolderId";
 import type { FeedView } from "../../types/FeedView";
 
-export function FeedList() {
+// showNavControls: desktop sidebar only (menu collapse toggle and the Home
+// shortcut shown while the menu is collapsed).
+export function FeedList({ showNavControls = false }: { showNavControls?: boolean }) {
+  const { navCollapsed, toggleNavCollapsed } = useTheme();
   const { feedId, folderId } = useParams();
   const { data: feeds, isLoading } = useFeeds();
   const { data: folders } = useFolders();
@@ -112,9 +119,30 @@ export function FeedList() {
         >
           {hideCaughtUp ? <TbEyeOff /> : <TbEye />}
         </button>
+        {showNavControls && (
+          <button
+            className="sidebar-feeds-filter"
+            aria-pressed={navCollapsed}
+            onClick={toggleNavCollapsed}
+            title={navCollapsed ? "Expand menu" : "Collapse menu"}
+            aria-label={navCollapsed ? "Expand menu" : "Collapse menu"}
+          >
+            {navCollapsed ? <TbLayoutNavbarExpand /> : <TbLayoutNavbarCollapse />}
+          </button>
+        )}
       </div>
 
       <div className="sidebar-feeds-scroll">
+        {showNavControls && navCollapsed && (
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) => `feed-item${isActive ? " active" : ""}`}
+          >
+            <TbHome />
+            <span className="feed-item-title">Home</span>
+          </NavLink>
+        )}
         {isLoading && <div className="pane-empty">Loading…</div>}
         {standalone.map(renderFeed)}
         {groups.map(({ folder, members, unread }) => {
