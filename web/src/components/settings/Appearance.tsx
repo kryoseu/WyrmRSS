@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useTheme, PALETTES } from "../../hooks/useTheme";
+import { BRANDING, DEFAULTS } from "../../utils/constants";
 import type { AccentKey, Density, FontSize, SnippetLines, Theme } from "../../hooks/useTheme";
 
 const DENSITY_OPTIONS: { value: Density; label: string }[] = [
@@ -27,7 +29,38 @@ export function Appearance() {
     setSnippetLines,
     hideThumbnails,
     setHideThumbnails,
+    highContrast,
+    setHighContrast,
+    siteTitle,
+    setSiteTitle,
+    customLogo,
+    setCustomLogo,
   } = useTheme();
+  const [logoError, setLogoError] = useState<string | null>(null);
+
+  function saveLogo(logo: string | null) {
+    setLogoError(setCustomLogo(logo) ? null : "Could not save the logo: browser storage is full.");
+  }
+
+  function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setLogoError("Please choose an image file.");
+      return;
+    }
+    if (file.size > BRANDING.maxLogoBytes) {
+      setLogoError(`Image is too large (max ${BRANDING.maxLogoBytes / 1024} KB).`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => saveLogo(reader.result as string);
+    reader.onerror = () => setLogoError("Could not read the image.");
+    reader.readAsDataURL(file);
+  }
+
+  const logoUrl = customLogo && !customLogo.startsWith("data:") ? customLogo : "";
 
   return (
     <div className="settings-section">
@@ -45,6 +78,10 @@ export function Appearance() {
             </button>
           ))}
         </div>
+      </div>
+      <div className="settings-field">
+        <label>High contrast</label>
+        <input type="checkbox" checked={highContrast} onChange={(e) => setHighContrast(e.target.checked)} />
       </div>
 
       <h2 className="settings-section-title">Accent color</h2>
@@ -119,6 +156,42 @@ export function Appearance() {
           </div>
         </div>
       )}
+
+      <h2 className="settings-section-title">Branding</h2>
+      <div className="settings-field">
+        <label>Tab title</label>
+        <input
+          type="text"
+          placeholder={DEFAULTS.siteTitle}
+          value={siteTitle}
+          onChange={(e) => setSiteTitle(e.target.value)}
+        />
+      </div>
+      <div className="settings-field">
+        <label>Logo URL</label>
+        <input
+          type="url"
+          placeholder={customLogo?.startsWith("data:") ? "Uploaded image" : "https://example.com/logo.svg"}
+          value={logoUrl}
+          onChange={(e) => saveLogo(e.target.value.trim() || null)}
+        />
+      </div>
+      <div className="settings-field">
+        <label>Logo image</label>
+        <div className="appearance-logo">
+          {customLogo && <img className="appearance-logo-preview" src={customLogo} alt="Custom logo" />}
+          <label className="btn btn-ghost">
+            Upload…
+            <input type="file" accept="image/*" onChange={handleLogoFile} style={{ display: "none" }} />
+          </label>
+          {customLogo && (
+            <button className="btn btn-ghost" onClick={() => saveLogo(null)}>
+              Reset
+            </button>
+          )}
+        </div>
+      </div>
+      {logoError && <p className="settings-status settings-status-err">{logoError}</p>}
       <p className="settings-hint">Changes apply immediately and are saved on this device.</p>
     </div>
   );
