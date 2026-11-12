@@ -16,6 +16,11 @@
         if (t === "light" || t === "dark") {
           document.documentElement.dataset.theme = t;
         }
+        if (localStorage.getItem("wyrm:high-contrast") === "true") {
+          document.documentElement.dataset.contrast = "high";
+        }
+        var title = localStorage.getItem("wyrm:site-title");
+        if (title && title.trim()) document.title = title.trim();
       })();
     </script>
   </head>
