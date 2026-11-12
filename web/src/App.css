@@ -130,6 +130,30 @@ body.reader-resizing {
   }
 }
 
+.sidebar-footer-btn {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.83rem;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 4px;
+  color: var(--text);
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    background: var(--accent-bg);
+    color: var(--text-h);
+  }
+
+  &.active {
+    color: var(--accent);
+  }
+}
+
 .theme-toggle {
   margin-left: auto;
   background: none;
@@ -865,6 +889,24 @@ body.reader-resizing {
 .settings-export-btn {
   align-self: flex-start;
   text-decoration: none;
+}
+
+.appearance-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+
+  /* Overrides the fixed-width .settings-field label. */
+  label.btn {
+    width: auto;
+  }
+}
+
+.appearance-logo-preview {
+  max-height: 32px;
+  max-width: 120px;
+  object-fit: contain;
 }
 
 .settings-field {

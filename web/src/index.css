@@ -78,6 +78,19 @@
   filter: invert(1) brightness(2);
 }
 
+/* High contrast: set by the sidebar toggle, applies on top of either theme. */
+:root[data-contrast="high"] {
+  --text: #2a2730;
+  --text-h: #000;
+  --border: #8f8c96;
+}
+
+:root[data-theme="dark"][data-contrast="high"] {
+  --text: #e5e7eb;
+  --text-h: #fff;
+  --border: #6b7280;
+}
+
 #root {
   width: 100%;
   height: 100svh;
