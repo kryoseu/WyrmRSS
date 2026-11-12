@@ -15,6 +15,18 @@ export interface ThemeContextValue {
   setSnippetLines: (lines: SnippetLines) => void;
   hideThumbnails: boolean;
   setHideThumbnails: (hide: boolean) => void;
+  highContrast: boolean;
+  toggleHighContrast: () => void;
+  setHighContrast: (on: boolean) => void;
+  navCollapsed: boolean;
+  toggleNavCollapsed: () => void;
+  /** Browser tab title; empty means the default. */
+  siteTitle: string;
+  setSiteTitle: (title: string) => void;
+  /** Sidebar logo URL (http(s) or data URL); null means the default logo. */
+  customLogo: string | null;
+  /** Returns false if the logo could not be saved (storage quota). */
+  setCustomLogo: (logo: string | null) => boolean;
 }
 
 export const ThemeContext = createContext<ThemeContextValue | null>(null);

@@ -59,6 +59,12 @@ function getInitialHideThumbnails(): boolean {
   return saved === "true";
 }
 
+function getInitialFlag(key: string, fallback: boolean): boolean {
+  const saved = localStorage.getItem(key);
+  if (saved === null) return fallback;
+  return saved === "true";
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(getInitialTheme);
   const [accent, setAccentState] = useState<AccentKey>(getInitialAccent);
@@ -67,6 +73,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [savedDensity, setSavedDensity] = useState<Density | null>(getSavedDensity);
   const [snippetLines, setSnippetLinesState] = useState<SnippetLines>(getInitialSnippetLines);
   const [hideThumbnails, setHideThumbnailsState] = useState(getInitialHideThumbnails);
+  const [highContrast, setHighContrastState] = useState(() =>
+    getInitialFlag(STORAGE_KEYS.highContrast, DEFAULTS.highContrast),
+  );
+  const [navCollapsed, setNavCollapsed] = useState(() =>
+    getInitialFlag(STORAGE_KEYS.navCollapsed, DEFAULTS.navCollapsed),
+  );
+  const [siteTitle, setSiteTitleState] = useState(() => localStorage.getItem(STORAGE_KEYS.siteTitle) ?? "");
+  const [customLogo, setCustomLogoState] = useState(() => localStorage.getItem(STORAGE_KEYS.customLogo));
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -83,6 +97,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.style.setProperty("--snippet-lines", String(snippetLines));
   }, [snippetLines]);
+
+  useEffect(() => {
+    if (highContrast) document.documentElement.dataset.contrast = "high";
+    else delete document.documentElement.dataset.contrast;
+    localStorage.setItem(STORAGE_KEYS.highContrast, String(highContrast));
+  }, [highContrast]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.navCollapsed, String(navCollapsed));
+  }, [navCollapsed]);
+
+  useEffect(() => {
+    document.title = siteTitle.trim() || DEFAULTS.siteTitle;
+  }, [siteTitle]);
 
   const value: ThemeContextValue = {
     theme,
@@ -109,6 +137,28 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setHideThumbnails: (hide) => {
       setHideThumbnailsState(hide);
       localStorage.setItem(STORAGE_KEYS.hideThumbnails, String(hide));
+    },
+    highContrast,
+    toggleHighContrast: () => setHighContrastState((on) => !on),
+    setHighContrast: (on) => setHighContrastState(on),
+    navCollapsed,
+    toggleNavCollapsed: () => setNavCollapsed((c) => !c),
+    siteTitle,
+    setSiteTitle: (title) => {
+      setSiteTitleState(title);
+      if (title.trim()) localStorage.setItem(STORAGE_KEYS.siteTitle, title);
+      else localStorage.removeItem(STORAGE_KEYS.siteTitle);
+    },
+    customLogo,
+    setCustomLogo: (logo) => {
+      try {
+        if (logo) localStorage.setItem(STORAGE_KEYS.customLogo, logo);
+        else localStorage.removeItem(STORAGE_KEYS.customLogo);
+      } catch {
+        return false;
+      }
+      setCustomLogoState(logo);
+      return true;
     },
   };
 
