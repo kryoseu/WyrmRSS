@@ -108,6 +108,7 @@ async fn signed_login_accepts_any_subject_when_filtering_is_omitted() {
 }
 
 async fn check_signed_login(allowed_subjects: Option<&str>) {
+    let pool = session_pool().await;
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let provider = web::Data::new(Provider {
         issuer: format!("http://{}", listener.local_addr().unwrap()),
@@ -150,6 +151,7 @@ async fn check_signed_login(allowed_subjects: Option<&str>) {
     let app = test::init_service(
         App::new()
             .app_data(auth.clone())
+            .app_data(pool)
             .wrap(from_fn(middleware))
             .configure(configure)
             .route(

@@ -20,9 +20,8 @@ wyrm-rss = { path = "../rss", default-features = false }
 openidconnect = { version = "4.1.0", features = ["timing-resistant-secret-traits"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
-
-[dev-dependencies]
 chrono = { workspace = true }
+sha2 = { workspace = true }
 
 # Backend selection for the whole tree lands here. `cargo run` keeps postgres;
 # the desktop build uses `--no-default-features --features sqlite`. Not

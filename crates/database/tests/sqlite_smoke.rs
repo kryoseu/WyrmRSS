@@ -17,6 +17,7 @@ use database::{
     models::{
         feed::{Feed, FeedInsertForm},
         post::{Post, PostInsertForm},
+        session::Session,
     },
     newtypes::{FeedId, Filters},
     run_migrations,
@@ -105,6 +106,66 @@ fn post_form(feed_id: FeedId, url: &str) -> PostInsertForm {
         content: None,
         created_at: None,
     }
+}
+
+#[tokio::test]
+async fn sessions_refresh_rotate_and_expire() {
+    let db = TestDb::new("sessions").await;
+    let now = chrono::DateTime::from_timestamp(Utc::now().timestamp(), 0).unwrap();
+    let timeout = chrono::TimeDelta::hours(12);
+    Session::create(
+        &db.pool,
+        Session {
+            token_hash: "old-hash".into(),
+            expires_at: now + timeout,
+            last_seen_at: now,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    let active = now + chrono::TimeDelta::hours(11);
+    let session = Session::refresh(&db.pool, "old-hash", active, active + timeout)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(session.last_seen_at, active);
+    assert_eq!(session.expires_at, active + timeout);
+    let delayed = Session::refresh(&db.pool, "old-hash", now, now + timeout)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(delayed.expires_at, session.expires_at);
+    Session::create(
+        &db.pool,
+        Session {
+            token_hash: "new-hash".into(),
+            expires_at: now + timeout,
+            last_seen_at: now,
+        },
+        Some("old-hash"),
+    )
+    .await
+    .unwrap();
+    assert!(
+        Session::refresh(&db.pool, "old-hash", now, now + timeout)
+            .await
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        Session::refresh(&db.pool, "new-hash", now + timeout, now + timeout + timeout)
+            .await
+            .unwrap()
+            .is_none()
+    );
+    Session::delete(&db.pool, "new-hash").await.unwrap();
+    assert!(
+        Session::refresh(&db.pool, "new-hash", now, now + timeout)
+            .await
+            .unwrap()
+            .is_none()
+    );
 }
 
 /// The pragmas are set per connection by the pool's setup hook. Without

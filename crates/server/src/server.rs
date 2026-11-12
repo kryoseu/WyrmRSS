@@ -61,10 +61,12 @@ fn spin_up_http_server(
 ) -> WyrmResult<ServerHandle> {
     let bind = startup_conf.bind;
     let port = startup_conf.port;
+    let session_pool = web::Data::new(ctx.db_pool.clone());
     let server = HttpServer::new(move || {
         App::new()
             .app_data(ctx.clone())
             .app_data(auth.clone())
+            .app_data(session_pool.clone())
             .wrap(from_fn(crate::oidc::middleware))
             .configure(crate::oidc::configure)
             .configure(api_routes::config)

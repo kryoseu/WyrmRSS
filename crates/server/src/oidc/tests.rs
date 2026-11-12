@@ -7,11 +7,54 @@ use openidconnect::{
     ResponseTypes,
     core::{CoreJwsSigningAlgorithm, CoreResponseType, CoreSubjectIdentifierType},
 };
+use std::collections::HashMap;
+#[cfg(feature = "postgres")]
+use std::sync::Mutex;
 
 const SESSION_COOKIE: &str = "__Host-wyrm_session";
 const LOGIN_COOKIE: &str = "__Host-wyrm_oidc_login";
 
+#[actix_web::test]
+async fn token_hash_is_sha256() {
+    assert_eq!(
+        token_hash("abc"),
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    );
+}
+
+#[actix_web::test]
+async fn api_key_access_needs_no_session_storage() {
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(configured_auth()))
+            .wrap(from_fn(middleware))
+            .route("/protected", web::post().to(HttpResponse::Ok)),
+    )
+    .await;
+    let response = test::call_service(
+        &app,
+        test::TestRequest::post()
+            .uri("/protected")
+            .insert_header(("x-api-key", "api-secret"))
+            .cookie(Cookie::new(SESSION_COOKIE, "stale-session"))
+            .to_request(),
+    )
+    .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert!(
+        !response
+            .response()
+            .cookies()
+            .any(|c| c.name() == SESSION_COOKIE)
+    );
+}
+
+#[cfg(feature = "postgres")]
 mod provider;
+#[cfg(feature = "postgres")]
+mod sessions;
+#[cfg(feature = "postgres")]
+use sessions::session_pool;
 
 fn configured_auth() -> Auth {
     let issuer = IssuerUrl::new("https://id.example.com".into()).unwrap();
@@ -49,7 +92,6 @@ fn configured_auth() -> Auth {
             allowed_subjects: Some(vec!["owner".into()]),
             login_key: Key::generate(),
             started_at: Instant::now(),
-            sessions: Mutex::new(HashMap::new()),
         }),
     }
 }
@@ -141,18 +183,27 @@ async fn subject_filtering_is_optional_and_explicit_lists_are_validated() {
 }
 
 #[actix_web::test]
+#[cfg(feature = "postgres")]
 async fn api_key_is_independent_of_oidc_and_sessions_require_csrf() {
+    let pool = session_pool().await;
     let auth = web::Data::new(configured_auth());
-    auth.oidc
-        .as_ref()
-        .unwrap()
-        .sessions
-        .lock()
-        .unwrap()
-        .insert("session".into(), Instant::now() + SESSION_TTL);
+    let session_token = CsrfToken::new_random().secret().clone();
+    let now = Utc::now();
+    Session::create(
+        &pool,
+        Session {
+            token_hash: token_hash(&session_token),
+            expires_at: now + SESSION_IDLE_TIMEOUT,
+            last_seen_at: now,
+        },
+        None,
+    )
+    .await
+    .unwrap();
     let app = test::init_service(
         App::new()
             .app_data(auth.clone())
+            .app_data(pool.clone())
             .wrap(from_fn(middleware))
             .configure(configure)
             .route("/protected", web::route().to(HttpResponse::Ok)),
@@ -171,15 +222,15 @@ async fn api_key_is_independent_of_oidc_and_sessions_require_csrf() {
     }
     for (token, csrf, origin, expected) in [
         ("invalid", None, None, StatusCode::UNAUTHORIZED),
-        ("session", None, None, StatusCode::FORBIDDEN),
+        (session_token.as_str(), None, None, StatusCode::FORBIDDEN),
         (
-            "session",
+            session_token.as_str(),
             Some("1"),
             Some("https://evil.example"),
             StatusCode::FORBIDDEN,
         ),
         (
-            "session",
+            session_token.as_str(),
             Some("1"),
             Some("https://rss.example.com"),
             StatusCode::OK,
@@ -203,7 +254,7 @@ async fn api_key_is_independent_of_oidc_and_sessions_require_csrf() {
     }
     let request = test::TestRequest::get()
         .uri("/protected")
-        .cookie(Cookie::new(SESSION_COOKIE, "session"))
+        .cookie(Cookie::new(SESSION_COOKIE, session_token.clone()))
         .to_request();
     assert_eq!(
         test::call_service(&app, request).await.status(),
@@ -212,44 +263,55 @@ async fn api_key_is_independent_of_oidc_and_sessions_require_csrf() {
     let request = test::TestRequest::post()
         .uri("/api/v1/auth/logout")
         .insert_header(("x-wyrm-csrf", "1"))
-        .cookie(Cookie::new(SESSION_COOKIE, "session"))
+        .cookie(Cookie::new(SESSION_COOKIE, session_token.clone()))
         .to_request();
     assert_eq!(
         test::call_service(&app, request).await.status(),
         StatusCode::NO_CONTENT
     );
     assert!(
-        auth.oidc
-            .as_ref()
-            .unwrap()
-            .sessions
-            .lock()
-            .unwrap()
-            .is_empty()
+        Session::refresh(
+            &pool,
+            &token_hash(&session_token),
+            now,
+            now + SESSION_IDLE_TIMEOUT
+        )
+        .await
+        .unwrap()
+        .is_none()
     );
 }
 
 #[actix_web::test]
+#[cfg(feature = "postgres")]
 async fn oidc_only_is_protected_and_expired_sessions_are_rejected() {
+    let pool = session_pool().await;
+    let expired_token = CsrfToken::new_random().secret().clone();
     let mut auth = configured_auth();
     auth.api_key = None;
     auth.oidc.as_mut().unwrap().allowed_subjects = None;
-    auth.oidc
-        .as_ref()
-        .unwrap()
-        .sessions
-        .lock()
-        .unwrap()
-        .insert("expired".into(), Instant::now() - Duration::from_secs(1));
+    let now = Utc::now();
+    Session::create(
+        &pool,
+        Session {
+            token_hash: token_hash(&expired_token),
+            expires_at: now - TimeDelta::seconds(1),
+            last_seen_at: now - SESSION_IDLE_TIMEOUT,
+        },
+        None,
+    )
+    .await
+    .unwrap();
     let app = test::init_service(
         App::new()
             .app_data(web::Data::new(auth))
+            .app_data(pool.clone())
             .wrap(from_fn(middleware))
             .configure(configure)
             .route("/protected", web::get().to(HttpResponse::Ok)),
     )
     .await;
-    for token in ["expired", "forged"] {
+    for token in [expired_token.as_str(), "forged"] {
         let request = test::TestRequest::get()
             .uri("/protected")
             .cookie(Cookie::new(SESSION_COOKIE, token))

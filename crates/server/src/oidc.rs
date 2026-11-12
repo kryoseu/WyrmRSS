@@ -1,6 +1,7 @@
 //! OIDC protects the shared instance; it does not create separate reader accounts.
 use actix_web::{
     Error,
+    HttpMessage,
     HttpRequest,
     HttpResponse,
     body::MessageBody,
@@ -11,6 +12,8 @@ use actix_web::{
     middleware::Next,
     web,
 };
+use chrono::{DateTime, TimeDelta, Utc};
+use database::{DatabasePool, models::session::Session};
 use openidconnect::{
     AuthorizationCode,
     ClientId,
@@ -29,17 +32,13 @@ use openidconnect::{
     reqwest,
 };
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    sync::Mutex,
-    time::{Duration, Instant},
-};
+use sha2::{Digest, Sha256};
+use std::time::{Duration, Instant};
 use tokio::sync::Mutex as AsyncMutex;
 use wyrm_utils::{config::WyrmStartupConfig, error::WyrmError, result::WyrmResult};
 
 const LOGIN_TTL: Duration = Duration::from_secs(600);
-const SESSION_TTL: Duration = Duration::from_secs(12 * 60 * 60);
-const SESSION_LIMIT: usize = 1024;
+const SESSION_IDLE_TIMEOUT: TimeDelta = TimeDelta::hours(12);
 // Leave room for JSON escaping and cookie encryption within browser size limits.
 const RETURN_PATH_LIMIT: usize = 1024;
 const DISCOVERY_TTL: Duration = Duration::from_secs(300);
@@ -71,7 +70,6 @@ struct Oidc {
     allowed_subjects: Option<Vec<String>>,
     login_key: Key,
     started_at: Instant,
-    sessions: Mutex<HashMap<String, Instant>>,
 }
 
 struct DiscoveryCache {
@@ -266,7 +264,6 @@ impl Auth {
                 login_key: Key::try_generate()
                     .ok_or_else(|| invalid_config("could not generate a login cookie key"))?,
                 started_at: Instant::now(),
-                sessions: Mutex::new(HashMap::new()),
             })
         } else {
             None
@@ -277,17 +274,23 @@ impl Auth {
         })
     }
 
-    fn session_valid(&self, req: &HttpRequest) -> bool {
-        let Some(oidc) = &self.oidc else { return false };
+    async fn session(&self, req: &HttpRequest) -> Result<Option<Session>, Error> {
+        let Some(oidc) = &self.oidc else {
+            return Ok(None);
+        };
         let Some(cookie) = req.cookie(oidc.session_cookie_name()) else {
-            return false;
+            return Ok(None);
         };
-        let Ok(sessions) = oidc.sessions.lock() else {
-            return false;
-        };
-        sessions
-            .get(cookie.value())
-            .is_some_and(|expiry| *expiry > Instant::now())
+        let pool = database_pool(req)?;
+        let now = Utc::now();
+        Session::refresh(
+            pool,
+            &token_hash(cookie.value()),
+            now,
+            now + SESSION_IDLE_TIMEOUT,
+        )
+        .await
+        .map_err(Into::into)
     }
 
     fn api_key_valid(&self, req: &HttpRequest) -> bool {
@@ -332,8 +335,14 @@ pub async fn middleware(
             "/api/v1/auth/config" | "/api/v1/auth/login" | "/api/v1/auth/callback"
         ))
         || (req.method() == Method::POST && req.path() == "/api/v1/auth/logout");
-    if !public && !auth.api_key_valid(req.request()) {
-        if auth.session_valid(req.request()) {
+    let key_valid = auth.api_key_valid(req.request());
+    let session = if (!public && !key_valid) || req.path() == "/api/v1/auth/config" {
+        auth.session(req.request()).await?
+    } else {
+        None
+    };
+    if !public && !key_valid {
+        if session.is_some() {
             if !matches!(*req.method(), Method::GET | Method::HEAD | Method::OPTIONS) {
                 check_csrf(req.request(), auth.oidc.as_ref().unwrap())?;
             }
@@ -341,7 +350,25 @@ pub async fn middleware(
             return Err(ErrorUnauthorized("Authentication required"));
         }
     }
-    next.call(req).await
+    let renewed_cookie = session.as_ref().map(|session| {
+        let oidc = auth.oidc.as_ref().unwrap();
+        session_cookie(
+            req.cookie(oidc.session_cookie_name())
+                .unwrap()
+                .value()
+                .to_owned(),
+            session.expires_at,
+            oidc,
+        )
+    });
+    if let Some(session) = session {
+        req.extensions_mut().insert(session);
+    }
+    let mut response = next.call(req).await?;
+    if let Some(cookie) = renewed_cookie {
+        response.response_mut().add_cookie(&cookie)?;
+    }
+    Ok(response)
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
@@ -356,7 +383,7 @@ async fn auth_config(req: HttpRequest, auth: web::Data<Auth>) -> HttpResponse {
         .insert_header((header::CACHE_CONTROL, "no-store"))
         .json(serde_json::json!({
             "oidc_enabled": auth.oidc.is_some(), "api_key_enabled": auth.api_key.is_some(),
-            "oidc_session": auth.session_valid(&req),
+            "oidc_session": req.extensions().get::<Session>().is_some(),
         }))
 }
 
@@ -368,6 +395,24 @@ fn cookie(name: &'static str, value: String, ttl: Duration, oidc: &Oidc) -> Cook
         .same_site(SameSite::Lax)
         .max_age(CookieDuration::seconds(ttl.as_secs() as i64))
         .finish()
+}
+
+fn token_hash(token: &str) -> String {
+    Sha256::digest(token.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+fn database_pool(req: &HttpRequest) -> Result<&DatabasePool, Error> {
+    req.app_data::<web::Data<DatabasePool>>()
+        .map(web::Data::get_ref)
+        .ok_or_else(|| ErrorServiceUnavailable("Session storage unavailable"))
+}
+
+fn session_cookie(token: String, expires_at: DateTime<Utc>, oidc: &Oidc) -> Cookie<'static> {
+    let remaining = (expires_at - Utc::now()).to_std().unwrap_or_default();
+    cookie(oidc.session_cookie_name(), token, remaining, oidc)
 }
 
 fn local_path(path: &str) -> bool {
@@ -453,17 +498,10 @@ async fn callback(
             oidc,
         ));
     match result {
-        Ok((token, return_to)) => {
-            // Rotate any existing session on successful authentication.
-            if let Some(old) = req.cookie(oidc.session_cookie_name()) {
-                oidc.sessions
-                    .lock()
-                    .map_err(|_| ErrorServiceUnavailable("Login unavailable"))?
-                    .remove(old.value());
-            }
+        Ok((token, return_to, expires_at)) => {
             response
                 .insert_header((header::LOCATION, return_to))
-                .cookie(cookie(oidc.session_cookie_name(), token, SESSION_TTL, oidc));
+                .cookie(session_cookie(token, expires_at, oidc));
         }
         Err(_) => {
             response.insert_header((header::LOCATION, "/?auth_error=oidc"));
@@ -476,7 +514,7 @@ async fn complete_login(
     req: &HttpRequest,
     query: &CallbackQuery,
     oidc: &Oidc,
-) -> Result<(String, String), Error> {
+) -> Result<(String, String, DateTime<Utc>), Error> {
     let denied = || ErrorUnauthorized("OIDC login failed");
     let state = query.state.as_ref().ok_or_else(denied)?;
     let cookie = req.cookie(oidc.login_cookie_name()).ok_or_else(denied)?;
@@ -514,13 +552,22 @@ async fn complete_login(
         return Err(denied());
     }
     let token = CsrfToken::new_random().secret().clone();
-    let mut sessions = oidc.sessions.lock().map_err(|_| denied())?;
-    sessions.retain(|_, expires| *expires > Instant::now());
-    if sessions.len() >= SESSION_LIMIT {
-        return Err(ErrorServiceUnavailable("Too many sessions"));
-    }
-    sessions.insert(token.clone(), Instant::now() + SESSION_TTL);
-    Ok((token, pending.return_to))
+    let now = Utc::now();
+    let expires_at = now + SESSION_IDLE_TIMEOUT;
+    let previous = req
+        .cookie(oidc.session_cookie_name())
+        .map(|cookie| token_hash(cookie.value()));
+    Session::create(
+        database_pool(req)?,
+        Session {
+            token_hash: token_hash(&token),
+            expires_at,
+            last_seen_at: now,
+        },
+        previous.as_deref(),
+    )
+    .await?;
+    Ok((token, pending.return_to, expires_at))
 }
 
 async fn logout(req: HttpRequest, auth: web::Data<Auth>) -> Result<HttpResponse, Error> {
@@ -530,10 +577,7 @@ async fn logout(req: HttpRequest, auth: web::Data<Auth>) -> Result<HttpResponse,
         .ok_or_else(|| actix_web::error::ErrorNotFound("OIDC disabled"))?;
     check_csrf(&req, oidc)?;
     if let Some(token) = req.cookie(oidc.session_cookie_name()) {
-        oidc.sessions
-            .lock()
-            .map_err(|_| ErrorServiceUnavailable("Logout unavailable"))?
-            .remove(token.value());
+        Session::delete(database_pool(&req)?, &token_hash(token.value())).await?;
     }
     Ok(HttpResponse::NoContent()
         .insert_header((header::CACHE_CONTROL, "no-store"))
