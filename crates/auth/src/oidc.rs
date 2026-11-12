@@ -153,13 +153,13 @@ impl Oidc {
         self.redirect.url()
     }
 
-    async fn discover_client(&self) -> Result<Client, Error> {
+    async fn discover_client(&self) -> WyrmResult<Client> {
         let metadata = CoreProviderMetadata::discover_async(self.issuer.clone(), &self.http)
             .await
-            .map_err(|_| ErrorServiceUnavailable("Identity provider discovery failed"))?;
+            .map_err(|error| WyrmError::AuthProviderUnavailable(error.to_string()))?;
         if metadata.token_endpoint().is_none() {
-            return Err(ErrorServiceUnavailable(
-                "Identity provider has no token endpoint",
+            return Err(WyrmError::AuthProviderUnavailable(
+                "identity provider has no token endpoint".into(),
             ));
         }
         // Discovered endpoints also need transport protection, especially for the client secret.
@@ -168,8 +168,9 @@ impl Oidc {
             metadata.token_endpoint().unwrap().url(),
             metadata.jwks_uri().url(),
         ] {
-            validate_url(url.as_str())
-                .map_err(|_| ErrorServiceUnavailable("Insecure identity provider endpoint"))?;
+            validate_url(url.as_str()).map_err(|_| {
+                WyrmError::AuthProviderUnavailable("insecure identity provider endpoint".into())
+            })?;
         }
         Ok(CoreClient::from_provider_metadata(
             metadata,
@@ -179,15 +180,14 @@ impl Oidc {
         .set_redirect_uri(self.redirect.clone()))
     }
 
-    async fn authorization_client(&self) -> Result<Client, Error> {
+    async fn authorization_client(&self) -> WyrmResult<Client> {
         // One request refreshes discovery at a time. Back off after errors so a
         // burst of sign-in attempts cannot keep retrying an unavailable issuer.
         let mut cache = self.discovery.lock().await;
         if Instant::now() < cache.refresh_at {
-            return cache
-                .client
-                .clone()
-                .ok_or_else(|| ErrorServiceUnavailable("Identity provider discovery unavailable"));
+            return cache.client.clone().ok_or_else(|| {
+                WyrmError::AuthProviderUnavailable("identity provider discovery unavailable".into())
+            });
         }
         let result = self.discover_client().await;
         cache.client = result.as_ref().ok().cloned();
@@ -227,7 +227,7 @@ impl Oidc {
 }
 
 fn invalid_config(message: &str) -> WyrmError {
-    WyrmError::InvalidInput(format!("OIDC configuration: {message}"))
+    WyrmError::InvalidAuthConfig(message.to_owned())
 }
 
 fn validate_url(value: &str) -> WyrmResult<reqwest::Url> {

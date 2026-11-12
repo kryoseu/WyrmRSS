@@ -70,7 +70,10 @@ async fn partial_configuration_fails_closed() {
         oidc_client_id: Some("wyrm".into()),
         ..Default::default()
     };
-    assert!(Auth::new(&config).is_err());
+    assert!(matches!(
+        Auth::new(&config),
+        Err(WyrmError::InvalidAuthConfig(_))
+    ));
 }
 
 #[actix_web::test]
@@ -96,7 +99,10 @@ async fn subject_filtering_is_optional_and_explicit_lists_are_validated() {
     }
     for empty in ["", " ", ", ,"] {
         config.oidc_allowed_subjects = Some(empty.into());
-        assert!(Auth::new(&config).is_err());
+        assert!(matches!(
+            Auth::new(&config),
+            Err(WyrmError::InvalidAuthConfig(_))
+        ));
     }
 }
 

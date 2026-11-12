@@ -175,6 +175,19 @@ async fn check_signed_login(allowed_subjects: Option<&str>) {
         response.headers().get(header::LOCATION).unwrap(),
         "/?auth_error=oidc_unavailable"
     );
+    let error = auth
+        .oidc
+        .as_ref()
+        .unwrap()
+        .authorization_client()
+        .await
+        .err()
+        .unwrap();
+    assert!(matches!(error, WyrmError::AuthProviderUnavailable(_)));
+    assert_eq!(
+        actix_web::ResponseError::status_code(&error),
+        StatusCode::SERVICE_UNAVAILABLE
+    );
     let keyed = test::TestRequest::get()
         .uri("/private")
         .insert_header(("x-api-key", "test-api-key"));
