@@ -32,7 +32,7 @@ function buildUrl(base: string, params: Record<string, string | undefined>): str
 export const ENDPOINTS = {
   auth: {
     verify: () => `${apiBase()}/auth/verify`,
-    config: () => `${apiBase()}/auth/config`,
+    status: () => `${apiBase()}/auth/status`,
     login: () => `${apiBase()}/auth/login`,
     logout: () => `${apiBase()}/auth/logout`,
   },

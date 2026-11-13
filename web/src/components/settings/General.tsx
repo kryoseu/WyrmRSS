@@ -124,7 +124,7 @@ function GeneralForm({ initial }: { initial: Settings }) {
 
 export function General() {
   const { data } = useSettings();
-  const { oidcSession, signOut } = useContext(AuthContext);
+  const { signedIn, signOut } = useContext(AuthContext);
   const [signOutError, setSignOutError] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -142,7 +142,7 @@ export function General() {
   if (!data) return null;
   return <>
     <GeneralForm initial={data} />
-    {oidcSession && <section className="settings-section">
+    {signedIn && <section className="settings-section">
       <h2 className="settings-section-title">Account</h2>
       <button className="btn" disabled={signingOut} onClick={handleSignOut}>
         {signingOut ? "Signing out…" : "Sign out"}

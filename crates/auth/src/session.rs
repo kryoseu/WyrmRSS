@@ -1,6 +1,8 @@
 use crate::{Auth, oidc};
 use actix_web::{
-    Error, HttpRequest, HttpResponse,
+    Error,
+    HttpRequest,
+    HttpResponse,
     cookie::{Cookie, SameSite, time::Duration as CookieDuration},
     error::{ErrorForbidden, ErrorNotFound, ErrorServiceUnavailable},
     http::header,
@@ -13,14 +15,14 @@ use std::time::Duration;
 
 pub(crate) const SESSION_IDLE_TIMEOUT: TimeDelta = TimeDelta::hours(12);
 
-pub(crate) struct Config {
+pub(crate) struct SessionConfig {
     pub origin: String,
     pub secure: bool,
 }
 
-pub(crate) struct AuthenticatedSession;
+pub struct AuthenticatedSession;
 
-impl Config {
+impl SessionConfig {
     pub(crate) fn cookie_name(&self) -> &'static str {
         if self.secure {
             "__Host-wyrm_session"
@@ -66,7 +68,10 @@ fn database_pool(req: &HttpRequest) -> Result<&DatabasePool, Error> {
         .ok_or_else(|| ErrorServiceUnavailable("Session storage unavailable"))
 }
 
-pub(crate) async fn create(req: &HttpRequest, config: &Config) -> Result<Cookie<'static>, Error> {
+pub(crate) async fn create(
+    req: &HttpRequest,
+    config: &SessionConfig,
+) -> Result<Cookie<'static>, Error> {
     let token = generate_session_token();
     let now = Utc::now();
     let expires_at = now + SESSION_IDLE_TIMEOUT;
@@ -88,7 +93,7 @@ pub(crate) async fn create(req: &HttpRequest, config: &Config) -> Result<Cookie<
 
 pub(crate) async fn validate(
     req: &HttpRequest,
-    config: &Config,
+    config: &SessionConfig,
 ) -> Result<Option<Cookie<'static>>, Error> {
     let Some(cookie) = req.cookie(config.cookie_name()) else {
         return Ok(None);
@@ -104,7 +109,7 @@ pub(crate) async fn validate(
     Ok(session.map(|session| config.session_cookie(cookie.value().to_owned(), session.expires_at)))
 }
 
-pub(crate) fn check_csrf(req: &HttpRequest, config: &Config) -> Result<(), Error> {
+pub(crate) fn check_csrf(req: &HttpRequest, config: &SessionConfig) -> Result<(), Error> {
     if req
         .headers()
         .get("x-wyrm-csrf")

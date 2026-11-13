@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
 export const AuthContext = createContext({
-  oidcSession: false,
+  signedIn: false,
   signOut: async (): Promise<void> => {},
 });

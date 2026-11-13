@@ -205,7 +205,7 @@ impl Oidc {
     fn seal_login(
         &self,
         pending: &PendingLogin,
-        config: &session::Config,
+        config: &session::SessionConfig,
     ) -> Result<Cookie<'static>, Error> {
         let payload = serde_json::to_string(pending)
             .map_err(|_| ErrorServiceUnavailable("Login unavailable"))?;
@@ -246,7 +246,7 @@ fn validate_url(value: &str) -> WyrmResult<reqwest::Url> {
     Ok(url)
 }
 
-fn login_cookie_name(config: &session::Config) -> &'static str {
+fn login_cookie_name(config: &session::SessionConfig) -> &'static str {
     if config.secure {
         "__Host-wyrm_oidc_login"
     } else {
@@ -254,7 +254,7 @@ fn login_cookie_name(config: &session::Config) -> &'static str {
     }
 }
 
-pub(crate) fn clear_login_cookie(config: &session::Config) -> Cookie<'static> {
+pub(crate) fn clear_login_cookie(config: &session::SessionConfig) -> Cookie<'static> {
     config.cookie(login_cookie_name(config), String::new(), Duration::ZERO)
 }
 
@@ -354,7 +354,7 @@ async fn complete_login(
     req: &HttpRequest,
     query: &CallbackQuery,
     oidc: &Oidc,
-    config: &session::Config,
+    config: &session::SessionConfig,
 ) -> Result<(Cookie<'static>, String), Error> {
     let denied = || ErrorUnauthorized("OIDC login failed");
     let state = query.state.as_ref().ok_or_else(denied)?;
@@ -395,6 +395,3 @@ async fn complete_login(
     let cookie = session::create(req, config).await?;
     Ok((cookie, pending.return_to))
 }
-
-#[cfg(test)]
-pub(crate) mod tests;

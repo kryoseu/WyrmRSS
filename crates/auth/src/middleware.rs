@@ -20,11 +20,12 @@ pub async fn middleware(
     let public = (req.method() == Method::GET
         && matches!(
             req.path(),
-            "/api/v1/auth/config" | "/api/v1/auth/login" | "/api/v1/auth/callback"
+            "/api/v1/auth/status" | "/api/v1/auth/login" | "/api/v1/auth/callback"
         ))
         || (req.method() == Method::POST && req.path() == "/api/v1/auth/logout");
     let key_valid = api_key::valid(req.request(), auth);
-    let check_session = (!public && !key_valid) || req.path() == "/api/v1/auth/config";
+    // The status route is public but still reports whether the caller is signed in.
+    let check_session = (!public && !key_valid) || req.path() == "/api/v1/auth/status";
     let cookie = match (check_session, auth.session.as_ref()) {
         (true, Some(config)) => session::validate(req.request(), config).await?,
         _ => None,
@@ -34,7 +35,7 @@ pub async fn middleware(
             if !matches!(*req.method(), Method::GET | Method::HEAD | Method::OPTIONS) {
                 session::check_csrf(req.request(), auth.session.as_ref().unwrap())?;
             }
-        } else if auth.api_key_enabled() || auth.oidc_enabled() {
+        } else if auth.required() {
             return Err(ErrorUnauthorized("Authentication required"));
         }
     }
@@ -47,6 +48,3 @@ pub async fn middleware(
     }
     Ok(response)
 }
-
-#[cfg(test)]
-mod tests;

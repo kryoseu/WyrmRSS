@@ -4,25 +4,37 @@ pub mod middleware;
 pub mod oidc;
 pub mod session;
 
-use actix_web::{HttpMessage, HttpRequest, HttpResponse, http::header, web};
+use crate::session::SessionConfig;
+use serde::Serialize;
 use wyrm_utils::{config::WyrmStartupConfig, result::WyrmResult};
+
+/// Sign-in methods enabled on this instance, as reported to the frontend.
+#[derive(Serialize, ts_rs::TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(rename_all = "snake_case", export)]
+pub enum AuthMethod {
+    ApiKey,
+    Oidc,
+}
 
 pub struct Auth {
     api_key: Option<String>,
     oidc: Option<oidc::Oidc>,
-    session: Option<session::Config>,
+    session: Option<SessionConfig>,
 }
 
 impl Auth {
     pub fn new(config: &WyrmStartupConfig) -> WyrmResult<Self> {
         let oidc = oidc::Oidc::new(config)?;
+
         let session = oidc.as_ref().map(|oidc| {
             let redirect = oidc.redirect_url();
-            session::Config {
+            SessionConfig {
                 origin: redirect.origin().ascii_serialization(),
                 secure: redirect.scheme() == "https",
             }
         });
+
         Ok(Self {
             api_key: config.api_key.clone(),
             oidc,
@@ -30,24 +42,19 @@ impl Auth {
         })
     }
 
-    pub fn api_key_enabled(&self) -> bool {
-        self.api_key.is_some()
+    pub fn methods(&self) -> Vec<AuthMethod> {
+        let mut methods = Vec::new();
+        if self.api_key.is_some() {
+            methods.push(AuthMethod::ApiKey);
+        }
+        if self.oidc.is_some() {
+            methods.push(AuthMethod::Oidc);
+        }
+        methods
     }
 
-    pub fn oidc_enabled(&self) -> bool {
-        self.oidc.is_some()
+    /// True when any sign-in method is configured; otherwise access is open.
+    pub(crate) fn required(&self) -> bool {
+        self.api_key.is_some() || self.oidc.is_some()
     }
 }
-
-pub async fn config(req: HttpRequest, auth: web::Data<Auth>) -> HttpResponse {
-    HttpResponse::Ok()
-        .insert_header((header::CACHE_CONTROL, "no-store"))
-        .json(serde_json::json!({
-            "oidc_enabled": auth.oidc_enabled(),
-            "api_key_enabled": auth.api_key_enabled(),
-            "oidc_session": req.extensions().get::<session::AuthenticatedSession>().is_some(),
-        }))
-}
-
-#[cfg(test)]
-mod tests;

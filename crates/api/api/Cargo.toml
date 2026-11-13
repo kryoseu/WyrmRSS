@@ -14,6 +14,7 @@ actix-web = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }
 api_utils = { path = "../utils", default-features = false }
+wyrm_auth = { path = "../../auth", default-features = false }
 wyrm_utils = { path = "../../utils" }
 database = { path = "../../database", default-features = false }
 wyrm-rss = { path = "../../rss", default-features = false }

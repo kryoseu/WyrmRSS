@@ -277,6 +277,7 @@ dependencies = [
  "tracing",
  "ts-rs",
  "wyrm-rss",
+ "wyrm_auth",
  "wyrm_utils",
 ]
 
@@ -5128,6 +5129,7 @@ dependencies = [
  "sha2 0.11.0",
  "tokio",
  "tracing",
+ "ts-rs",
  "wyrm_utils",
 ]
 
