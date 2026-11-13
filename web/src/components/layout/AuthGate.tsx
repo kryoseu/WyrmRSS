@@ -5,6 +5,16 @@ import { AUTH } from "../../utils/constants";
 import { AuthContext } from "../../context/AuthContext";
 import type { AuthStatusResponse } from "../../types/AuthStatusResponse";
 
+async function fetchAuthStatus(): Promise<AuthStatusResponse | null> {
+  try {
+    const response = await fetchWithAuth(ENDPOINTS.auth.status());
+    return response.ok ? await response.json() as AuthStatusResponse : null;
+  } catch {
+    // Keep the existing API-key flow available if discovery is unreachable.
+    return null;
+  }
+}
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
   // Preserve immediate access for open instances; a protected API returning
   // 401 locks the gate and prompts for the configured sign-in methods.
@@ -25,33 +35,27 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Runs on mount and on lock changes, so a burst of 401s fetches status once.
   useEffect(() => {
     let active = true;
-    async function refreshStatus() {
-      try {
-        const response = await fetchWithAuth(ENDPOINTS.auth.status());
-        if (response.ok) {
-          const status = await response.json() as AuthStatusResponse;
-          if (active) setStatus(status);
-        }
-      } catch { /* Keep the existing API-key flow available if discovery is unreachable. */ }
-    }
+    void fetchAuthStatus().then((status) => {
+      if (active && status) setStatus(status);
+    });
+    return () => { active = false; };
+  }, [locked]);
+
+  useEffect(() => {
     const handle = () => {
       setLocked(true);
       setStatus((current) => ({ ...current, signed_in: false }));
-      void refreshStatus();
     };
     const url = new URL(location.href);
     if (url.searchParams.has(AUTH.errorParam)) {
       url.searchParams.delete(AUTH.errorParam);
       history.replaceState(null, "", url);
     }
-    void refreshStatus();
     window.addEventListener(AUTH.unauthorizedEvent, handle);
-    return () => {
-      active = false;
-      window.removeEventListener(AUTH.unauthorizedEvent, handle);
-    };
+    return () => window.removeEventListener(AUTH.unauthorizedEvent, handle);
   }, []);
 
   async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
