@@ -307,6 +307,7 @@ dependencies = [
  "serde_with",
  "ts-rs",
  "wyrm-rss",
+ "wyrm_auth",
  "wyrm_utils",
  "wyrm_webhook",
 ]
@@ -1456,7 +1457,7 @@ dependencies = [
  "api_utils",
  "database",
  "rand 0.10.3",
- "reqwest 0.13.5",
+ "reqwest",
  "serde",
  "tauri",
  "tauri-build",
@@ -1467,6 +1468,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "wyrm-rss",
+ "wyrm_auth",
  "wyrm_utils",
 ]
 
@@ -2703,7 +2705,6 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tower-service",
- "webpki-roots",
 ]
 
 [[package]]
@@ -3569,7 +3570,6 @@ dependencies = [
  "getrandom 0.2.17",
  "http 1.5.0",
  "rand 0.8.8",
- "reqwest 0.12.28",
  "serde",
  "serde_json",
  "serde_path_to_error",
@@ -4570,44 +4570,6 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "reqwest"
-version = "0.12.28"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147"
-dependencies = [
- "base64 0.22.1",
- "bytes",
- "futures-core",
- "http 1.5.0",
- "http-body",
- "http-body-util",
- "hyper",
- "hyper-rustls",
- "hyper-util",
- "js-sys",
- "log",
- "percent-encoding",
- "pin-project-lite",
- "quinn",
- "rustls",
- "rustls-pki-types",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "sync_wrapper",
- "tokio",
- "tokio-rustls",
- "tower",
- "tower-http",
- "tower-service",
- "url",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "webpki-roots",
-]
-
-[[package]]
-name = "reqwest"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16a1cfa75cc186dd73d5818e510e042e40927bccc9c236b061cea97e1eb08029"
@@ -4658,7 +4620,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "http 1.5.0",
- "reqwest 0.13.5",
+ "reqwest",
  "thiserror 2.0.21",
  "tower-service",
 ]
@@ -4675,7 +4637,7 @@ dependencies = [
  "getrandom 0.2.17",
  "http 1.5.0",
  "hyper",
- "reqwest 0.13.5",
+ "reqwest",
  "reqwest-middleware",
  "retry-policies",
  "thiserror 2.0.21",
@@ -4807,7 +4769,6 @@ checksum = "48e13bd8c0e9365c43cfa5c9e8f9ad49d3c8444926c9aac819e0e4dc503c8fdf"
 dependencies = [
  "aws-lc-rs",
  "once_cell",
- "ring",
  "rustls-pki-types",
  "rustls-webpki",
  "subtle",
@@ -5760,7 +5721,7 @@ dependencies = [
  "percent-encoding",
  "plist",
  "raw-window-handle",
- "reqwest 0.13.5",
+ "reqwest",
  "serde",
  "serde_json",
  "serde_repr",
@@ -6857,15 +6818,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "webpki-roots"
-version = "1.0.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7265c9301c16a8711c992c2d8da90ee77ef54b1ed51482d6dfeb00dc756b1297"
-dependencies = [
- "rustls-pki-types",
-]
-
-[[package]]
 name = "webview2-com"
 version = "0.39.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7347,7 +7299,7 @@ dependencies = [
  "futures",
  "http 1.5.0",
  "quick-xml 0.42.0",
- "reqwest 0.13.5",
+ "reqwest",
  "reqwest-middleware",
  "reqwest-retry",
  "scraper",
@@ -7364,17 +7316,19 @@ name = "wyrm_auth"
 version = "0.37.0"
 dependencies = [
  "actix-web",
+ "api_utils",
  "chrono",
  "database",
  "getrandom 0.3.4",
  "hex",
  "openidconnect",
+ "reqwest",
  "serde",
  "serde_json",
  "sha2 0.11.1",
- "tokio",
  "tracing",
  "ts-rs",
+ "url",
  "wyrm_utils",
 ]
 
@@ -7389,7 +7343,7 @@ dependencies = [
  "diesel-async",
  "feed-rs",
  "quick-xml 0.42.0",
- "reqwest 0.13.5",
+ "reqwest",
  "reqwest-middleware",
  "scraper",
  "serde",
@@ -7397,6 +7351,7 @@ dependencies = [
  "smart-default",
  "thiserror 2.0.21",
  "tracing",
+ "url",
 ]
 
 [[package]]

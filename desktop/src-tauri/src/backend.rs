@@ -13,6 +13,7 @@ use std::{
     sync::{Arc, OnceLock, RwLock},
 };
 use tracing::info;
+use wyrm_auth::Auth;
 use wyrm_rss::worker::{FeedWorker, WorkerCommand};
 use wyrm_utils::{
     config::WyrmStartupConfig,
@@ -116,10 +117,13 @@ pub async fn bootstrap(data_dir: PathBuf) -> WyrmDesktopResult<ServerInfo> {
     let listener = TcpListener::bind((startup_conf.bind, 0))?;
     let port = listener.local_addr()?.port();
 
+    // api_routes wraps its protected routes in wyrm_auth's middleware, which needs `Auth`.
+    let auth = web::Data::new(Auth::new(&startup_conf)?);
     let api_key_data = startup_conf.api_key.clone();
     let server = HttpServer::new(move || {
         App::new()
             .app_data(ctx.clone())
+            .app_data(auth.clone())
             .app_data(web::Data::new(api_key_data.clone()))
             // The webview's origin (tauri://localhost, http://tauri.localhost,
             // etc.) differs from this server's, so cross-origin fetches need

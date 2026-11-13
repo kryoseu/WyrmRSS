@@ -1,9 +1,9 @@
-use actix_web::{App, HttpServer, dev::ServerHandle, middleware::from_fn, web};
+use actix_web::{App, HttpServer, dev::ServerHandle, web};
 use api_utils::context::WyrmContext;
 use database::{models::settings::Settings, utils::settings::RuntimeSettings};
 use std::sync::{Arc, RwLock};
 use tracing::info;
-use wyrm_auth::{Auth, middleware};
+use wyrm_auth::Auth;
 use wyrm_rss::worker::{FeedWorker, WorkerCommand};
 use wyrm_utils::{
     config::WyrmStartupConfig,
@@ -62,13 +62,10 @@ fn spin_up_http_server(
 ) -> WyrmResult<ServerHandle> {
     let bind = startup_conf.bind;
     let port = startup_conf.port;
-    let session_pool = web::Data::new(ctx.db_pool.clone());
     let server = HttpServer::new(move || {
         App::new()
             .app_data(ctx.clone())
             .app_data(auth.clone())
-            .app_data(session_pool.clone())
-            .wrap(from_fn(middleware::middleware))
             .configure(api_routes::config)
     })
     .bind((bind, port))
