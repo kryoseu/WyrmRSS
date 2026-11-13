@@ -1,5 +1,6 @@
 import { ENDPOINTS } from "./api";
 import { AUTH, STORAGE_KEYS } from "./constants";
+import type { AuthStatusResponse } from "../types/AuthStatusResponse";
 
 export function getApiKey(): string | null {
   return import.meta.env.WYRM_API_KEY || localStorage.getItem(STORAGE_KEYS.apiKey);
@@ -44,6 +45,16 @@ export async function fetchWithAuth(url: string, init: RequestInit = {}): Promis
 export function handleUnauthorized(): void {
   clearApiKey();
   window.dispatchEvent(new Event(AUTH.unauthorizedEvent));
+}
+
+export async function fetchAuthStatus(): Promise<AuthStatusResponse | null> {
+  try {
+    const response = await fetchWithAuth(ENDPOINTS.auth.status());
+    return response.ok ? await response.json() as AuthStatusResponse : null;
+  } catch {
+    // Keep the existing API-key flow available if discovery is unreachable.
+    return null;
+  }
 }
 
 export async function verifyApiKey(key: string): Promise<boolean> {

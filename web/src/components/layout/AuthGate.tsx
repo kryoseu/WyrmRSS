@@ -1,19 +1,9 @@
 import { type SubmitEvent, useEffect, useRef, useState } from "react";
-import { clearApiKey, fetchWithAuth, setApiKey, verifyApiKey } from "../../utils/auth";
+import { clearApiKey, fetchAuthStatus, fetchWithAuth, setApiKey, verifyApiKey } from "../../utils/auth";
 import { ENDPOINTS } from "../../utils/api";
 import { AUTH } from "../../utils/constants";
 import { AuthContext } from "../../context/AuthContext";
 import type { AuthStatusResponse } from "../../types/AuthStatusResponse";
-
-async function fetchAuthStatus(): Promise<AuthStatusResponse | null> {
-  try {
-    const response = await fetchWithAuth(ENDPOINTS.auth.status());
-    return response.ok ? await response.json() as AuthStatusResponse : null;
-  } catch {
-    // Keep the existing API-key flow available if discovery is unreachable.
-    return null;
-  }
-}
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   // Preserve immediate access for open instances; a protected API returning
