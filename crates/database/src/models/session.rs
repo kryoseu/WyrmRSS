@@ -1,6 +1,6 @@
 use crate::{DatabasePool, schema::sessions};
 use chrono::{DateTime, Utc};
-use diesel::{dsl::case_when, prelude::*};
+use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
@@ -45,8 +45,8 @@ impl Session {
         Ok(deleted)
     }
 
-    /// Authenticate and record activity in one update. Expired or revoked
-    /// sessions cannot be revived, and concurrent requests never shorten expiry.
+    /// Records activity on an active session: sets `last_seen_at` to now and extends `expires_at`.
+    /// Expired or revoked sessions can't be revived.
     pub async fn refresh(
         pool: &DatabasePool,
         token_hash: &str,
@@ -61,16 +61,8 @@ impl Session {
                 .filter(sessions::expires_at.gt(now)),
         )
         .set((
-            sessions::last_seen_at.eq(case_when(
-                sessions::last_seen_at.gt(now),
-                sessions::last_seen_at,
-            )
-            .otherwise(now)),
-            sessions::expires_at.eq(case_when(
-                sessions::expires_at.gt(expires_at),
-                sessions::expires_at,
-            )
-            .otherwise(expires_at)),
+            sessions::last_seen_at.eq(now),
+            sessions::expires_at.eq(expires_at),
         ))
         .returning(Self::as_returning())
         .get_result(&mut conn)
@@ -151,20 +143,12 @@ mod tests {
             .expect("active session should be found");
         assert_eq!(found.expires_at, expires_at);
 
-        // Refresh extends the expiry...
         let extended = hours_from_now(12);
         let refreshed = Session::refresh(&pool, &token_hash, extended)
             .await
             .expect("refresh should succeed")
             .expect("active session should refresh");
         assert_eq!(refreshed.expires_at, extended);
-
-        // ...but a refresh with an earlier expiry never shortens it.
-        let not_shortened = Session::refresh(&pool, &token_hash, hours_from_now(2))
-            .await
-            .expect("refresh should succeed")
-            .expect("active session should refresh");
-        assert_eq!(not_shortened.expires_at, extended);
 
         Session::delete(&pool, &token_hash)
             .await
