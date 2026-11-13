@@ -9,7 +9,7 @@
 //!   cargo test -p database --no-default-features --features sqlite
 #![cfg(feature = "sqlite")]
 
-use chrono::Utc;
+use chrono::{DateTime, TimeDelta, Utc};
 use database::{
     DatabasePool,
     create_pool,
@@ -108,63 +108,68 @@ fn post_form(feed_id: FeedId, url: &str) -> PostInsertForm {
     }
 }
 
+fn session_form(token_hash: &str, expires_at: DateTime<Utc>) -> SessionInsertForm {
+    SessionInsertForm {
+        token_hash: token_hash.to_string(),
+        expires_at,
+        last_seen_at: Utc::now(),
+    }
+}
+
 #[tokio::test]
-async fn sessions_refresh_rotate_and_expire() {
+async fn session_expiry_comparisons_work_on_timestamptz_sqlite() {
     let db = TestDb::new("sessions").await;
-    let now = chrono::DateTime::from_timestamp(Utc::now().timestamp(), 0).unwrap();
-    let timeout = chrono::TimeDelta::hours(12);
-    Session::create(
-        &db.pool,
-        SessionInsertForm {
-            token_hash: "old-hash".into(),
-            expires_at: now + timeout,
-            last_seen_at: now,
-        },
-        None,
-    )
-    .await
-    .unwrap();
-    let active = now + chrono::TimeDelta::hours(11);
-    let session = Session::refresh(&db.pool, "old-hash", active, active + timeout)
+    // Whole seconds, so values compare equal after a database round trip.
+    let now = DateTime::from_timestamp(Utc::now().timestamp(), 0).expect("timestamp in range");
+
+    Session::create(&db.pool, session_form("expired", now - TimeDelta::hours(1)))
         .await
-        .unwrap()
-        .unwrap();
-    assert_eq!(session.last_seen_at, active);
-    assert_eq!(session.expires_at, active + timeout);
-    let delayed = Session::refresh(&db.pool, "old-hash", now, now + timeout)
+        .expect("create should succeed");
+    Session::create(&db.pool, session_form("active", now + TimeDelta::hours(1)))
         .await
-        .unwrap()
-        .unwrap();
-    assert_eq!(delayed.expires_at, session.expires_at);
-    Session::create(
-        &db.pool,
-        SessionInsertForm {
-            token_hash: "new-hash".into(),
-            expires_at: now + timeout,
-            last_seen_at: now,
-        },
-        Some("old-hash"),
-    )
-    .await
-    .unwrap();
+        .expect("create should succeed");
+
     assert!(
-        Session::refresh(&db.pool, "old-hash", now, now + timeout)
+        Session::find_active(&db.pool, "expired")
             .await
-            .unwrap()
-            .is_none()
+            .expect("find should succeed")
+            .is_none(),
+        "expired session should not be found"
     );
     assert!(
-        Session::refresh(&db.pool, "new-hash", now + timeout, now + timeout + timeout)
+        Session::refresh(&db.pool, "expired", now + TimeDelta::hours(12))
             .await
-            .unwrap()
-            .is_none()
+            .expect("refresh should succeed")
+            .is_none(),
+        "expired session should not be revived"
     );
-    Session::delete(&db.pool, "new-hash").await.unwrap();
-    assert!(
-        Session::refresh(&db.pool, "new-hash", now, now + timeout)
+
+    // The CASE in refresh extends the expiry but never shortens it.
+    let extended = now + TimeDelta::hours(12);
+    let refreshed = Session::refresh(&db.pool, "active", extended)
+        .await
+        .expect("refresh should succeed")
+        .expect("active session should refresh");
+    assert_eq!(refreshed.expires_at, extended);
+    let not_shortened = Session::refresh(&db.pool, "active", now + TimeDelta::hours(2))
+        .await
+        .expect("refresh should succeed")
+        .expect("active session should refresh");
+    assert_eq!(not_shortened.expires_at, extended);
+
+    // A fresh database per test, so the purge count is exact.
+    assert_eq!(
+        Session::delete_expired(&db.pool)
             .await
-            .unwrap()
-            .is_none()
+            .expect("delete_expired should succeed"),
+        1
+    );
+    assert!(
+        Session::find_active(&db.pool, "active")
+            .await
+            .expect("find should succeed")
+            .is_some(),
+        "active session should survive the purge"
     );
 }
 

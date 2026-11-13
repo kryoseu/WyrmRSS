@@ -14,6 +14,7 @@ serde_with = { workspace = true }
 ts-rs = { workspace = true }
 api_utils = { path = "../utils", default-features = false }
 wyrm_utils = { path = "../../utils" }
+wyrm_auth = { path = "../../auth", default-features = false }
 database = { path = "../../database", default-features = false }
 wyrm-rss = { path = "../../rss", default-features = false }
 wyrm_webhook = { path = "../../webhook", default-features = false }
@@ -23,12 +24,14 @@ default = ["postgres"]
 postgres = [
   "database/postgres",
   "api_utils/postgres",
+  "wyrm_auth/postgres",
   "wyrm-rss/postgres",
   "wyrm_webhook/postgres",
 ]
 sqlite = [
   "database/sqlite",
   "api_utils/sqlite",
+  "wyrm_auth/sqlite",
   "wyrm-rss/sqlite",
   "wyrm_webhook/sqlite",
 ]

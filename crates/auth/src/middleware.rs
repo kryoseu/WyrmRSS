@@ -1,7 +1,6 @@
-use crate::{Auth, api_key, session};
+use crate::{Auth, api_key};
 use actix_web::{
     Error,
-    HttpMessage,
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse},
     error::ErrorUnauthorized,
@@ -9,42 +8,46 @@ use actix_web::{
     middleware::Next,
     web,
 };
+use api_utils::context::WyrmContext;
 
 pub async fn middleware(
     req: ServiceRequest,
     next: Next<impl MessageBody>,
 ) -> Result<ServiceResponse<impl MessageBody>, Error> {
+    let ctx = req
+        .app_data::<web::Data<WyrmContext>>()
+        .expect("context configured");
+
     let auth = req
         .app_data::<web::Data<Auth>>()
         .expect("auth data configured");
-    let public = (req.method() == Method::GET
-        && matches!(
-            req.path(),
-            "/api/v1/auth/status" | "/api/v1/auth/login" | "/api/v1/auth/callback"
-        ))
-        || (req.method() == Method::POST && req.path() == "/api/v1/auth/logout");
-    let key_valid = api_key::valid(req.request(), auth);
-    // The status route is public but still reports whether the caller is signed in.
-    let check_session = (!public && !key_valid) || req.path() == "/api/v1/auth/status";
-    let cookie = match (check_session, auth.session.as_ref()) {
-        (true, Some(config)) => session::validate(req.request(), config).await?,
-        _ => None,
+
+    // No auth configured or a valid API key: nothing to check.
+    if !auth.enabled() || api_key::valid(req.request(), auth) {
+        return next.call(req).await;
+    }
+
+    // Otherwise the caller must have a valid session.
+    let Some(sessions) = auth.sessions() else {
+        return Err(ErrorUnauthorized("Authentication required"));
     };
-    if !public && !key_valid {
-        if cookie.is_some() {
-            if !matches!(*req.method(), Method::GET | Method::HEAD | Method::OPTIONS) {
-                session::check_csrf(req.request(), auth.session.as_ref().unwrap())?;
-            }
-        } else if auth.required() {
-            return Err(ErrorUnauthorized("Authentication required"));
-        }
+
+    let Some(authenticated) = sessions.authenticate(&ctx.db_pool, req.request()).await? else {
+        return Err(ErrorUnauthorized("Authentication required"));
+    };
+
+    if !safe_method(req.method()) {
+        sessions.check_csrf(req.request())?;
     }
-    if cookie.is_some() {
-        req.extensions_mut().insert(session::AuthenticatedSession);
-    }
+
     let mut response = next.call(req).await?;
-    if let Some(cookie) = cookie {
+    if let Some(cookie) = authenticated.cookie {
         response.response_mut().add_cookie(&cookie)?;
     }
     Ok(response)
+}
+
+/// Read-only HTTP methods. They skip CSRF since they're read-only and don't alter server state.
+fn safe_method(method: &Method) -> bool {
+    matches!(*method, Method::GET | Method::HEAD | Method::OPTIONS)
 }
