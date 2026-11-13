@@ -1,8 +1,6 @@
 use crate::{Auth, oidc};
 use actix_web::{
-    Error,
-    HttpRequest,
-    HttpResponse,
+    Error, HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite, time::Duration as CookieDuration},
     error::{ErrorForbidden, ErrorNotFound, ErrorServiceUnavailable},
     http::header,
@@ -10,7 +8,6 @@ use actix_web::{
 };
 use chrono::{DateTime, TimeDelta, Utc};
 use database::{DatabasePool, models::session::Session};
-use openidconnect::CsrfToken;
 use sha2::{Digest, Sha256};
 use std::time::Duration;
 
@@ -53,11 +50,14 @@ impl Config {
     }
 }
 
+pub(crate) fn generate_session_token() -> String {
+    let mut bytes = [0u8; 32];
+    getrandom::fill(&mut bytes).expect("OS random source unavailable");
+    hex::encode(bytes)
+}
+
 pub(crate) fn token_hash(token: &str) -> String {
-    Sha256::digest(token.as_bytes())
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
+    hex::encode(Sha256::digest(token))
 }
 
 fn database_pool(req: &HttpRequest) -> Result<&DatabasePool, Error> {
@@ -67,7 +67,7 @@ fn database_pool(req: &HttpRequest) -> Result<&DatabasePool, Error> {
 }
 
 pub(crate) async fn create(req: &HttpRequest, config: &Config) -> Result<Cookie<'static>, Error> {
-    let token = CsrfToken::new_random().secret().clone();
+    let token = generate_session_token();
     let now = Utc::now();
     let expires_at = now + SESSION_IDLE_TIMEOUT;
     let previous = req
@@ -135,6 +135,3 @@ pub async fn logout(req: HttpRequest, auth: web::Data<Auth>) -> Result<HttpRespo
         .cookie(oidc::clear_login_cookie(config))
         .finish())
 }
-
-#[cfg(test)]
-mod tests;

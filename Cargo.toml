@@ -28,12 +28,12 @@ repository = "https://github.com/kryoseu/WyrmRSS"
 rust-version = "1.94.1"
 
 [workspace.dependencies]
-tokio = { version = "1.52.3", features = ["full"] }
+actix-files = "0.6.10"
 actix-web = "4.13.0"
 actix-web-httpauth = "0.8.2"
-actix-files = "0.6.10"
-tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+chrono = "0.4.44"
+config = "0.15.23"
+deadpool = "0.13.0"
 # Backend features (postgres/sqlite) are deliberately NOT set here — the
 # `database` crate's own `postgres`/`sqlite` features turn them on, so the
 # server and the desktop build can pick different backends. Enabling one here
@@ -42,22 +42,25 @@ diesel = { version = "2.3.14", features = ["chrono"] }
 diesel-async = { version = "0.9.0", features = ["deadpool"] }
 diesel-derive-enum = { version = "2.1.0" }
 diesel-derive-newtype = { version = "2.1.2" }
-libsqlite3-sys = { version = "0.38.2", features = ["bundled"] }
-deadpool = "0.13.0"
 diesel_migrations = "2.3.2"
-thiserror = "2.0.18"
-chrono = "0.4.44"
+feed-rs = "2.3.1"
+futures = "0.3.32"
+getrandom = "0.3.4"
+hex = "0.4.3"
+libsqlite3-sys = { version = "0.38.2", features = ["bundled"] }
+openidconnect = { version = "4.1.0", features = ["timing-resistant-secret-traits"] }
+quick-xml = { version = "0.42.0", features = ["serialize"] }
+reqwest = { version = "0.13.4", features = ["gzip"] }
+reqwest-middleware = "0.5.2"
+reqwest-retry = "0.9.1"
+scraper = "0.29.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
-sha2 = "0.11.0"
-config = "0.15.23"
-smart-default = "0.7.1"
-reqwest = { version = "0.13.4", features = ["gzip"] }
-reqwest-retry = "0.9.1"
-reqwest-middleware = "0.5.2"
-futures = "0.3.32"
-feed-rs = "2.3.1"
-ts-rs = { version = "12.0.1", features = ["chrono-impl", "no-serde-warnings"] }
 serde_with = "3.20.0"
-quick-xml = { version = "0.42.0", features = ["serialize"] }
-scraper = "0.29.0"
+sha2 = "0.11.0"
+smart-default = "0.7.1"
+thiserror = "2.0.18"
+tokio = { version = "1.52.3", features = ["full"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+ts-rs = { version = "12.0.1", features = ["chrono-impl", "no-serde-warnings"] }

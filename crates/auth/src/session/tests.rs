@@ -19,7 +19,7 @@ async fn token_hash_is_sha256() {
 #[cfg(feature = "postgres")]
 async fn activity_renews_cookie_and_survives_auth_restart() {
     let pool = session_pool().await;
-    let token = CsrfToken::new_random().secret().clone();
+    let token = generate_session_token();
     let issued_at = Utc::now() - TimeDelta::hours(11);
     Session::create(
         &pool,

@@ -2,7 +2,7 @@ use super::*;
 use crate::tests::{SESSION_COOKIE, configure, configured_auth};
 #[cfg(feature = "postgres")]
 use crate::{
-    session::{SESSION_IDLE_TIMEOUT, token_hash},
+    session::{SESSION_IDLE_TIMEOUT, generate_session_token, token_hash},
     tests::session_pool,
 };
 #[cfg(feature = "postgres")]
@@ -12,8 +12,6 @@ use actix_web::{App, HttpResponse, cookie::Cookie, http::StatusCode, middleware:
 use chrono::{TimeDelta, Utc};
 #[cfg(feature = "postgres")]
 use database::models::session::Session;
-#[cfg(feature = "postgres")]
-use openidconnect::CsrfToken;
 use wyrm_utils::config::WyrmStartupConfig;
 
 #[actix_web::test]
@@ -98,7 +96,7 @@ async fn defaults_preserve_open_access_and_api_key_only_access() {
 async fn api_key_is_independent_of_oidc_and_sessions_require_csrf() {
     let pool = session_pool().await;
     let auth = web::Data::new(configured_auth());
-    let session_token = CsrfToken::new_random().secret().clone();
+    let session_token = generate_session_token();
     let now = Utc::now();
     Session::create(
         &pool,
@@ -197,7 +195,7 @@ async fn api_key_is_independent_of_oidc_and_sessions_require_csrf() {
 #[cfg(feature = "postgres")]
 async fn oidc_only_is_protected_and_expired_sessions_are_rejected() {
     let pool = session_pool().await;
-    let expired_token = CsrfToken::new_random().secret().clone();
+    let expired_token = generate_session_token();
     let mut auth = configured_auth();
     auth.api_key = None;
     let now = Utc::now();

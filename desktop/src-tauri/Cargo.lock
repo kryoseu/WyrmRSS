@@ -7365,6 +7365,8 @@ dependencies = [
  "actix-web",
  "chrono",
  "database",
+ "getrandom 0.3.4",
+ "hex",
  "openidconnect",
  "serde",
  "serde_json",
