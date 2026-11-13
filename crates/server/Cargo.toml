@@ -12,8 +12,8 @@ tokio = { workspace = true }
 actix-web = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-api_routes = { path = "../api/routes", default-features = false, features = ["auth"] }
-auth = { path = "../auth", default-features = false }
+api_routes = { path = "../api/routes", default-features = false }
+wyrm_auth = { path = "../auth", default-features = false }
 api_utils = { path = "../api/utils", default-features = false }
 database = { path = "../database", default-features = false }
 wyrm_utils = { path = "../utils" }
@@ -26,15 +26,15 @@ wyrm-rss = { path = "../rss", default-features = false }
 default = ["postgres"]
 postgres = [
   "database/postgres",
-  "auth/postgres",
   "api_routes/postgres",
   "api_utils/postgres",
+  "wyrm_auth/postgres",
   "wyrm-rss/postgres",
 ]
 sqlite = [
   "database/sqlite",
-  "auth/sqlite",
   "api_routes/sqlite",
   "api_utils/sqlite",
+  "wyrm_auth/sqlite",
   "wyrm-rss/sqlite",
 ]

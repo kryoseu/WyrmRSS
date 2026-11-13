@@ -11,14 +11,9 @@ rust-version.workspace = true
 actix-web = { workspace = true }
 api_api = { path = "../api", default-features = false }
 api_crud = { path = "../crud", default-features = false }
-auth = { path = "../../auth", default-features = false, optional = true }
+wyrm_auth = { path = "../../auth", default-features = false }
 
 [features]
 default = ["postgres"]
-auth = ["dep:auth"]
-postgres = ["api_api/postgres", "api_crud/postgres", "auth?/postgres"]
-sqlite = ["api_api/sqlite", "api_crud/sqlite", "auth?/sqlite"]
-
-[dev-dependencies]
-serde_json = { workspace = true }
-wyrm_utils = { path = "../../utils" }
+postgres = ["api_api/postgres", "api_crud/postgres", "wyrm_auth/postgres"]
+sqlite = ["api_api/sqlite", "api_crud/sqlite", "wyrm_auth/sqlite"]

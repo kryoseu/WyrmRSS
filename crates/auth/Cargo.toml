@@ -1,5 +1,5 @@
 [package]
-name = "auth"
+name = "wyrm_auth"
 version.workspace = true
 edition.workspace = true
 description.workspace = true
