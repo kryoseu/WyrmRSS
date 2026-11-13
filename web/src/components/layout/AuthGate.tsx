@@ -9,51 +9,67 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   // Preserve immediate access for open instances; a protected API returning
   // 401 locks the gate and prompts for the configured sign-in methods.
   const [locked, setLocked] = useState(false);
+
   const [error, setError] = useState<string | null>(() => {
     const callbackError = new URLSearchParams(location.search).get(AUTH.errorParam);
     if (callbackError === "oidc") {
       return "Sign-in failed. Check that your account is allowed, then try again.";
     }
     if (callbackError === "oidc_unavailable") {
-      return "The identity provider is unavailable. Try again in a moment.";
+      return "The identity provider is unavailable. Try again later.";
     }
     return null;
   });
+
   const [status, setStatus] = useState<AuthStatusResponse>({
     methods: ["api_key"], signed_in: false,
   });
+
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Runs on mount and on lock changes, so a burst of 401s fetches status once.
   useEffect(() => {
     let active = true;
+
     void fetchAuthStatus().then((status) => {
       if (active && status) setStatus(status);
     });
+
     return () => { active = false; };
   }, [locked]);
 
+  // Listener for unauthorizedEvent (wyrm:unauthorized) set when 
+  // API calls return a 401 response (see utils/response.ts).
   useEffect(() => {
     const handle = () => {
       setLocked(true);
       setStatus((current) => ({ ...current, signed_in: false }));
     };
+
+    window.addEventListener(AUTH.unauthorizedEvent, handle);
+
+    return () => window.removeEventListener(AUTH.unauthorizedEvent, handle);
+  }, []);
+
+  // Strip the sign-in error param once it's been read into `error`.
+  useEffect(() => {
     const url = new URL(location.href);
     if (url.searchParams.has(AUTH.errorParam)) {
       url.searchParams.delete(AUTH.errorParam);
       history.replaceState(null, "", url);
     }
-    window.addEventListener(AUTH.unauthorizedEvent, handle);
-    return () => window.removeEventListener(AUTH.unauthorizedEvent, handle);
   }, []);
 
-  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
+  async function handleApiKeySubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
+
     const key = inputRef.current?.value.trim();
     if (!key) return;
+
     setLoading(true);
     setError(null);
+
     try {
       const valid = await verifyApiKey(key);
       if (valid) {
@@ -88,7 +104,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="api-key-gate">
-      <form className="api-key-form" onSubmit={handleSubmit}>
+      <form className="api-key-form" onSubmit={handleApiKeySubmit}>
         <h2>{oidcEnabled ? "Sign in to Wyrm" : "API Key Required"}</h2>
         {oidcEnabled && (
           <>
