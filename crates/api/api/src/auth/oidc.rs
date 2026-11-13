@@ -1,20 +1,12 @@
 use actix_web::{
-    HttpRequest,
-    HttpResponse,
+    HttpRequest, HttpResponse,
     http::header,
-    web::{self, Data, Query},
+    web::{Data, Query},
 };
 use api_utils::context::WyrmContext;
-use serde::{Deserialize, Serialize};
-use wyrm_auth::{Auth, AuthMethod, session::Authenticated};
+use serde::Deserialize;
+use wyrm_auth::{Auth, session::Authenticated};
 use wyrm_utils::{error::AuthError, result::WyrmResult};
-
-#[derive(Serialize, ts_rs::TS)]
-#[ts(export)]
-pub struct AuthStatusResponse {
-    pub methods: Vec<AuthMethod>,
-    pub signed_in: bool,
-}
 
 #[derive(Deserialize)]
 pub struct OidcLoginQuery {
@@ -28,27 +20,7 @@ pub struct OidcCallbackQuery {
     error: Option<String>,
 }
 
-pub async fn status(
-    req: HttpRequest,
-    ctx: Data<WyrmContext>,
-    auth: Data<Auth>,
-) -> WyrmResult<HttpResponse> {
-    let signed_in = match auth.sessions() {
-        Some(sessions) => sessions.authenticate(&ctx.db_pool, &req).await?.is_some(),
-        None => false,
-    };
-    Ok(HttpResponse::Ok()
-        .insert_header((header::CACHE_CONTROL, "no-store"))
-        .json(AuthStatusResponse {
-            methods: auth.methods(),
-            signed_in,
-        }))
-}
-
-pub async fn oidc_login(
-    query: web::Query<OidcLoginQuery>,
-    auth: Data<Auth>,
-) -> WyrmResult<HttpResponse> {
+pub async fn login(query: Query<OidcLoginQuery>, auth: Data<Auth>) -> WyrmResult<HttpResponse> {
     let oidc = auth.oidc()?;
     let return_to = query.into_inner().return_to;
 
@@ -71,7 +43,7 @@ pub async fn oidc_login(
 }
 
 /// A GET that creates a session: the provider redirects the browser here.
-pub async fn oidc_callback(
+pub async fn callback(
     req: HttpRequest,
     query: Query<OidcCallbackQuery>,
     ctx: Data<WyrmContext>,
@@ -85,7 +57,7 @@ pub async fn oidc_callback(
         .insert_header((header::REFERRER_POLICY, "no-referrer"))
         .cookie(oidc.clear_login_cookie());
 
-    match sign_in_with_oidc(&req, query.into_inner(), &auth, &ctx).await {
+    match sign_in(&req, query.into_inner(), &auth, &ctx).await {
         Ok((return_to, authenticated)) => {
             response.insert_header((header::LOCATION, return_to));
 
@@ -103,7 +75,7 @@ pub async fn oidc_callback(
 }
 
 /// Verifies the callback with the provider, then starts a session.
-async fn sign_in_with_oidc(
+async fn sign_in(
     req: &HttpRequest,
     query: OidcCallbackQuery,
     auth: &Auth,

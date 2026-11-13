@@ -23,7 +23,8 @@ wyrm-rss = { path = "../rss", default-features = false }
 # the desktop build uses `--no-default-features --features sqlite`. Not
 # documented as a deployment option -- sqlite exists for the desktop app.
 [features]
-default = ["postgres"]
+default = ["postgres", "oidc"]
+oidc = ["api_routes/oidc", "wyrm_auth/oidc"]
 postgres = [
   "database/postgres",
   "api_routes/postgres",

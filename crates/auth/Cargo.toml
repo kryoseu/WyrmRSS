@@ -13,10 +13,10 @@ chrono = { workspace = true }
 database = { path = "../database", default-features = false }
 getrandom = { workspace = true }
 hex = { workspace = true }
-openidconnect = { workspace = true }
-reqwest = { workspace = true }
+openidconnect = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
+serde_json = { workspace = true, optional = true }
 sha2 = { workspace = true }
 tracing = { workspace = true }
 ts-rs = { workspace = true }
@@ -25,6 +25,8 @@ wyrm_utils = { path = "../utils" }
 api_utils = { path = "../api/utils", default-features = false }
 
 [features]
-default = ["postgres"]
+default = ["postgres", "oidc"]
 sqlite = ["database/sqlite", "api_utils/sqlite"]
 postgres = ["database/postgres", "api_utils/postgres"]
+# OIDC sign-in; off for the desktop app, which has no use for it.
+oidc = ["dep:openidconnect", "dep:reqwest", "dep:serde_json"]

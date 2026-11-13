@@ -20,6 +20,7 @@ database = { path = "../../database", default-features = false }
 wyrm-rss = { path = "../../rss", default-features = false }
 
 [features]
-default = ["postgres"]
+default = ["postgres", "oidc"]
 postgres = ["database/postgres", "api_utils/postgres", "wyrm-rss/postgres"]
 sqlite = ["database/sqlite", "api_utils/sqlite", "wyrm-rss/sqlite"]
+oidc = ["wyrm_auth/oidc"]
