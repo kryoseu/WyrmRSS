@@ -1,14 +1,9 @@
 //! OpenID Connect discovery, authorization, and callback verification.
-use crate::{Auth, session};
 use actix_web::{
-    Error,
     HttpRequest,
-    HttpResponse,
-    cookie::{Cookie, CookieJar, Key},
-    error::{ErrorServiceUnavailable, ErrorUnauthorized},
-    http::header,
-    web,
+    cookie::{Cookie, CookieJar, Key, SameSite, time::Duration as CookieDuration},
 };
+use chrono::Utc;
 use openidconnect::{
     AuthorizationCode,
     ClientId,
@@ -24,43 +19,270 @@ use openidconnect::{
     RedirectUrl,
     TokenResponse,
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
-    reqwest,
 };
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
-use tokio::sync::Mutex as AsyncMutex;
-use wyrm_utils::{config::WyrmStartupConfig, error::WyrmError, result::WyrmResult};
+use std::{fmt::Display, time::Duration};
+use url::Url;
+use wyrm_utils::{
+    config::WyrmStartupConfig,
+    error::{AuthError, WyrmError},
+    result::WyrmResult,
+};
 
 const LOGIN_TTL: Duration = Duration::from_secs(600);
-// Leave room for JSON escaping and cookie encryption within browser size limits.
 const RETURN_PATH_LIMIT: usize = 1024;
-const DISCOVERY_TTL: Duration = Duration::from_secs(300);
-const DISCOVERY_RETRY: Duration = Duration::from_secs(5);
-const OIDC_HTTP_TIMEOUT: Duration = Duration::from_secs(15);
-type Client = CoreClient<
-    EndpointSet,
-    EndpointNotSet,
-    EndpointNotSet,
-    EndpointNotSet,
-    EndpointMaybeSet,
-    EndpointMaybeSet,
+
+/// OIDC client built from discovery; auth and token endpoints guaranteed.
+type ProviderClient = CoreClient<
+    EndpointSet,      // authorization
+    EndpointNotSet,   // device authorization
+    EndpointNotSet,   // introspection
+    EndpointNotSet,   // revocation
+    EndpointSet,      // token
+    EndpointMaybeSet, // userinfo
 >;
 
-pub(crate) struct Oidc {
-    discovery: AsyncMutex<DiscoveryCache>,
+/// OIDC sign-in: verifies who the user is at the provider; never creates sessions.
+pub struct Oidc {
+    /// Client for discovery and token exchange; never follows redirects.
     http: reqwest::Client,
+    /// Provider's issuer exactly as configured (not normalized): discovery compares it as a
+    /// string.
     issuer: IssuerUrl,
+    /// Client ID registered at the provider.
     client_id: String,
+    /// `None` for a public client, which relies on PKCE alone.
     client_secret: Option<String>,
+    /// Callback URL the provider sends the browser back to.
     redirect: RedirectUrl,
+    /// Subjects (`sub` claims) allowed to sign in; `None` allows everyone.
     allowed_subjects: Option<Vec<String>>,
+    /// Served over HTTPS: login cookie gets `Secure` and the `__Host-` prefix.
+    secure: bool,
+    /// Per-process key encrypting the login cookie; a restart voids pending logins.
     login_key: Key,
-    started_at: Instant,
 }
 
-struct DiscoveryCache {
-    client: Option<Client>,
-    refresh_at: Instant,
+impl Oidc {
+    pub(crate) fn new(config: &WyrmStartupConfig) -> WyrmResult<Option<Self>> {
+        let enabled = config.oidc_issuer_url.is_some();
+
+        if enabled {
+            let public_url = config
+                .public_url()?
+                .ok_or_else(|| invalid_config("public url required"))?;
+
+            validate_url(public_url.as_ref())?;
+
+            let issuer_url = config
+                .oidc_issuer_url
+                .as_deref()
+                .ok_or_else(|| invalid_config("issuer url required"))?;
+
+            validate_url(issuer_url)?;
+
+            let client_id = config
+                .oidc_client_id
+                .clone()
+                .ok_or_else(|| invalid_config("client id required"))?;
+
+            let client_secret = config.oidc_client_secret.clone();
+
+            let allowed_subjects = config
+                .oidc_allowed_subjects
+                .as_deref()
+                .map(parse_allowed_subjects)
+                .transpose()?;
+
+            let issuer = IssuerUrl::new(issuer_url.to_owned())
+                .map_err(|_| invalid_config("invalid issuer url"))?;
+
+            let callback_url = public_url
+                .join("/api/v1/auth/oidc/callback")
+                .map_err(|_| invalid_config("could not build callback url"))?;
+
+            let redirect = RedirectUrl::from_url(callback_url);
+
+            let login_key = Key::try_generate()
+                .ok_or_else(|| invalid_config("could not generate login cookie key"))?;
+
+            let oidc = Self {
+                http: crate::http::client()?,
+                issuer,
+                client_id,
+                client_secret,
+                redirect,
+                allowed_subjects,
+                secure: public_url.scheme() == "https",
+                login_key,
+            };
+
+            return Ok(Some(oidc));
+        }
+        Ok(None)
+    }
+
+    async fn client(&self) -> WyrmResult<ProviderClient> {
+        let metadata = self.discover().await?;
+
+        let token_url = metadata
+            .token_endpoint()
+            .cloned()
+            .ok_or_else(|| provider_unavailable("identity provider has no token endpoint"))?;
+
+        let client_id = ClientId::new(self.client_id.clone());
+        let client_secret = self.client_secret.clone().map(ClientSecret::new);
+        Ok(
+            CoreClient::from_provider_metadata(metadata, client_id, client_secret)
+                .set_token_uri(token_url)
+                .set_redirect_uri(self.redirect.clone()),
+        )
+    }
+
+    /// Builds an OIDC client from freshly discovered provider metadata.
+    /// Starts a login: returns the provider URL to redirect to and the sealed login cookie.
+    pub async fn begin_login(
+        &self,
+        return_to: Option<String>,
+    ) -> WyrmResult<(Url, Cookie<'static>)> {
+        let client = self.client().await?;
+
+        let (challenge, verifier) = PkceCodeChallenge::new_random_sha256();
+        let (url, state, nonce) = client
+            .authorize_url(
+                CoreAuthenticationFlow::AuthorizationCode,
+                CsrfToken::new_random,
+                Nonce::new_random,
+            )
+            .set_pkce_challenge(challenge)
+            .url();
+
+        // Pending state lives only in the browser's encrypted cookie, never on the server.
+        let pending = PendingLogin {
+            state,
+            nonce,
+            verifier,
+            expires_at: (Utc::now() + LOGIN_TTL).timestamp(),
+            return_to: return_to
+                .filter(|path| path.len() <= RETURN_PATH_LIMIT && local_path(path))
+                .unwrap_or_else(|| "/".into()),
+        };
+
+        Ok((url, self.seal_login(&pending)))
+    }
+
+    /// Fetches the provider's metadata and signing keys, and checks its endpoints.
+    async fn discover(&self) -> WyrmResult<CoreProviderMetadata> {
+        let send = |request| crate::http::send(&self.http, request);
+        let metadata = CoreProviderMetadata::discover_async(self.issuer.clone(), &send)
+            .await
+            .map_err(provider_unavailable)?;
+
+        let endpoints = [
+            Some(metadata.authorization_endpoint().url()),
+            metadata.token_endpoint().map(|endpoint| endpoint.url()),
+            Some(metadata.jwks_uri().url()),
+        ];
+
+        for url in endpoints.into_iter().flatten() {
+            validate_url(url.as_str())
+                .map_err(|_| provider_unavailable("insecure identity provider endpoint"))?;
+        }
+
+        Ok(metadata)
+    }
+
+    /// Encrypts the pending login into the cookie the callback reads back.
+    fn seal_login(&self, pending: &PendingLogin) -> Cookie<'static> {
+        let payload = serde_json::to_string(pending).expect("PendingLogin serializes to JSON");
+        let mut jar = CookieJar::new();
+        jar.private_mut(&self.login_key)
+            .add(self.login_cookie(payload, LOGIN_TTL));
+        jar.get(self.login_cookie_name())
+            .expect("login cookie was just added")
+            .clone()
+    }
+
+    /// Finishes a login: verifies the callback against the login cookie, returns the return_to
+    /// path.
+    pub async fn complete_login(
+        &self,
+        req: &HttpRequest,
+        state: &str,
+        code: &str,
+    ) -> WyrmResult<String> {
+        let cookie = req
+            .cookie(self.login_cookie_name())
+            .ok_or_else(|| login_failed("missing login cookie"))?;
+
+        let pending = self
+            .open_login(cookie, state)
+            .ok_or_else(|| login_failed("invalid or expired login cookie"))?;
+
+        // Discover on every login so rotated provider signing keys are picked up.
+        let client = self.client().await?;
+
+        let send = |request| crate::http::send(&self.http, request);
+
+        let tokens = client
+            .exchange_code(AuthorizationCode::new(code.to_owned()))
+            .set_pkce_verifier(pending.verifier)
+            .request_async(&send)
+            .await
+            .map_err(|error| login_failed(format!("code exchange: {error}")))?;
+
+        let id_token = tokens
+            .id_token()
+            .ok_or_else(|| login_failed("no ID token in token response"))?;
+
+        let claims = id_token
+            .claims(&client.id_token_verifier(), &pending.nonce)
+            .map_err(|error| login_failed(format!("ID token: {error}")))?;
+
+        let subject = claims.subject().as_str();
+
+        let allowed = self
+            .allowed_subjects
+            .as_ref()
+            .is_none_or(|subjects| subjects.iter().any(|allowed| allowed == subject));
+
+        if !allowed {
+            return Err(login_failed(format!("subject {subject} not allowed")));
+        }
+
+        Ok(pending.return_to)
+    }
+
+    fn open_login(&self, cookie: Cookie<'static>, state: &str) -> Option<PendingLogin> {
+        let jar = CookieJar::new();
+        let cookie = jar.private(&self.login_key).decrypt(cookie)?;
+        let pending: PendingLogin = serde_json::from_str(cookie.value()).ok()?;
+        (pending.expires_at > Utc::now().timestamp()
+            && pending.state == CsrfToken::new(state.to_owned()))
+        .then_some(pending)
+    }
+
+    fn login_cookie(&self, value: String, ttl: Duration) -> Cookie<'static> {
+        Cookie::build(self.login_cookie_name(), value)
+            .path("/")
+            .http_only(true)
+            .secure(self.secure)
+            .same_site(SameSite::Lax)
+            .max_age(CookieDuration::seconds(ttl.as_secs() as i64))
+            .finish()
+    }
+
+    fn login_cookie_name(&self) -> &'static str {
+        if self.secure {
+            "__Host-wyrm_oidc_login"
+        } else {
+            "wyrm_oidc_login"
+        }
+    }
+
+    pub fn clear_login_cookie(&self) -> Cookie<'static> {
+        self.login_cookie(String::new(), Duration::ZERO)
+    }
 }
 
 #[derive(Deserialize, Serialize)]
@@ -68,194 +290,54 @@ struct PendingLogin {
     state: CsrfToken,
     nonce: Nonce,
     verifier: PkceCodeVerifier,
-    expires_at: u64,
+    expires_at: i64,
     return_to: String,
 }
 
-impl Oidc {
-    pub(crate) fn new(config: &WyrmStartupConfig) -> WyrmResult<Option<Self>> {
-        let options = [
-            &config.oidc_issuer_url,
-            &config.oidc_client_id,
-            &config.oidc_client_secret,
-            &config.oidc_redirect_url,
-            &config.oidc_allowed_subjects,
-        ];
-        let oidc = if options.iter().any(|value| value.is_some()) {
-            let required = |value: &Option<String>| {
-                value
-                    .clone()
-                    .filter(|s| !s.trim().is_empty())
-                    .ok_or_else(|| {
-                        invalid_config("issuer URL, client ID, and redirect URL are required")
-                    })
-            };
-            let issuer_value = required(&config.oidc_issuer_url)?;
-            validate_url(&issuer_value)?;
-            let redirect_value = required(&config.oidc_redirect_url)?;
-            let redirect_url = validate_url(&redirect_value)?;
-            if redirect_url.path() != "/api/v1/auth/callback" {
-                return Err(invalid_config(
-                    "redirect URL path must be /api/v1/auth/callback",
-                ));
-            }
-            let allowed_subjects = config
-                .oidc_allowed_subjects
-                .as_deref()
-                .map(|value| {
-                    let subjects: Vec<String> = value
-                        .split(',')
-                        .map(str::trim)
-                        .filter(|s| !s.is_empty())
-                        .map(String::from)
-                        .collect();
-                    if subjects.is_empty() {
-                        return Err(invalid_config(
-                            "configured subject allowlist must not be empty",
-                        ));
-                    }
-                    Ok(subjects)
-                })
-                .transpose()?;
-            let http = reqwest::Client::builder()
-                .redirect(reqwest::redirect::Policy::none())
-                .timeout(OIDC_HTTP_TIMEOUT)
-                .build()
-                .map_err(|_| invalid_config("could not create HTTP client"))?;
-            let issuer =
-                IssuerUrl::new(issuer_value).map_err(|_| invalid_config("invalid issuer URL"))?;
-            let redirect = RedirectUrl::new(redirect_value)
-                .map_err(|_| invalid_config("invalid redirect URL"))?;
-            let client_id = required(&config.oidc_client_id)?;
-            let client_secret = config.oidc_client_secret.clone();
-            Some(Oidc {
-                discovery: AsyncMutex::new(DiscoveryCache {
-                    client: None,
-                    refresh_at: Instant::now(),
-                }),
-                http,
-                issuer,
-                client_id,
-                client_secret,
-                redirect,
-                allowed_subjects,
-                login_key: Key::try_generate()
-                    .ok_or_else(|| invalid_config("could not generate a login cookie key"))?,
-                started_at: Instant::now(),
-            })
-        } else {
-            None
-        };
-        Ok(oidc)
-    }
-
-    pub(crate) fn redirect_url(&self) -> &reqwest::Url {
-        self.redirect.url()
-    }
-
-    async fn discover_client(&self) -> WyrmResult<Client> {
-        let metadata = CoreProviderMetadata::discover_async(self.issuer.clone(), &self.http)
-            .await
-            .map_err(|error| WyrmError::AuthProviderUnavailable(error.to_string()))?;
-        if metadata.token_endpoint().is_none() {
-            return Err(WyrmError::AuthProviderUnavailable(
-                "identity provider has no token endpoint".into(),
-            ));
-        }
-        // Discovered endpoints also need transport protection, especially for the client secret.
-        for url in [
-            metadata.authorization_endpoint().url(),
-            metadata.token_endpoint().unwrap().url(),
-            metadata.jwks_uri().url(),
-        ] {
-            validate_url(url.as_str()).map_err(|_| {
-                WyrmError::AuthProviderUnavailable("insecure identity provider endpoint".into())
-            })?;
-        }
-        Ok(CoreClient::from_provider_metadata(
-            metadata,
-            ClientId::new(self.client_id.clone()),
-            self.client_secret.clone().map(ClientSecret::new),
-        )
-        .set_redirect_uri(self.redirect.clone()))
-    }
-
-    async fn authorization_client(&self) -> WyrmResult<Client> {
-        // One request refreshes discovery at a time. Back off after errors so a
-        // burst of sign-in attempts cannot keep retrying an unavailable issuer.
-        let mut cache = self.discovery.lock().await;
-        if Instant::now() < cache.refresh_at {
-            return cache.client.clone().ok_or_else(|| {
-                WyrmError::AuthProviderUnavailable("identity provider discovery unavailable".into())
-            });
-        }
-        let result = self.discover_client().await;
-        cache.client = result.as_ref().ok().cloned();
-        let delay = match &result {
-            Ok(_) => DISCOVERY_TTL,
-            Err(error) => {
-                tracing::warn!(%error, "OIDC discovery failed");
-                DISCOVERY_RETRY
-            }
-        };
-        cache.refresh_at = Instant::now() + delay;
-        result
-    }
-
-    fn seal_login(
-        &self,
-        pending: &PendingLogin,
-        config: &session::SessionConfig,
-    ) -> Result<Cookie<'static>, Error> {
-        let payload = serde_json::to_string(pending)
-            .map_err(|_| ErrorServiceUnavailable("Login unavailable"))?;
-        let name = login_cookie_name(config);
-        let mut jar = CookieJar::new();
-        jar.private_mut(&self.login_key)
-            .add(config.cookie(name, payload, LOGIN_TTL));
-        Ok(jar.get(name).expect("login cookie was just added").clone())
-    }
-
-    fn open_login(&self, cookie: Cookie<'static>, state: &str) -> Option<PendingLogin> {
-        let jar = CookieJar::new();
-        let cookie = jar.private(&self.login_key).decrypt(cookie)?;
-        let pending: PendingLogin = serde_json::from_str(cookie.value()).ok()?;
-        (pending.expires_at > self.started_at.elapsed().as_secs()
-            && pending.state == CsrfToken::new(state.to_owned()))
-        .then_some(pending)
-    }
+pub(crate) fn invalid_config(message: impl Display) -> WyrmError {
+    AuthError::InvalidAuthConfig(format!("OIDC: {message}")).into()
 }
 
-fn invalid_config(message: &str) -> WyrmError {
-    WyrmError::InvalidAuthConfig(message.to_owned())
+pub(crate) fn provider_unavailable(message: impl Display) -> WyrmError {
+    AuthError::AuthProviderUnavailable(format!("OIDC: {message}")).into()
+}
+
+fn login_failed(reason: impl Display) -> WyrmError {
+    AuthError::LoginFailed(format!("OIDC: {reason}")).into()
+}
+
+/// Parses a comma-separated subject list; an empty list is a config error, not "allow all".
+fn parse_allowed_subjects(value: &str) -> WyrmResult<Vec<String>> {
+    let subjects: Vec<String> = value
+        .split(',')
+        .map(str::trim)
+        .filter(|subject| !subject.is_empty())
+        .map(String::from)
+        .collect();
+
+    if subjects.is_empty() {
+        return Err(invalid_config("allowed subjects must not be empty"));
+    }
+
+    Ok(subjects)
 }
 
 fn validate_url(value: &str) -> WyrmResult<reqwest::Url> {
     let url = reqwest::Url::parse(value).map_err(|_| invalid_config("invalid URL"))?;
-    let local = matches!(url.host_str(), Some("localhost" | "127.0.0.1" | "[::1]"));
-    if (url.scheme() != "https" && !(url.scheme() == "http" && local))
+    if (url.scheme() != "https" && !(url.scheme() == "http" && is_loopback(&url)))
         || !url.username().is_empty()
         || url.password().is_some()
         || url.fragment().is_some()
         || url.query().is_some()
     {
-        return Err(invalid_config(
-            "URLs must use HTTPS (HTTP is allowed on loopback only), without credentials, query, or fragment",
-        ));
+        return Err(invalid_config("invalid url"));
     }
     Ok(url)
 }
 
-fn login_cookie_name(config: &session::SessionConfig) -> &'static str {
-    if config.secure {
-        "__Host-wyrm_oidc_login"
-    } else {
-        "wyrm_oidc_login"
-    }
-}
-
-pub(crate) fn clear_login_cookie(config: &session::SessionConfig) -> Cookie<'static> {
-    config.cookie(login_cookie_name(config), String::new(), Duration::ZERO)
+/// Loopback hosts, where plain HTTP is acceptable for local development.
+fn is_loopback(url: &reqwest::Url) -> bool {
+    matches!(url.host_str(), Some("localhost" | "127.0.0.1" | "[::1]"))
 }
 
 fn local_path(path: &str) -> bool {
@@ -263,135 +345,4 @@ fn local_path(path: &str) -> bool {
         && !path.starts_with("//")
         && !path.contains('\\')
         && !path.chars().any(char::is_control)
-}
-
-#[derive(Deserialize)]
-pub struct LoginQuery {
-    return_to: Option<String>,
-}
-
-pub async fn login(
-    query: web::Query<LoginQuery>,
-    auth: web::Data<Auth>,
-) -> Result<HttpResponse, Error> {
-    let oidc = auth
-        .oidc
-        .as_ref()
-        .ok_or_else(|| actix_web::error::ErrorNotFound("OIDC disabled"))?;
-    let config = auth.session.as_ref().expect("OIDC session configuration");
-    let Ok(client) = oidc.authorization_client().await else {
-        return Ok(HttpResponse::SeeOther()
-            .insert_header((header::LOCATION, "/?auth_error=oidc_unavailable"))
-            .insert_header((header::CACHE_CONTROL, "no-store"))
-            .finish());
-    };
-    let (challenge, verifier) = PkceCodeChallenge::new_random_sha256();
-    let (url, state, nonce) = client
-        .authorize_url(
-            CoreAuthenticationFlow::AuthorizationCode,
-            CsrfToken::new_random,
-            Nonce::new_random,
-        )
-        .set_pkce_challenge(challenge)
-        .url();
-    // An abandoned login occupies only its browser's cookie. The server keeps
-    // no pending entries that unauthenticated callers could fill up.
-    let pending = PendingLogin {
-        state,
-        nonce,
-        verifier,
-        expires_at: oidc.started_at.elapsed().as_secs() + LOGIN_TTL.as_secs(),
-        return_to: query
-            .into_inner()
-            .return_to
-            .filter(|path| path.len() <= RETURN_PATH_LIMIT && local_path(path))
-            .unwrap_or_else(|| "/".into()),
-    };
-    Ok(HttpResponse::SeeOther()
-        .insert_header((header::LOCATION, url.as_str()))
-        .insert_header((header::CACHE_CONTROL, "no-store"))
-        .cookie(oidc.seal_login(&pending, config)?)
-        .finish())
-}
-
-#[derive(Deserialize)]
-pub struct CallbackQuery {
-    state: Option<String>,
-    code: Option<String>,
-    error: Option<String>,
-}
-
-pub async fn callback(
-    req: HttpRequest,
-    query: web::Query<CallbackQuery>,
-    auth: web::Data<Auth>,
-) -> Result<HttpResponse, Error> {
-    let oidc = auth
-        .oidc
-        .as_ref()
-        .ok_or_else(|| actix_web::error::ErrorNotFound("OIDC disabled"))?;
-    let config = auth.session.as_ref().expect("OIDC session configuration");
-    let result = complete_login(&req, &query, oidc, config).await;
-    let mut response = HttpResponse::SeeOther();
-    response
-        .insert_header((header::CACHE_CONTROL, "no-store"))
-        .insert_header((header::REFERRER_POLICY, "no-referrer"))
-        .cookie(clear_login_cookie(config));
-    match result {
-        Ok((cookie, return_to)) => {
-            response
-                .insert_header((header::LOCATION, return_to))
-                .cookie(cookie);
-        }
-        Err(_) => {
-            response.insert_header((header::LOCATION, "/?auth_error=oidc"));
-        }
-    }
-    Ok(response.finish())
-}
-
-async fn complete_login(
-    req: &HttpRequest,
-    query: &CallbackQuery,
-    oidc: &Oidc,
-    config: &session::SessionConfig,
-) -> Result<(Cookie<'static>, String), Error> {
-    let denied = || ErrorUnauthorized("OIDC login failed");
-    let state = query.state.as_ref().ok_or_else(denied)?;
-    let cookie = req.cookie(login_cookie_name(config)).ok_or_else(denied)?;
-    let pending = oidc
-        .open_login(cookie.into_owned(), state)
-        .ok_or_else(denied)?;
-    if query.error.is_some() {
-        return Err(denied());
-    }
-    let code = query
-        .code
-        .clone()
-        .filter(|s| !s.is_empty())
-        .ok_or_else(denied)?;
-    // Refresh discovery/JWKS for each completed login to support provider key rotation.
-    let client = oidc.discover_client().await?;
-    // The provider enforces single-use authorization codes. The callback also
-    // clears the browser's login cookie when it returns.
-    let tokens = client
-        .exchange_code(AuthorizationCode::new(code))
-        .map_err(|_| denied())?
-        .set_pkce_verifier(pending.verifier)
-        .request_async(&oidc.http)
-        .await
-        .map_err(|_| denied())?;
-    let id_token = tokens.id_token().ok_or_else(denied)?;
-    let claims = id_token
-        .claims(&client.id_token_verifier(), &pending.nonce)
-        .map_err(|_| denied())?;
-    if oidc.allowed_subjects.as_ref().is_some_and(|subjects| {
-        !subjects
-            .iter()
-            .any(|subject| subject == claims.subject().as_str())
-    }) {
-        return Err(denied());
-    }
-    let cookie = session::create(req, config).await?;
-    Ok((cookie, pending.return_to))
 }

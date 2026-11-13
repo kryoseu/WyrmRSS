@@ -73,11 +73,11 @@ Startup settings can be configured via environment variables (prefixed `WYRM_`) 
 | `WYRM_PORT` | `3001` | Port to listen on |
 | `WYRM_DATABASE_CONNECTION` | `postgres://wyrm:wyrm@localhost/wyrm` | PostgreSQL connection URI |
 | `WYRM_DATABASE_POOL_SIZE` | `30` | Max database connection pool size |
+| `WYRM_PUBLIC_URL` | _(none)_ | URL users reach Wyrm on, e.g. `https://rss.example.com`; required for OIDC, whose callback is `{public_url}/api/v1/auth/oidc/callback` |
 | `WYRM_API_KEY` | _(none)_ | API key accepted independently of OIDC; the API is open when neither authentication method is configured |
 | `WYRM_OIDC_ISSUER_URL` | _(none)_ | Enable optional OIDC using this provider's issuer URL |
 | `WYRM_OIDC_CLIENT_ID` | _(none)_ | Registered OIDC client ID |
 | `WYRM_OIDC_CLIENT_SECRET` | _(none)_ | OIDC client secret; omit for public clients |
-| `WYRM_OIDC_REDIRECT_URL` | _(none)_ | Public callback URL, ending in `/api/v1/auth/callback` |
 | `WYRM_OIDC_ALLOWED_SUBJECTS` | _(none)_ | Optional comma-separated `sub` allowlist; unset allows any user authenticated by the provider |
 
 > [!NOTE]

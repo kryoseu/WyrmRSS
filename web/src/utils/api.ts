@@ -33,7 +33,7 @@ export const ENDPOINTS = {
   auth: {
     verify: () => `${apiBase()}/auth/verify`,
     status: () => `${apiBase()}/auth/status`,
-    login: () => `${apiBase()}/auth/login`,
+    login: () => `${apiBase()}/auth/oidc/login`,
     logout: () => `${apiBase()}/auth/logout`,
   },
   feeds: {

@@ -6,9 +6,10 @@ database_pool_size = 25                                         # default 30
 
 # Optional OpenID Connect login for the shared instance. Omit all of these to
 # preserve the default open-access / API-key behavior. API keys still work
-# independently when OIDC is enabled.
+# independently when OIDC is enabled. public_url is required with OIDC; register
+# {public_url}/api/v1/auth/oidc/callback as the callback URL at the provider.
+# public_url = "https://rss.example.com"
 # oidc_issuer_url = "https://sso.example.com/realms/wyrm"
 # oidc_client_id = "wyrm"
 # oidc_client_secret = "replace-me"  # omit for a public client
-# oidc_redirect_url = "https://rss.example.com/api/v1/auth/callback"
 # oidc_allowed_subjects = "provider-subject-id-1,provider-subject-id-2" # optional, restricts who can sign in
