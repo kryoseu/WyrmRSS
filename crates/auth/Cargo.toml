@@ -14,15 +14,17 @@ database = { path = "../database", default-features = false }
 getrandom = { workspace = true }
 hex = { workspace = true }
 openidconnect = { workspace = true }
+reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
-tokio = { workspace = true }
 tracing = { workspace = true }
 ts-rs = { workspace = true }
+url = { workspace = true }
 wyrm_utils = { path = "../utils" }
+api_utils = { path = "../api/utils", default-features = false }
 
 [features]
 default = ["postgres"]
-postgres = ["database/postgres"]
-sqlite = ["database/sqlite"]
+sqlite = ["database/sqlite", "api_utils/sqlite"]
+postgres = ["database/postgres", "api_utils/postgres"]
