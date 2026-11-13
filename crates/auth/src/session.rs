@@ -1,15 +1,16 @@
 use crate::{Auth, oidc};
 use actix_web::{
-    Error,
-    HttpRequest,
-    HttpResponse,
+    Error, HttpRequest, HttpResponse,
     cookie::{Cookie, SameSite, time::Duration as CookieDuration},
     error::{ErrorForbidden, ErrorNotFound, ErrorServiceUnavailable},
     http::header,
     web,
 };
 use chrono::{DateTime, TimeDelta, Utc};
-use database::{DatabasePool, models::session::Session};
+use database::{
+    DatabasePool,
+    models::session::{Session, SessionInsertForm},
+};
 use sha2::{Digest, Sha256};
 use std::time::Duration;
 
@@ -80,7 +81,7 @@ pub(crate) async fn create(
         .map(|cookie| token_hash(cookie.value()));
     Session::create(
         database_pool(req)?,
-        Session {
+        SessionInsertForm {
             token_hash: token_hash(&token),
             expires_at,
             last_seen_at: now,

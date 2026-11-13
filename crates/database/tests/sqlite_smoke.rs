@@ -17,7 +17,7 @@ use database::{
     models::{
         feed::{Feed, FeedInsertForm},
         post::{Post, PostInsertForm},
-        session::Session,
+        session::{Session, SessionInsertForm},
     },
     newtypes::{FeedId, Filters},
     run_migrations,
@@ -115,7 +115,7 @@ async fn sessions_refresh_rotate_and_expire() {
     let timeout = chrono::TimeDelta::hours(12);
     Session::create(
         &db.pool,
-        Session {
+        SessionInsertForm {
             token_hash: "old-hash".into(),
             expires_at: now + timeout,
             last_seen_at: now,
@@ -138,7 +138,7 @@ async fn sessions_refresh_rotate_and_expire() {
     assert_eq!(delayed.expires_at, session.expires_at);
     Session::create(
         &db.pool,
-        Session {
+        SessionInsertForm {
             token_hash: "new-hash".into(),
             expires_at: now + timeout,
             last_seen_at: now,

@@ -1,10 +1,11 @@
 use crate::{DatabasePool, schema::sessions};
 use chrono::{DateTime, Utc};
-use diesel::{dsl::case_when, prelude::*};
+use diesel::dsl::case_when;
+use diesel::prelude::*;
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
-#[derive(Clone, Queryable, Selectable, Insertable)]
+#[derive(Queryable, Selectable)]
 #[diesel(table_name = sessions)]
 #[diesel(check_for_backend(crate::Backend))]
 pub struct Session {
@@ -18,12 +19,12 @@ impl Session {
     /// the random browser tokens are persisted.
     pub async fn create(
         pool: &DatabasePool,
-        session: Self,
+        form: SessionInsertForm,
         previous_hash: Option<&str>,
     ) -> WyrmResult<()> {
         let mut conn = pool.get().await?;
         conn.transaction(async |conn| {
-            diesel::delete(sessions::table.filter(sessions::expires_at.le(session.last_seen_at)))
+            diesel::delete(sessions::table.filter(sessions::expires_at.le(form.last_seen_at)))
                 .execute(conn)
                 .await?;
             if let Some(previous) = previous_hash {
@@ -32,7 +33,7 @@ impl Session {
                     .await?;
             }
             diesel::insert_into(sessions::table)
-                .values(&session)
+                .values(&form)
                 .execute(conn)
                 .await?;
             Ok(())
@@ -82,13 +83,22 @@ impl Session {
     }
 }
 
+#[derive(Default, Insertable)]
+#[diesel(table_name = crate::schema::sessions)]
+#[diesel(check_for_backend(crate::Backend))]
+pub struct SessionInsertForm {
+    pub token_hash: String,
+    pub expires_at: DateTime<Utc>,
+    pub last_seen_at: DateTime<Utc>,
+}
+
 #[cfg(all(test, feature = "postgres"))]
 mod tests {
     use super::*;
     use chrono::TimeDelta;
 
-    fn session(label: &str, now: DateTime<Utc>) -> Session {
-        Session {
+    fn insert_form(label: &str, now: DateTime<Utc>) -> SessionInsertForm {
+        SessionInsertForm {
             token_hash: format!("{label}-{}", Utc::now().timestamp_nanos_opt().unwrap()),
             expires_at: now + TimeDelta::hours(12),
             last_seen_at: now,
@@ -99,7 +109,7 @@ mod tests {
     async fn activity_extends_session_but_cannot_revive_expired_sessions() {
         let pool = crate::setup_test_db().await;
         let now = DateTime::from_timestamp(Utc::now().timestamp(), 0).unwrap();
-        let original = session("activity", now);
+        let original = insert_form("activity", now);
         let hash = original.token_hash.clone();
         Session::create(&pool, original, None).await.unwrap();
 
@@ -130,17 +140,22 @@ mod tests {
     async fn rotation_is_atomic_and_logout_revokes_the_session() {
         let pool = crate::setup_test_db().await;
         let now = Utc::now();
-        let original = session("original", now);
-        let replacement = session("replacement", now);
+        let original = insert_form("original", now);
+        let replacement = insert_form("replacement", now);
         let old_hash = original.token_hash.clone();
         let new_hash = replacement.token_hash.clone();
+        let replacement_again = || SessionInsertForm {
+            token_hash: new_hash.clone(),
+            expires_at: replacement.expires_at,
+            last_seen_at: replacement.last_seen_at,
+        };
         Session::create(&pool, original, None).await.unwrap();
-        Session::create(&pool, replacement.clone(), None)
+        Session::create(&pool, replacement_again(), None)
             .await
             .unwrap();
         // A failed replacement must leave the previous session valid.
         assert!(
-            Session::create(&pool, replacement.clone(), Some(&old_hash))
+            Session::create(&pool, replacement_again(), Some(&old_hash))
                 .await
                 .is_err()
         );
@@ -151,7 +166,7 @@ mod tests {
                 .is_some()
         );
         Session::delete(&pool, &new_hash).await.unwrap();
-        Session::create(&pool, replacement, Some(&old_hash))
+        Session::create(&pool, replacement_again(), Some(&old_hash))
             .await
             .unwrap();
         assert!(
