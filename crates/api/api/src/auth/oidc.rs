@@ -1,5 +1,6 @@
 use actix_web::{
-    HttpRequest, HttpResponse,
+    HttpRequest,
+    HttpResponse,
     http::header,
     web::{Data, Query},
 };
