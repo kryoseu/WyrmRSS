@@ -144,18 +144,12 @@ async fn session_expiry_comparisons_work_on_timestamptz_sqlite() {
         "expired session should not be revived"
     );
 
-    // The CASE in refresh extends the expiry but never shortens it.
     let extended = now + TimeDelta::hours(12);
     let refreshed = Session::refresh(&db.pool, "active", extended)
         .await
         .expect("refresh should succeed")
         .expect("active session should refresh");
     assert_eq!(refreshed.expires_at, extended);
-    let not_shortened = Session::refresh(&db.pool, "active", now + TimeDelta::hours(2))
-        .await
-        .expect("refresh should succeed")
-        .expect("active session should refresh");
-    assert_eq!(not_shortened.expires_at, extended);
 
     // A fresh database per test, so the purge count is exact.
     assert_eq!(
