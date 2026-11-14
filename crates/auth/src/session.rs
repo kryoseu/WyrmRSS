@@ -78,7 +78,7 @@ impl SessionManager {
 
         // Refreshed recently: valid as is, no write needed.
         let now = Utc::now();
-        if now - session.last_seen_at < SESSION_REFRESH_INTERVAL {
+        if !needs_refresh(session.last_seen_at, now) {
             return Ok(Some(Authenticated { cookie: None }));
         }
 
@@ -149,6 +149,11 @@ impl SessionManager {
     }
 }
 
+/// True once the session's last refresh is at least [`SESSION_REFRESH_INTERVAL`] old.
+fn needs_refresh(last_seen_at: DateTime<Utc>, now: DateTime<Utc>) -> bool {
+    now - last_seen_at >= SESSION_REFRESH_INTERVAL
+}
+
 pub(crate) fn generate_session_token() -> String {
     let mut bytes = [0u8; 32];
     getrandom::fill(&mut bytes).expect("OS random source unavailable");
@@ -157,4 +162,95 @@ pub(crate) fn generate_session_token() -> String {
 
 pub(crate) fn token_hash(token: &str) -> String {
     hex::encode(Sha256::digest(token))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::test::TestRequest;
+    use wyrm_utils::error::WyrmError;
+
+    fn manager(public_url: &str) -> SessionManager {
+        SessionManager::from_public_url(&Url::parse(public_url).expect("valid url"))
+    }
+
+    fn is_csrf_failure(result: WyrmResult<()>) -> bool {
+        matches!(result, Err(WyrmError::Auth(AuthError::CsrfCheckFailed)))
+    }
+
+    #[test]
+    fn needs_refresh_only_once_the_refresh_interval_has_passed() {
+        let now = Utc::now();
+        assert!(!needs_refresh(now, now));
+        assert!(!needs_refresh(
+            now - SESSION_REFRESH_INTERVAL + TimeDelta::seconds(1),
+            now
+        ));
+        assert!(needs_refresh(now - SESSION_REFRESH_INTERVAL, now));
+    }
+
+    #[test]
+    fn https_cookie_is_secure_and_host_prefixed() {
+        let cookie = manager("https://rss.example.com")
+            .cookie("token".into(), Utc::now() + SESSION_IDLE_TIMEOUT);
+        assert_eq!(cookie.name(), "__Host-wyrm_session");
+        assert_eq!(cookie.value(), "token");
+        assert_eq!(cookie.secure(), Some(true));
+        assert_eq!(cookie.http_only(), Some(true));
+        assert_eq!(cookie.path(), Some("/"));
+        assert_eq!(cookie.same_site(), Some(SameSite::Lax));
+    }
+
+    #[test]
+    fn http_cookie_is_neither_secure_nor_host_prefixed() {
+        let cookie = manager("http://localhost:5173")
+            .cookie("token".into(), Utc::now() + SESSION_IDLE_TIMEOUT);
+        assert_eq!(cookie.name(), "wyrm_session");
+        assert_eq!(cookie.secure(), Some(false));
+    }
+
+    #[test]
+    fn cookie_with_past_expiry_has_zero_max_age() {
+        let cookie = manager("https://rss.example.com").cookie(String::new(), DateTime::UNIX_EPOCH);
+        assert_eq!(cookie.max_age(), Some(CookieDuration::ZERO));
+    }
+
+    #[test]
+    fn csrf_rejects_missing_or_wrong_header() {
+        let sessions = manager("https://rss.example.com");
+
+        let missing = TestRequest::default().to_http_request();
+        assert!(is_csrf_failure(sessions.check_csrf(&missing)));
+
+        let wrong = TestRequest::default()
+            .insert_header(("x-wyrm-csrf", "0"))
+            .to_http_request();
+        assert!(is_csrf_failure(sessions.check_csrf(&wrong)));
+    }
+
+    #[test]
+    fn csrf_accepts_header_with_matching_or_no_origin() {
+        let sessions = manager("https://rss.example.com");
+
+        let no_origin = TestRequest::default()
+            .insert_header(("x-wyrm-csrf", "1"))
+            .to_http_request();
+        assert!(sessions.check_csrf(&no_origin).is_ok());
+
+        let same_origin = TestRequest::default()
+            .insert_header(("x-wyrm-csrf", "1"))
+            .insert_header((header::ORIGIN, "https://rss.example.com"))
+            .to_http_request();
+        assert!(sessions.check_csrf(&same_origin).is_ok());
+    }
+
+    #[test]
+    fn csrf_rejects_foreign_origin() {
+        let sessions = manager("https://rss.example.com");
+        let foreign = TestRequest::default()
+            .insert_header(("x-wyrm-csrf", "1"))
+            .insert_header((header::ORIGIN, "https://evil.example.com"))
+            .to_http_request();
+        assert!(is_csrf_failure(sessions.check_csrf(&foreign)));
+    }
 }

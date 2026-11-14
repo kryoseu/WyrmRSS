@@ -82,3 +82,49 @@ impl Auth {
         self.sessions.as_ref()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn api_key_config() -> WyrmStartupConfig {
+        WyrmStartupConfig {
+            api_key: Some("secret".into()),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn no_methods_configured_leaves_access_open() {
+        let auth = Auth::new(&WyrmStartupConfig::default()).expect("valid config");
+        assert!(auth.methods().is_empty());
+        assert!(!auth.enabled());
+        assert!(auth.sessions().is_none());
+    }
+
+    #[test]
+    fn api_key_alone_enables_auth() {
+        let auth = Auth::new(&api_key_config()).expect("valid config");
+        assert!(matches!(auth.methods().as_slice(), [AuthMethod::ApiKey]));
+        assert!(auth.enabled());
+    }
+
+    #[cfg(feature = "oidc")]
+    fn oidc_config() -> WyrmStartupConfig {
+        WyrmStartupConfig {
+            public_url: Some("https://rss.example.com".into()),
+            oidc_issuer_url: Some("https://sso.example.com/realms/wyrm".into()),
+            oidc_client_id: Some("wyrm".into()),
+            ..Default::default()
+        }
+    }
+
+    #[cfg(feature = "oidc")]
+    #[test]
+    fn oidc_alone_enables_auth() {
+        let auth = Auth::new(&oidc_config()).expect("valid config");
+        assert!(matches!(auth.methods().as_slice(), [AuthMethod::Oidc]));
+        assert!(auth.enabled());
+        assert!(auth.oidc().is_ok());
+    }
+}

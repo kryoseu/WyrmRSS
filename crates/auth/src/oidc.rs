@@ -346,3 +346,150 @@ fn local_path(path: &str) -> bool {
         && !path.contains('\\')
         && !path.chars().any(char::is_control)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn config() -> WyrmStartupConfig {
+        WyrmStartupConfig {
+            public_url: Some("https://rss.example.com".into()),
+            oidc_issuer_url: Some("https://sso.example.com/realms/wyrm".into()),
+            oidc_client_id: Some("wyrm".into()),
+            ..Default::default()
+        }
+    }
+
+    fn oidc() -> Oidc {
+        Oidc::new(&config())
+            .expect("valid config")
+            .expect("OIDC enabled")
+    }
+
+    fn is_invalid_config(result: WyrmResult<Option<Oidc>>) -> bool {
+        matches!(
+            result,
+            Err(WyrmError::Auth(AuthError::InvalidAuthConfig(_)))
+        )
+    }
+
+    fn pending_login(expires_at: i64) -> PendingLogin {
+        PendingLogin {
+            state: CsrfToken::new("state".into()),
+            nonce: Nonce::new("nonce".into()),
+            verifier: PkceCodeVerifier::new("verifier".into()),
+            expires_at,
+            return_to: "/feeds".into(),
+        }
+    }
+
+    fn in_ten_minutes() -> i64 {
+        (Utc::now() + LOGIN_TTL).timestamp()
+    }
+
+    #[test]
+    fn disabled_without_issuer() {
+        let config = WyrmStartupConfig {
+            oidc_issuer_url: None,
+            ..config()
+        };
+        assert!(Oidc::new(&config).expect("valid config").is_none());
+    }
+
+    #[test]
+    fn requires_public_url_and_client_id() {
+        assert!(is_invalid_config(Oidc::new(&WyrmStartupConfig {
+            public_url: None,
+            ..config()
+        })));
+        assert!(is_invalid_config(Oidc::new(&WyrmStartupConfig {
+            oidc_client_id: None,
+            ..config()
+        })));
+    }
+
+    #[test]
+    fn plain_http_issuer_only_allowed_on_loopback() {
+        assert!(is_invalid_config(Oidc::new(&WyrmStartupConfig {
+            oidc_issuer_url: Some("http://sso.example.com".into()),
+            ..config()
+        })));
+        assert!(
+            Oidc::new(&WyrmStartupConfig {
+                public_url: Some("http://localhost:5173".into()),
+                oidc_issuer_url: Some("http://localhost:8080/default".into()),
+                ..config()
+            })
+            .expect("valid config")
+            .is_some()
+        );
+    }
+
+    #[test]
+    fn empty_allowed_subjects_is_a_config_error() {
+        assert!(is_invalid_config(Oidc::new(&WyrmStartupConfig {
+            oidc_allowed_subjects: Some(" , ".into()),
+            ..config()
+        })));
+    }
+
+    #[test]
+    fn validate_url_rejects_credentials_query_and_fragment() {
+        assert!(validate_url("https://sso.example.com/realms/wyrm").is_ok());
+        assert!(validate_url("https://user:pass@sso.example.com").is_err());
+        assert!(validate_url("https://sso.example.com?tenant=1").is_err());
+        assert!(validate_url("https://sso.example.com#fragment").is_err());
+        assert!(validate_url("ftp://sso.example.com").is_err());
+    }
+
+    #[test]
+    fn local_path_rejects_external_redirects() {
+        assert!(local_path("/feeds?id=1#top"));
+        assert!(!local_path("https://evil.example.com"));
+        assert!(!local_path("//evil.example.com"));
+        assert!(!local_path("/\\evil.example.com"));
+        assert!(!local_path("/feeds\n"));
+    }
+
+    #[test]
+    fn login_cookie_round_trips_with_matching_state() {
+        let oidc = oidc();
+        let cookie = oidc.seal_login(&pending_login(in_ten_minutes()));
+        assert_eq!(cookie.name(), "__Host-wyrm_oidc_login");
+        assert_ne!(cookie.value(), "", "cookie should carry the sealed login");
+
+        let pending = oidc
+            .open_login(cookie, "state")
+            .expect("valid login cookie");
+        assert_eq!(pending.return_to, "/feeds");
+    }
+
+    #[test]
+    fn login_cookie_rejects_wrong_state() {
+        let oidc = oidc();
+        let cookie = oidc.seal_login(&pending_login(in_ten_minutes()));
+        assert!(oidc.open_login(cookie, "other-state").is_none());
+    }
+
+    #[test]
+    fn login_cookie_rejects_expired_login() {
+        let oidc = oidc();
+        let cookie = oidc.seal_login(&pending_login(Utc::now().timestamp() - 1));
+        assert!(oidc.open_login(cookie, "state").is_none());
+    }
+
+    #[test]
+    fn login_cookie_rejects_tampering_and_other_keys() {
+        let oidc = oidc();
+        let cookie = oidc.seal_login(&pending_login(in_ten_minutes()));
+
+        let tampered = Cookie::new(cookie.name().to_owned(), format!("{}x", cookie.value()));
+        assert!(oidc.open_login(tampered, "state").is_none());
+
+        // A restart generates a new key, voiding pending logins.
+        let restarted = Oidc::new(&config())
+            .expect("valid config")
+            .expect("OIDC enabled");
+        assert!(restarted.open_login(cookie, "state").is_none());
+    }
+}
