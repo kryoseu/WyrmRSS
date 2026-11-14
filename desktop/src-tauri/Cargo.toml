@@ -43,6 +43,9 @@ database = { path = "../../crates/database", default-features = false, features 
   "sqlite",
 ] }
 wyrm_utils = { path = "../../crates/utils" }
+wyrm_auth = { path = "../../crates/auth", default-features = false, features = [
+  "sqlite",
+] }
 wyrm-rss = { path = "../../crates/rss", default-features = false, features = [
   "sqlite",
 ] }

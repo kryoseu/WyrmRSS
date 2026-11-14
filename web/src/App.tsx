@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router";
 import "./App.css";
-import { ApiKeyGate } from "./components/layout/ApiKeyGate";
+import { AuthGate } from "./components/layout/AuthGate";
 import { ArchiveList } from "./components/archive/ArchiveList";
 import { BookmarkedPostList } from "./components/posts/BookmarkedPostList";
 import { PostList } from "./components/posts/PostList";
@@ -24,7 +24,7 @@ const qc = new QueryClient({
 export default function App() {
   return (
     <ThemeProvider>
-      <ApiKeyGate>
+      <AuthGate>
         <QueryClientProvider client={qc}>
           <BrowserRouter>
             <Routes>
@@ -49,7 +49,7 @@ export default function App() {
             </Routes>
           </BrowserRouter>
         </QueryClientProvider>
-      </ApiKeyGate>
+      </AuthGate>
     </ThemeProvider>
   );
 }

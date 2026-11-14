@@ -1,0 +1,32 @@
+[package]
+name = "wyrm_auth"
+version.workspace = true
+edition.workspace = true
+description.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+actix-web = { workspace = true, features = ["secure-cookies"] }
+chrono = { workspace = true }
+database = { path = "../database", default-features = false }
+getrandom = { workspace = true }
+hex = { workspace = true }
+openidconnect = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true, optional = true }
+sha2 = { workspace = true }
+tracing = { workspace = true }
+ts-rs = { workspace = true }
+url = { workspace = true }
+wyrm_utils = { path = "../utils" }
+api_utils = { path = "../api/utils", default-features = false }
+
+[features]
+default = ["postgres", "oidc"]
+sqlite = ["database/sqlite", "api_utils/sqlite"]
+postgres = ["database/postgres", "api_utils/postgres"]
+# OIDC sign-in; off for the desktop app, which has no use for it.
+oidc = ["dep:openidconnect", "dep:reqwest", "dep:serde_json"]

@@ -1,19 +1,20 @@
-use actix_web::{App, HttpServer, dev::ServerHandle, middleware::from_fn, web};
+use actix_web::{App, HttpServer, dev::ServerHandle, web};
 use api_utils::context::WyrmContext;
 use database::{models::settings::Settings, utils::settings::RuntimeSettings};
 use std::sync::{Arc, RwLock};
 use tracing::info;
+use wyrm_auth::Auth;
 use wyrm_rss::worker::{FeedWorker, WorkerCommand};
 use wyrm_utils::{
     config::WyrmStartupConfig,
     error::{DatabaseError, HttpServerError},
-    middleware::api_key_middleware,
     result::WyrmResult,
 };
 
 pub async fn start_server() -> WyrmResult<()> {
     info!("Loading settings");
     let startup_conf = WyrmStartupConfig::load()?;
+    let auth = web::Data::new(Auth::new(&startup_conf)?);
 
     info!("Establishing database connection for migrations");
     let mut db_sync_conn = database::establish_sync_connection(&startup_conf)?;
@@ -45,7 +46,7 @@ pub async fn start_server() -> WyrmResult<()> {
     });
 
     info!("Starting up HTTP server");
-    let server_handle = spin_up_http_server(startup_conf, ctx)?;
+    let server_handle = spin_up_http_server(startup_conf, ctx, auth)?;
 
     tokio::select! {
         _ = tokio::signal::ctrl_c() => server_handle.stop(true).await
@@ -57,14 +58,14 @@ pub async fn start_server() -> WyrmResult<()> {
 fn spin_up_http_server(
     startup_conf: WyrmStartupConfig,
     ctx: web::Data<WyrmContext>,
+    auth: web::Data<Auth>,
 ) -> WyrmResult<ServerHandle> {
     let bind = startup_conf.bind;
     let port = startup_conf.port;
     let server = HttpServer::new(move || {
         App::new()
             .app_data(ctx.clone())
-            .app_data(web::Data::new(startup_conf.api_key.clone()))
-            .wrap(from_fn(api_key_middleware))
+            .app_data(auth.clone())
             .configure(api_routes::config)
     })
     .bind((bind, port))

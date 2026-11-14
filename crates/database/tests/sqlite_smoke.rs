@@ -9,7 +9,7 @@
 //!   cargo test -p database --no-default-features --features sqlite
 #![cfg(feature = "sqlite")]
 
-use chrono::Utc;
+use chrono::{DateTime, TimeDelta, Utc};
 use database::{
     DatabasePool,
     create_pool,
@@ -17,6 +17,7 @@ use database::{
     models::{
         feed::{Feed, FeedInsertForm},
         post::{Post, PostInsertForm},
+        session::{Session, SessionInsertForm},
     },
     newtypes::{FeedId, Filters},
     run_migrations,
@@ -105,6 +106,65 @@ fn post_form(feed_id: FeedId, url: &str) -> PostInsertForm {
         content: None,
         created_at: None,
     }
+}
+
+fn session_form(token_hash: &str, expires_at: DateTime<Utc>) -> SessionInsertForm {
+    SessionInsertForm {
+        token_hash: token_hash.to_string(),
+        expires_at,
+        last_seen_at: Utc::now(),
+    }
+}
+
+#[tokio::test]
+async fn session_expiry_comparisons_work_on_timestamptz_sqlite() {
+    let db = TestDb::new("sessions").await;
+    // Whole seconds, so values compare equal after a database round trip.
+    let now = DateTime::from_timestamp(Utc::now().timestamp(), 0).expect("timestamp in range");
+
+    Session::create(&db.pool, session_form("expired", now - TimeDelta::hours(1)))
+        .await
+        .expect("create should succeed");
+    Session::create(&db.pool, session_form("active", now + TimeDelta::hours(1)))
+        .await
+        .expect("create should succeed");
+
+    assert!(
+        Session::find_active(&db.pool, "expired")
+            .await
+            .expect("find should succeed")
+            .is_none(),
+        "expired session should not be found"
+    );
+    assert!(
+        Session::refresh(&db.pool, "expired", now + TimeDelta::hours(12))
+            .await
+            .expect("refresh should succeed")
+            .is_none(),
+        "expired session should not be revived"
+    );
+
+    let extended = now + TimeDelta::hours(12);
+    let refreshed = Session::refresh(&db.pool, "active", extended)
+        .await
+        .expect("refresh should succeed")
+        .expect("active session should refresh");
+    assert_eq!(refreshed.expires_at, extended);
+
+    // A fresh database per test, so the purge count is exact.
+    assert_eq!(
+        Session::delete_expired(&db.pool)
+            .await
+            .expect("delete_expired should succeed"),
+        1
+    );
+    assert!(
+        Session::find_active(&db.pool, "active")
+            .await
+            .expect("find should succeed")
+            .is_some(),
+        "active session should survive the purge"
+    );
 }
 
 /// The pragmas are set per connection by the pool's setup hook. Without

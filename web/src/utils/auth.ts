@@ -1,5 +1,6 @@
 import { ENDPOINTS } from "./api";
-import { STORAGE_KEYS } from "./constants";
+import { AUTH, STORAGE_KEYS } from "./constants";
+import type { AuthStatusResponse } from "../types/AuthStatusResponse";
 
 export function getApiKey(): string | null {
   return import.meta.env.WYRM_API_KEY || localStorage.getItem(STORAGE_KEYS.apiKey);
@@ -22,7 +23,10 @@ const GATEWAY_ERRORS = new Set([502, 503]);
 export async function fetchWithAuth(url: string, init: RequestInit = {}): Promise<Response> {
   const key = getApiKey();
   const headers = new Headers(init.headers);
-  if (key) headers.set("x-api-key", `${key}`);
+  if (key) headers.set(AUTH.apiKeyHeader, `${key}`);
+  if (!["GET", "HEAD", "OPTIONS"].includes((init.method ?? "GET").toUpperCase())) {
+    headers.set(AUTH.csrfHeader, AUTH.csrfValue);
+  }
   let res: Response;
   try {
     res = await fetch(url, { ...init, headers });
@@ -40,12 +44,22 @@ export async function fetchWithAuth(url: string, init: RequestInit = {}): Promis
 
 export function handleUnauthorized(): void {
   clearApiKey();
-  window.dispatchEvent(new Event("wyrm:unauthorized"));
+  window.dispatchEvent(new Event(AUTH.unauthorizedEvent));
+}
+
+export async function fetchAuthStatus(): Promise<AuthStatusResponse | null> {
+  try {
+    const response = await fetchWithAuth(ENDPOINTS.auth.status());
+    return response.ok ? await response.json() as AuthStatusResponse : null;
+  } catch {
+    // Keep the existing API-key flow available if discovery is unreachable.
+    return null;
+  }
 }
 
 export async function verifyApiKey(key: string): Promise<boolean> {
   const res = await fetch(ENDPOINTS.auth.verify(), {
-    headers: { "x-api-key": `${key}` },
+    headers: { [AUTH.apiKeyHeader]: `${key}` },
   });
   return res.ok;
 }

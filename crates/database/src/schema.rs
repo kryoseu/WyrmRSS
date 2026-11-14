@@ -114,6 +114,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    sessions (token_hash) {
+        token_hash -> Text,
+        expires_at -> Timestamptz,
+        last_seen_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::ReadMode;
 
@@ -170,6 +178,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     host_credentials,
     post_archive,
     posts,
+    sessions,
     settings,
     shortcut_overrides,
     webhooks,
