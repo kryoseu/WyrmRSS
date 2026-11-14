@@ -3,7 +3,7 @@ use crate::{
     youtube::youtube_embed,
 };
 use actix_cors::Cors;
-use actix_web::{App, HttpServer, middleware::from_fn, web};
+use actix_web::{App, HttpServer, web};
 use api_utils::context::WyrmContext;
 use database::{models::settings::Settings, utils::settings::RuntimeSettings};
 use rand::{RngExt, distr::Alphanumeric};
@@ -18,7 +18,6 @@ use wyrm_rss::worker::{FeedWorker, WorkerCommand};
 use wyrm_utils::{
     config::WyrmStartupConfig,
     error::{DatabaseError, HttpServerError},
-    middleware::api_key_middleware,
 };
 
 /// Info the frontend needs to talk to the embedded backend, resolved once at
@@ -119,23 +118,19 @@ pub async fn bootstrap(data_dir: PathBuf) -> WyrmDesktopResult<ServerInfo> {
 
     // api_routes wraps its protected routes in wyrm_auth's middleware, which needs `Auth`.
     let auth = web::Data::new(Auth::new(&startup_conf)?);
-    let api_key_data = startup_conf.api_key.clone();
     let server = HttpServer::new(move || {
-        App::new()
-            .app_data(ctx.clone())
-            .app_data(auth.clone())
-            .app_data(web::Data::new(api_key_data.clone()))
-            // The webview's origin (tauri://localhost, http://tauri.localhost,
-            // etc.) differs from this server's, so cross-origin fetches need
-            // CORS. Permissive is acceptable here: the server only binds
-            // 127.0.0.1 and every request still needs the per-launch api key.
-            .wrap(Cors::permissive())
-            .route("/youtube-embed", web::get().to(youtube_embed))
-            .service(
-                web::scope("")
-                    .wrap(from_fn(api_key_middleware))
-                    .configure(api_routes::config),
-            )
+        {
+            App::new()
+                .app_data(ctx.clone())
+                .app_data(auth.clone())
+                // The webview's origin (tauri://localhost, http://tauri.localhost,
+                // etc.) differs from this server's, so cross-origin fetches need
+                // CORS. Permissive is acceptable here: the server only binds
+                // 127.0.0.1 and every request still needs the per-launch api key.
+                .wrap(Cors::permissive())
+                .route("/youtube-embed", web::get().to(youtube_embed))
+        }
+        .configure(api_routes::config)
     })
     .listen(listener)
     .map_err(HttpServerError::BindError)
