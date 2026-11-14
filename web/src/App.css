@@ -2050,6 +2050,7 @@ body.reader-resizing {
 .radar-list {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   margin: 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
