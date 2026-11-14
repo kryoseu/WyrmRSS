@@ -96,6 +96,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    sessions (token_hash) {
+        token_hash -> Text,
+        expires_at -> TimestamptzSqlite,
+        last_seen_at -> TimestamptzSqlite,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use crate::models::settings::ReadModeMapping;
 
@@ -152,6 +160,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     host_credentials,
     post_archive,
     posts,
+    sessions,
     settings,
     shortcut_overrides,
     webhooks,

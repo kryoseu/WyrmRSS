@@ -5,7 +5,7 @@
 
 [package]
 name = "desktop"
-version = "0.37.0"
+version = "0.38.0"
 edition = "2024"
 description = "Desktop build of WyrmRSS (Tauri)"
 license = "GPL-3.0-only"
@@ -43,6 +43,9 @@ database = { path = "../../crates/database", default-features = false, features 
   "sqlite",
 ] }
 wyrm_utils = { path = "../../crates/utils" }
+wyrm_auth = { path = "../../crates/auth", default-features = false, features = [
+  "sqlite",
+] }
 wyrm-rss = { path = "../../crates/rss", default-features = false, features = [
   "sqlite",
 ] }

@@ -72,7 +72,7 @@
      }
  }
  
-@@ -77,19 +83,22 @@
+@@ -77,14 +83,14 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -90,6 +90,16 @@
          thumbnail_url -> Nullable<Text>,
      }
  }
+@@ -92,12 +98,15 @@
+ diesel::table! {
+     sessions (token_hash) {
+         token_hash -> Text,
+-        expires_at -> Timestamp,
+-        last_seen_at -> Timestamp,
++        expires_at -> TimestamptzSqlite,
++        last_seen_at -> TimestamptzSqlite,
+     }
+ }
  
  diesel::table! {
 +    use diesel::sql_types::*;
@@ -98,7 +108,7 @@
      settings (is_singleton) {
          is_singleton -> Bool,
          page_size -> Integer,
-@@ -98,7 +107,7 @@
+@@ -106,7 +115,7 @@
          http_connect_timeout -> Integer,
          http_retries -> Integer,
          http_user_agent -> Nullable<Text>,
@@ -107,7 +117,7 @@
          expire_read_after_days -> Nullable<Integer>,
          expire_unread_after_days -> Nullable<Integer>,
          read_delay_secs -> Integer,
-@@ -114,13 +123,16 @@
+@@ -122,13 +131,16 @@
  }
  
  diesel::table! {
