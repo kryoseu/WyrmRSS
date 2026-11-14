@@ -267,7 +267,7 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
 name = "api_api"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "actix-web",
  "api_utils",
@@ -283,7 +283,7 @@ dependencies = [
 
 [[package]]
 name = "api_crud"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "actix-web",
  "api_utils",
@@ -300,7 +300,7 @@ dependencies = [
 
 [[package]]
 name = "api_routes"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "actix-web",
  "api_api",
@@ -310,7 +310,7 @@ dependencies = [
 
 [[package]]
 name = "api_utils"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "actix-web",
  "database",
@@ -937,7 +937,7 @@ dependencies = [
 
 [[package]]
 name = "database"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "chrono",
  "diesel",
@@ -3668,7 +3668,7 @@ dependencies = [
 
 [[package]]
 name = "server"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "actix-web",
  "api_routes",
@@ -5043,7 +5043,7 @@ checksum = "1ffae5123b2d3fc086436f8834ae3ab053a283cfac8fe0a0b8eaae044768a4c4"
 
 [[package]]
 name = "wyrm-rss"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -5067,7 +5067,7 @@ dependencies = [
 
 [[package]]
 name = "wyrm_auth"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "actix-web",
  "api_utils",
@@ -5088,7 +5088,7 @@ dependencies = [
 
 [[package]]
 name = "wyrm_utils"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "actix-web",
  "config",
@@ -5110,7 +5110,7 @@ dependencies = [
 
 [[package]]
 name = "wyrm_webhook"
-version = "0.37.0"
+version = "0.38.0"
 dependencies = [
  "chrono",
  "database",
