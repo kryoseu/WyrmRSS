@@ -34,6 +34,14 @@ export const STORAGE_KEYS = {
   apiKey: "WYRM_API_KEY",
 };
 
+export const AUTH = {
+  apiKeyHeader: "x-api-key",
+  csrfHeader: "x-wyrm-csrf",
+  csrfValue: "1",
+  unauthorizedEvent: "wyrm:unauthorized",
+  errorParam: "auth_error",
+} as const;
+
 export const LAYOUT = {
   // Phone layout at or below this width; not used in CSS.
   mobileBreakpointPx: 768,

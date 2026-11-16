@@ -267,7 +267,8 @@ body.reader-resizing {
   }
 
   @media (hover: hover) {
-    &:hover {
+    &:hover,
+    &:has(.row-menu-trigger.open) {
       .row-menu-trigger {
         display: flex;
       }
@@ -349,7 +350,8 @@ body.reader-resizing {
   }
 
   @media (hover: hover) {
-    &:hover {
+    &:hover,
+    &:has(.row-menu-trigger.open) {
       /* Swap the unread badge for the menu trigger, like feed rows do. */
       .row-menu-trigger {
         display: flex;
@@ -1862,7 +1864,7 @@ body.reader-resizing {
   }
 }
 
-/* ── API Key Gate ────────────────────────────────────────────── */
+/* ── Authentication Gate ─────────────────────────────────────── */
 
 .api-key-gate {
   position: fixed;
@@ -1878,11 +1880,17 @@ body.reader-resizing {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 320px;
+  box-sizing: border-box;
+  width: min(370px, calc(100% - 24px));
   padding: 28px 24px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--code-bg);
+
+  a.btn {
+    text-align: center;
+    text-decoration: none;
+  }
 
   h2 {
     margin: 0;
@@ -2044,6 +2052,7 @@ body.reader-resizing {
 .radar-list {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   margin: 16px;
   border: 1px solid var(--border);
   border-radius: 8px;

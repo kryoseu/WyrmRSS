@@ -8,6 +8,7 @@ pub mod feed_icon;
 pub mod feed_poll_state;
 pub mod folder;
 pub mod host_credential;
+pub mod session;
 pub mod settings;
 pub mod shortcut;
 pub mod webhook;

@@ -73,10 +73,19 @@ Startup settings can be configured via environment variables (prefixed `WYRM_`) 
 | `WYRM_PORT` | `3001` | Port to listen on |
 | `WYRM_DATABASE_CONNECTION` | `postgres://wyrm:wyrm@localhost/wyrm` | PostgreSQL connection URI |
 | `WYRM_DATABASE_POOL_SIZE` | `30` | Max database connection pool size |
-| `WYRM_API_KEY` | _(none)_ | API key required by clients; unset means the API is open and any key is accepted |
+| `WYRM_PUBLIC_URL` | _(none)_ | URL users reach Wyrm on, e.g. `https://rss.example.com`; required for OIDC, whose callback is `{public_url}/api/v1/auth/oidc/callback` |
+| `WYRM_API_KEY` | _(none)_ | API key accepted independently of OIDC; the API is open when neither authentication method is configured |
+| `WYRM_OIDC_ISSUER_URL` | _(none)_ | Enable optional OIDC using this provider's issuer URL |
+| `WYRM_OIDC_CLIENT_ID` | _(none)_ | Registered OIDC client ID |
+| `WYRM_OIDC_CLIENT_SECRET` | _(none)_ | OIDC client secret; omit for public clients |
+| `WYRM_OIDC_ALLOWED_SUBJECTS` | _(none)_ | Optional comma-separated `sub` allowlist; unset allows any user authenticated by the provider |
 
 > [!NOTE]
-> Setting `WYRM_API_KEY` on the backend is enough to restrict access. Setting it on the frontend too skips the in-app key prompt. If left unset on the backend, the API is open and any key entered in the prompt will be accepted.
+> Setting `WYRM_API_KEY` on the backend is enough to restrict access. Setting it on the frontend too skips the in-app key prompt. When both API-key and OIDC settings are absent, the API remains open.
+
+### Optional OpenID Connect sign-in
+
+OIDC is disabled by default. See [OIDC setup](docs/installation/oidc.md) for provider registration, configuration, and session behavior. A valid `x-api-key` always works without an OIDC login when `WYRM_API_KEY` is configured, including when OIDC is enabled.
 
 ### Runtime settings
 

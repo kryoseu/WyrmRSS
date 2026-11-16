@@ -6,6 +6,20 @@ use actix_web::{
 use diesel::result::DatabaseErrorKind;
 
 #[derive(thiserror::Error, Debug)]
+pub enum AuthError {
+    #[error("auth method disabled: {0}")]
+    AuthMethodDisabled(String),
+    #[error("invalid authentication configuration: {0}")]
+    InvalidAuthConfig(String),
+    #[error("authentication provider unavailable: {0}")]
+    AuthProviderUnavailable(String),
+    #[error("csrf check failed")]
+    CsrfCheckFailed,
+    #[error("login failed: {0}")]
+    LoginFailed(String),
+}
+
+#[derive(thiserror::Error, Debug)]
 pub enum HttpClientError {
     #[error("unauthorized")]
     Unauthorized,
@@ -47,6 +61,8 @@ pub enum DatabaseError {
 
 #[derive(thiserror::Error, Debug)]
 pub enum WyrmError {
+    #[error(transparent)]
+    Auth(#[from] AuthError),
     #[error(transparent)]
     Database(#[from] DatabaseError),
     #[error("api restricted in demo mode")]
@@ -139,6 +155,12 @@ impl WyrmError {
             WyrmError::WebhookTemplate(msg) => msg,
             WyrmError::EmptyFolderName => "folder name cannot be empty",
             WyrmError::FeedDiscovery(msg) => msg,
+            WyrmError::Auth(AuthError::AuthMethodDisabled(_)) => "not found",
+            WyrmError::Auth(AuthError::CsrfCheckFailed) => "csrf check failed",
+            WyrmError::Auth(AuthError::LoginFailed(_)) => "login failed",
+            WyrmError::Auth(AuthError::AuthProviderUnavailable(_)) => {
+                "authentication provider unavailable"
+            }
             WyrmError::InvalidInput(msg) => msg,
             _ => "internal server error",
         }
@@ -171,6 +193,12 @@ impl error::ResponseError for WyrmError {
             WyrmError::WebhookTemplate(_) => StatusCode::BAD_REQUEST,
             WyrmError::EmptyFolderName => StatusCode::BAD_REQUEST,
             WyrmError::FeedDiscovery(_) => StatusCode::BAD_REQUEST,
+            WyrmError::Auth(AuthError::AuthMethodDisabled(_)) => StatusCode::NOT_FOUND,
+            WyrmError::Auth(AuthError::CsrfCheckFailed) => StatusCode::FORBIDDEN,
+            WyrmError::Auth(AuthError::LoginFailed(_)) => StatusCode::UNAUTHORIZED,
+            WyrmError::Auth(AuthError::AuthProviderUnavailable(_)) => {
+                StatusCode::SERVICE_UNAVAILABLE
+            }
             WyrmError::InvalidInput(_) => StatusCode::BAD_REQUEST,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
