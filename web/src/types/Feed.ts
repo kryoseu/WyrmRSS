@@ -41,4 +41,8 @@ is_paused: boolean,
  * Dictates how posts from a feed are displayed.
  * See the enum above.
  */
-display_mode: DisplayMode, };
+display_mode: DisplayMode, 
+/**
+ * Curated error from the latest failed poll; cleared on success.
+ */
+last_error?: string, };

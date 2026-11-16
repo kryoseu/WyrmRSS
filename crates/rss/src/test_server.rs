@@ -1,4 +1,4 @@
-//! Small real HTTP fixture for conditional request and poller tests.
+//! Small real HTTP fixture for feed polling tests.
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpListener,

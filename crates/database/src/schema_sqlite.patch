@@ -16,16 +16,7 @@
      }
  }
  
-@@ -22,7 +22,7 @@
-         feed_id -> Integer,
-         source_url -> Text,
-         filter_signature -> Text,
--        checked_at -> Timestamp,
-+        checked_at -> TimestamptzSqlite,
-         last_error -> Nullable<Text>,
-         etag -> Nullable<Text>,
-         last_modified -> Nullable<Text>,
-@@ -37,17 +37,20 @@
+@@ -25,17 +25,20 @@
  }
  
  diesel::table! {
@@ -46,10 +37,10 @@
          is_paused -> Bool,
 -        display_mode -> Text,
 +        display_mode -> DisplayModeMapping,
+         last_error -> Nullable<Text>,
      }
  }
- 
-@@ -59,13 +62,16 @@
+@@ -48,13 +51,16 @@
  }
  
  diesel::table! {
@@ -68,7 +59,7 @@
      }
  }
  
-@@ -75,10 +81,10 @@
+@@ -64,10 +70,10 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -81,7 +72,7 @@
      }
  }
  
-@@ -89,14 +95,14 @@
+@@ -78,14 +84,14 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -99,7 +90,7 @@
          thumbnail_url -> Nullable<Text>,
      }
  }
-@@ -104,12 +110,15 @@
+@@ -93,12 +99,15 @@
  diesel::table! {
      sessions (token_hash) {
          token_hash -> Text,
@@ -117,7 +108,7 @@
      settings (is_singleton) {
          is_singleton -> Bool,
          page_size -> Integer,
-@@ -118,7 +127,7 @@
+@@ -107,7 +116,7 @@
          http_connect_timeout -> Integer,
          http_retries -> Integer,
          http_user_agent -> Nullable<Text>,
@@ -126,7 +117,7 @@
          expire_read_after_days -> Nullable<Integer>,
          expire_unread_after_days -> Nullable<Integer>,
          read_delay_secs -> Integer,
-@@ -134,13 +143,16 @@
+@@ -123,13 +132,16 @@
  }
  
  diesel::table! {

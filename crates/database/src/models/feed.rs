@@ -2,7 +2,7 @@ use crate::{
     DatabasePool,
     models::folder::Folder,
     newtypes::{FeedId, Filters, FolderId},
-    schema::{feed_poll_state, feeds},
+    schema::feeds,
 };
 use chrono::{DateTime, Utc};
 use diesel::{
@@ -66,6 +66,8 @@ pub struct Feed {
     /// Dictates how posts from a feed are displayed.
     /// See the enum above.
     pub display_mode: DisplayMode,
+    /// Curated error from the latest failed poll; cleared on success.
+    pub last_error: Option<String>,
 }
 
 impl Feed {
@@ -119,25 +121,16 @@ impl Feed {
                 Some(folder) => Some(Folder::resolve_name_on(conn, folder.as_deref()).await?),
             };
 
-            let url_changed = if let Some(url) = form.url.as_deref() {
-                let current_url: String = feeds::table
-                    .find(form.id)
-                    .select(feeds::url)
-                    .first(conn)
-                    .await?;
-                url != current_url
-            } else {
-                false
-            };
-            if url_changed {
-                diesel::update(feeds::table.find(form.id))
-                    .set(feeds::last_fetched_at.eq(None::<DateTime<Utc>>))
-                    .execute(conn)
-                    .await?;
-                diesel::delete(feed_poll_state::table.find(form.id))
+            if let Some(url) = &form.url {
+                diesel::update(feeds::table.find(form.id).filter(feeds::url.ne(url)))
+                    .set((
+                        feeds::last_fetched_at.eq(None::<DateTime<Utc>>),
+                        feeds::last_error.eq(None::<String>),
+                    ))
                     .execute(conn)
                     .await?;
             }
+
             let feed = diesel::update(feeds::table.find(form.id))
                 .set((form, folder_id.map(|f| feeds::folder_id.eq(f))))
                 .get_result::<Self>(conn)
@@ -146,6 +139,32 @@ impl Feed {
             Ok::<Feed, WyrmError>(feed)
         })
         .await
+    }
+
+    /// Ignore results from a fetch started before the feed URL was changed.
+    pub async fn record_fetch(
+        pool: &DatabasePool,
+        id: FeedId,
+        source_url: &str,
+        last_error: Option<&str>,
+    ) -> WyrmResult<()> {
+        let mut conn = pool.get().await?;
+        let target = feeds::table.find(id).filter(feeds::url.eq(source_url));
+        if let Some(error) = last_error {
+            diesel::update(target)
+                .set(feeds::last_error.eq(Some(error)))
+                .execute(&mut conn)
+                .await?;
+        } else {
+            diesel::update(target)
+                .set((
+                    feeds::last_fetched_at.eq(Some(Utc::now())),
+                    feeds::last_error.eq(None::<String>),
+                ))
+                .execute(&mut conn)
+                .await?;
+        }
+        Ok(())
     }
 
     pub async fn delete(pool: &DatabasePool, id: FeedId) -> WyrmResult<Self> {

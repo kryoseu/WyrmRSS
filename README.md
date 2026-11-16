@@ -111,23 +111,6 @@ The following settings are stored in the database and can be changed at runtime 
 | `WYRM_BACKEND_URL` | `http://localhost:3001` | Backend URL, must match where the backend is running |
 | `WYRM_API_KEY` | _(none)_ | Bake an API key into the frontend build, skipping the key prompt entirely |
 
-## Feed health and efficient polling
-
-Open **Settings → Feeds** and select a feed's **Health** status to see its last
-check, last successful check, latest error, and next eligible check time. Failed
-refreshes also show a warning beside the feed in the sidebar. Paused feeds stay
-paused; actual checks run on the normal polling cycle after the feed is due.
-A failed check leaves the previous successful timestamp intact; a later
-successful check clears the error.
-
-When publishers support `ETag` or `Last-Modified`, Wyrm saves those validators
-after successfully processing a feed and sends conditional requests on later
-polls. A `304 Not Modified` counts as a successful check and skips downloading
-and parsing the feed body, inserting posts, and sending new-post webhooks.
-Feeds without validators continue to use ordinary requests. Validators persist
-across restarts and are ignored after feed URL or exclusion-filter changes.
-A check that needs to retry a missing icon also requests a full feed body.
-
 ## Subscription links
 
 Extensions and bookmarklets can open `/subscribe` to prefill the Add Feed form
@@ -240,3 +223,5 @@ Logo by [Pedro Niels](https://www.instagram.com/opedroniels/).
 ## License
 
 GPL v3 — see [LICENSE](LICENSE).
+
+Feed settings show refresh health alongside the last successful fetch time. A failed fetch keeps that timestamp and provides a clickable error; the next successful fetch clears the error.
