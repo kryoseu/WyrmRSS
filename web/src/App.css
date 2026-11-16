@@ -267,7 +267,8 @@ body.reader-resizing {
   }
 
   @media (hover: hover) {
-    &:hover {
+    &:hover,
+    &:has(.row-menu-trigger.open) {
       .row-menu-trigger {
         display: flex;
       }
@@ -349,7 +350,8 @@ body.reader-resizing {
   }
 
   @media (hover: hover) {
-    &:hover {
+    &:hover,
+    &:has(.row-menu-trigger.open) {
       /* Swap the unread badge for the menu trigger, like feed rows do. */
       .row-menu-trigger {
         display: flex;
