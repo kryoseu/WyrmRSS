@@ -62,6 +62,10 @@ See [kubernetes.yaml](docs/templates/kubernetes.yaml) for Kubernetes manifests.
 
 See [source.md](docs/installation/source.md) to build from the source code.
 
+## One-Click Deploy
+
+[![Deploy on RepoCloud](https://d16t0pc4846x52.cloudfront.net/deploylobe.svg)](https://repocloud.io/details/WyrmRSS/)
+
 ## Configuration
 
 ### Startup configuration
