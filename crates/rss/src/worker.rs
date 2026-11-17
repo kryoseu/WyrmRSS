@@ -19,7 +19,7 @@ use futures::future::join_all;
 use std::sync::{Arc, RwLock};
 use tokio::sync::{Semaphore, mpsc::Receiver};
 use tracing::{error, info, warn};
-use wyrm_utils::result::WyrmResult;
+use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 #[derive(Debug)]
 pub enum WorkerCommand {
@@ -184,7 +184,7 @@ async fn process_feed(
     info!("Processing feed {}", task.feed.title);
 
     let result = fetch_and_store(pool, http, resolver, task).await;
-    let error = result.as_ref().err().map(poll_error_message);
+    let error = result.as_ref().err().map(WyrmError::fetch_error_message);
     Feed::record_fetch(pool, task.feed.id, &task.feed.url, error.as_deref()).await?;
     result
 }
@@ -230,6 +230,7 @@ async fn fetch_and_store(
     }
 
     let new_posts = Post::create_many(pool, forms).await?;
+
     info!(
         "Got {} new posts for feed {}",
         new_posts.len(),
@@ -260,24 +261,3 @@ async fn fetch_and_store(
     Ok(())
 }
 
-fn poll_error_message(error: &wyrm_utils::error::WyrmError) -> String {
-    use wyrm_utils::error::{HttpClientError, WyrmError};
-    match error {
-        WyrmError::HttpClient(HttpClientError::Unauthorized) => {
-            "Authentication failed (HTTP 401/403)".into()
-        }
-        WyrmError::HttpClient(HttpClientError::ClientError(error)) if error.is_timeout() => {
-            "Request timed out".into()
-        }
-        WyrmError::HttpClient(HttpClientError::ClientError(error)) => error
-            .status()
-            .map(|status| format!("HTTP {status}"))
-            .unwrap_or_else(|| "Could not connect to the feed server".into()),
-        WyrmError::HttpClient(HttpClientError::ResponseTooLarge(_)) => {
-            "Feed exceeds the download size limit".into()
-        }
-        WyrmError::ParseFeedError(_) => "Response is not a valid RSS or Atom feed".into(),
-        WyrmError::Database(_) => "Could not save feed updates".into(),
-        _ => "Could not refresh this feed; check server logs".into(),
-    }
-}
