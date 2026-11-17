@@ -121,16 +121,6 @@ impl Feed {
                 Some(folder) => Some(Folder::resolve_name_on(conn, folder.as_deref()).await?),
             };
 
-            if let Some(url) = &form.url {
-                diesel::update(feeds::table.find(form.id).filter(feeds::url.ne(url)))
-                    .set((
-                        feeds::last_fetched_at.eq(None::<DateTime<Utc>>),
-                        feeds::last_error.eq(None::<String>),
-                    ))
-                    .execute(conn)
-                    .await?;
-            }
-
             let feed = diesel::update(feeds::table.find(form.id))
                 .set((form, folder_id.map(|f| feeds::folder_id.eq(f))))
                 .get_result::<Self>(conn)
@@ -214,7 +204,7 @@ pub struct FeedUpdateForm {
     pub url: Option<String>,
     pub ttl: Option<i32>,
     /// Double `Option` for the nullable column:
-    /// `None` leaves the folder untouched (e.g. the worker bumping `last_fetched_at`);
+    /// `None` leaves the folder untouched (e.g. a title-only edit);
     /// `Some(None)` or a blank name clears it;
     /// `Some(Some(name))` assigns it, resolved inside the update transaction
     /// (creating the folder if the name is new).
@@ -224,8 +214,11 @@ pub struct FeedUpdateForm {
     pub folder: Option<Option<String>>,
     pub filters: Option<Filters>,
     pub is_paused: Option<bool>,
-    pub last_fetched_at: Option<DateTime<Utc>>,
     pub display_mode: Option<DisplayMode>,
+    /// `Some(None)` clears it; the update handler does this for both
+    /// when the URL changes, so the new URL is polled right away.
+    pub last_fetched_at: Option<Option<DateTime<Utc>>>,
+    pub last_error: Option<Option<String>>,
 }
 
 /// Test helper: inserts a feed with a unique url and returns the `Feed`. Lives
@@ -303,9 +296,10 @@ mod tests {
                 ttl: Some(120),
                 folder: Some(Some(folder.name.clone())),
                 filters: None,
-                display_mode: None,
                 is_paused: Some(true),
                 last_fetched_at: None,
+                last_error: None,
+                display_mode: None,
             },
         )
         .await

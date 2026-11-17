@@ -435,7 +435,8 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
             folder: None,
             filters: None,
             is_paused: None,
-            last_fetched_at: None,
+            last_fetched_at: Some(None),
+            last_error: Some(None),
             display_mode: None,
         },
     )

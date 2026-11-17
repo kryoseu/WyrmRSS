@@ -120,7 +120,8 @@ pub async fn update(
             filters: data.filters.map(|v| v.into_iter().map(Some).collect()),
             is_paused: data.is_paused,
             display_mode: data.display_mode,
-            last_fetched_at: None,
+            last_fetched_at: url_changed.then_some(None),
+            last_error: url_changed.then_some(None),
         },
     )
     .await?;
