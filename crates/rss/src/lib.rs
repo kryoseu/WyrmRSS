@@ -6,6 +6,3 @@ pub mod opml;
 pub mod rsshub;
 pub mod url;
 pub mod worker;
-
-#[cfg(all(test, feature = "sqlite"))]
-mod test_server;
