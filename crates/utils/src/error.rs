@@ -177,7 +177,6 @@ impl WyrmError {
             WyrmError::HttpClient(HttpClientError::ResponseTooLarge(_)) => "Feed too large".into(),
             WyrmError::ParseFeedError(_) => "Invalid feed".into(),
             WyrmError::Database(_) => "Database error".into(),
-            WyrmError::HttpClient(HttpClientError::MiddlewareError(_)) => "Connection failed".into(),
             _ => "Fetch failed".into(),
         }
     }
