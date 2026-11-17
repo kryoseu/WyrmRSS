@@ -122,6 +122,7 @@ pub async fn update(
             display_mode: data.display_mode,
             last_fetched_at: url_changed.then_some(None),
             last_error: url_changed.then_some(None),
+            expected_url: None,
         },
     )
     .await?;

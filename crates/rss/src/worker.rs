@@ -7,7 +7,7 @@ use chrono::Utc;
 use database::{
     DatabasePool,
     models::{
-        feed::Feed,
+        feed::{Feed, FeedUpdateForm},
         host_credential::HostCredential,
         post::{Post, PostInsertForm},
         webhook::Webhook,
@@ -19,7 +19,7 @@ use futures::future::join_all;
 use std::sync::{Arc, RwLock};
 use tokio::sync::{Semaphore, mpsc::Receiver};
 use tracing::{error, info, warn};
-use wyrm_utils::{error::WyrmError, result::WyrmResult};
+use wyrm_utils::result::WyrmResult;
 
 #[derive(Debug)]
 pub enum WorkerCommand {
@@ -174,7 +174,7 @@ pub struct FeedTask {
     folder: Option<String>,
 }
 
-/// Fetch -> Parse -> Store -> Update -> Notify
+/// Fetch -> Parse -> Store -> Notify -> Update
 async fn process_feed(
     pool: &DatabasePool,
     http: &HttpClient,
@@ -184,8 +184,7 @@ async fn process_feed(
     info!("Processing feed {}", task.feed.title);
 
     let result = fetch_and_store(pool, http, resolver, task).await;
-    let error = result.as_ref().err().map(WyrmError::fetch_error_message);
-    Feed::record_fetch(pool, task.feed.id, &task.feed.url, error.as_deref()).await?;
+    Feed::update(pool, FeedUpdateForm::from_poll_result(&task.feed, &result)).await?;
     result
 }
 
@@ -260,4 +259,3 @@ async fn fetch_and_store(
 
     Ok(())
 }
-
