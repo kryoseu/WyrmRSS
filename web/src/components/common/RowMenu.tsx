@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { TbDotsVertical } from "react-icons/tb";
+import { useDismiss } from "../../hooks/useDismiss";
 
 export interface RowMenuItem {
   icon: React.ReactNode;
@@ -25,27 +26,10 @@ export function RowMenu({ label, items }: Props) {
   const [confirming, setConfirming] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    function onMouseDown(e: MouseEvent) {
-      if (!ref.current?.contains(e.target as Node)) {
-        setOpen(false);
-        setConfirming(null);
-      }
-    }
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setOpen(false);
-        setConfirming(null);
-      }
-    }
-    document.addEventListener("mousedown", onMouseDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onMouseDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  useDismiss(ref, open, () => {
+    setOpen(false);
+    setConfirming(null);
+  });
 
   function handleTrigger(e: React.MouseEvent) {
     e.preventDefault();

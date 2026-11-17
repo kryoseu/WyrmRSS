@@ -174,7 +174,7 @@ pub struct FeedTask {
     folder: Option<String>,
 }
 
-/// Fetch -> Parse -> Store -> Update -> Notify
+/// Fetch -> Parse -> Store -> Notify -> Update
 async fn process_feed(
     pool: &DatabasePool,
     http: &HttpClient,
@@ -183,6 +183,17 @@ async fn process_feed(
 ) -> WyrmResult<()> {
     info!("Processing feed {}", task.feed.title);
 
+    let result = fetch_and_store(pool, http, resolver, task).await;
+    Feed::update(pool, FeedUpdateForm::from_poll_result(&task.feed, &result)).await?;
+    result
+}
+
+async fn fetch_and_store(
+    pool: &DatabasePool,
+    http: &HttpClient,
+    resolver: &FeedUrlResolver,
+    task: &FeedTask,
+) -> WyrmResult<()> {
     let fetch_target = resolver.resolve(&task.feed.url)?;
     let (bytes, _) = http.fetch(&fetch_target).await?;
 
@@ -218,27 +229,12 @@ async fn process_feed(
     }
 
     let new_posts = Post::create_many(pool, forms).await?;
+
     info!(
         "Got {} new posts for feed {}",
         new_posts.len(),
         task.feed.title
     );
-
-    Feed::update(
-        pool,
-        FeedUpdateForm {
-            id: task.feed.id,
-            title: None,
-            url: None,
-            ttl: None,
-            folder: None,
-            filters: None,
-            display_mode: None,
-            is_paused: None,
-            last_fetched_at: Some(Utc::now()),
-        },
-    )
-    .await?;
 
     if new_posts.is_empty() {
         return Ok(());

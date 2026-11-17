@@ -15,7 +15,7 @@ use database::{
     create_pool,
     establish_sync_connection,
     models::{
-        feed::{Feed, FeedInsertForm},
+        feed::{Feed, FeedInsertForm, FeedUpdateForm},
         post::{Post, PostInsertForm},
         session::{Session, SessionInsertForm},
     },
@@ -25,7 +25,10 @@ use database::{
 };
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use wyrm_utils::config::WyrmStartupConfig;
+use wyrm_utils::{
+    config::WyrmStartupConfig,
+    error::{DatabaseError, WyrmError},
+};
 
 /// A migrated database in a uniquely named temp file, plus its pool.
 struct TestDb {
@@ -379,4 +382,78 @@ async fn rsshub_instance_persists_and_partial_updates_preserve_it() {
     assert_eq!(cleared.http_user_agent, None);
     assert_eq!(cleared.expire_read_after_days, None);
     assert_eq!(cleared.expire_unread_after_days, None);
+}
+
+#[tokio::test]
+async fn feed_health_preserves_success_and_ignores_stale_results() {
+    let db = TestDb::new("feed_health").await;
+    let feed = Feed::create(
+        &db.pool,
+        FeedInsertForm {
+            title: "Health".into(),
+            url: "https://example.com/health".into(),
+            ttl: 60,
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert!(feed.last_error.is_none());
+    assert!(feed.last_fetched_at.is_none());
+
+    let success = Feed::update(&db.pool, FeedUpdateForm::from_poll_result(&feed, &Ok(())))
+        .await
+        .unwrap();
+    assert!(success.last_fetched_at.is_some());
+
+    let failed_poll = Err(WyrmError::WorkerError("boom".into()));
+    let failed = Feed::update(
+        &db.pool,
+        FeedUpdateForm::from_poll_result(&feed, &failed_poll),
+    )
+    .await
+    .unwrap();
+    assert_eq!(failed.last_fetched_at, success.last_fetched_at);
+    assert_eq!(failed.last_error.as_deref(), Some("Fetch failed"));
+
+    let recovered = Feed::update(&db.pool, FeedUpdateForm::from_poll_result(&feed, &Ok(())))
+        .await
+        .unwrap();
+    assert!(recovered.last_error.is_none());
+
+    let updated = Feed::update(
+        &db.pool,
+        FeedUpdateForm {
+            id: feed.id,
+            title: None,
+            url: Some("https://example.com/new".into()),
+            ttl: None,
+            folder: None,
+            filters: None,
+            is_paused: None,
+            last_fetched_at: Some(None),
+            last_error: Some(None),
+            expected_url: None,
+            display_mode: None,
+        },
+    )
+    .await
+    .unwrap();
+    assert!(updated.last_fetched_at.is_none());
+
+    // A poll of the old URL finishing after the edit is discarded.
+    let stale = Feed::update(
+        &db.pool,
+        FeedUpdateForm::from_poll_result(&feed, &failed_poll),
+    )
+    .await;
+    assert!(matches!(
+        stale,
+        Err(WyrmError::Database(DatabaseError::NotFound))
+    ));
+    let current = Feed::get(&db.pool, feed.id).await.unwrap();
+    assert!(current.last_error.is_none());
+    assert!(current.last_fetched_at.is_none());
+
+    Feed::delete(&db.pool, feed.id).await.unwrap();
 }

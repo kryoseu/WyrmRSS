@@ -35,6 +35,7 @@
 - Webhooks - get notified on new posts (Discord, Slack and custom)
 - OPML import and export
 - Background feed polling with configurable interval and retry logic
+- Feed fetch status — see failing feeds and their errors in Settings → Feeds
 - Full-text search on post titles and description
 - Hot-reloaded settings (poll interval, HTTP timeouts, page size, reading mode and delay, post expiry) configurable via the UI
 - Easy to install

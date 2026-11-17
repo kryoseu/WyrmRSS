@@ -165,6 +165,21 @@ impl WyrmError {
             _ => "internal server error",
         }
     }
+
+    /// Short curated message persisted as a feed's `last_error`; never includes the URL.
+    pub fn fetch_error_message(&self) -> String {
+        match self {
+            WyrmError::HttpClient(HttpClientError::Unauthorized) => "Access denied".into(),
+            WyrmError::HttpClient(HttpClientError::ClientError(err)) => err
+                .status()
+                .map(|status| format!("HTTP {}", status.as_u16()))
+                .unwrap_or_else(|| "Connection failed".into()),
+            WyrmError::HttpClient(HttpClientError::ResponseTooLarge(_)) => "Feed too large".into(),
+            WyrmError::ParseFeedError(_) => "Invalid feed".into(),
+            WyrmError::Database(_) => "Database error".into(),
+            _ => "Fetch failed".into(),
+        }
+    }
 }
 
 impl error::ResponseError for WyrmError {
