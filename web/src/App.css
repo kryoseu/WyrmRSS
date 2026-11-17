@@ -1056,8 +1056,10 @@ body.reader-resizing {
   flex-direction: column;
   border: 1px solid var(--border);
   border-radius: 6px;
-  overflow: hidden;
 }
+/* Round the end rows instead of clipping, so row bubbles can overflow the table. */
+.settings-table > :first-child { border-radius: 5px 5px 0 0; }
+.settings-table > :last-child { border-radius: 0 0 5px 5px; }
 
 .settings-table-header,
 .settings-table-row {
@@ -2837,6 +2839,17 @@ body.reader-resizing {
     flex-basis: 100%;
   }
 
+  /* Fetch status sits at the bottom right; its bubble opens leftwards to stay on screen. */
+  .settings-table-meta.feed-fetch-status,
+  .feed-fetch-wrap {
+    margin-left: auto;
+  }
+  /* Extra specificity: the base bubble rule comes later in the file. */
+  .settings-table-row .feed-fetch-bubble {
+    left: auto;
+    right: 0;
+  }
+
   /* No folder, nothing to show. */
   .settings-table-badge:empty,
   .settings-table-ttl {
@@ -3056,22 +3069,32 @@ kbd {
   border: 0;
   padding: 0;
   font: inherit;
+  color: inherit;
   text-align: left;
   cursor: pointer;
   text-decoration: underline dotted;
   text-underline-offset: 3px;
 }
 .feed-fetch-error:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
-.feed-fetch-popover {
-  width: min(340px, calc(100vw - 32px));
-  box-sizing: border-box;
-  padding: 20px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--text);
-  overflow-wrap: anywhere;
-  box-shadow: 0 8px 32px #0003;
+.feed-fetch-wrap {
+  position: relative;
+  display: inline-flex;
 }
-.feed-fetch-popover strong { color: var(--text-h); }
-.feed-fetch-popover p { margin: 12px 0; }
+.feed-fetch-bubble {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: -6px;
+  z-index: 40;
+  width: max-content;
+  max-width: 240px;
+  padding: 6px 9px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+  overflow-wrap: anywhere;
+}
+.feed-fetch-bubble b { color: #d8763b; font-weight: 600; }
