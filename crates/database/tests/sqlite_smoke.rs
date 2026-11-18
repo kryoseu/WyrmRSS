@@ -541,6 +541,8 @@ async fn validators_follow_subscription_and_rsshub_configuration() {
         filters: Some(vec![Some("exclude".into())].into()),
         is_paused: None,
         last_fetched_at: None,
+        last_error: None,
+        expected_url: None,
         display_mode: None,
     };
     let filtered = Feed::update(&db.pool, update).await.unwrap();
@@ -575,6 +577,8 @@ async fn validators_follow_subscription_and_rsshub_configuration() {
             filters: None,
             is_paused: None,
             last_fetched_at: None,
+            last_error: None,
+            expected_url: None,
             display_mode: None,
         },
     )
