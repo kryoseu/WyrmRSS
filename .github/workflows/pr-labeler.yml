@@ -27,7 +27,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
         run: |
-          type_labels=(feature bug enhancement refactor chore ci)
+          type_labels=(feature bug enhancement refactor chore ci documentation)
 
           # "feat(web)!: x" -> "feat"
           prefix=$(printf '%s' "$PR_TITLE" | sed -nE 's/^([a-z]+)(\([^)]*\))?!?:.*/\1/p')
@@ -39,6 +39,7 @@ jobs:
             refactor) label=refactor ;;
             chore|build) label=chore ;;
             ci) label=ci ;;
+            docs) label=documentation ;;
             *) label="" ;;
           esac
 

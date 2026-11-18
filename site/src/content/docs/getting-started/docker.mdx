@@ -1,0 +1,30 @@
+---
+title: Docker
+description: Run Wyrm with Docker Compose.
+sidebar:
+  order: 1
+---
+
+import { Code } from '@astrojs/starlight/components';
+import compose from '../../../../../templates/docker-compose.yaml?raw';
+
+Install Wyrm using Docker compose.
+
+## Prerequisites
+
+- Docker
+- docker-compose
+
+## Compose
+
+Everything you need to run Wyrm is there, including PostgreSQL itself. You can also use your own database.
+
+<Code code={compose} lang="yaml" title="docker-compose.yaml" />
+
+Settings can also be provided via a config file `/app/config/wyrm.toml`.
+
+Run it:
+
+```
+docker compose -f docker-compose.yaml up
+```

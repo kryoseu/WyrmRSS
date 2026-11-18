@@ -1,0 +1,52 @@
+---
+import { Image } from 'astro:assets';
+import dark from '../assets/screenshot-dark.png';
+import light from '../assets/screenshot-light.png';
+import icon from '../assets/icon.svg';
+---
+
+<div class="compare not-content">
+	<Image
+		src={dark}
+		quality="max"
+		alt="The Wyrm reader showing a list of posts next to an open article"
+	/>
+	<Image src={light} quality="max" alt="" class="compare-light" />
+	<div class="compare-handle" aria-hidden="true">
+		<Image src={icon} alt="" />
+	</div>
+	<input
+		type="range"
+		min="0"
+		max="100"
+		value="50"
+		class="compare-range"
+		aria-label="Compare dark and light mode"
+	/>
+</div>
+
+<script>
+	for (const compare of document.querySelectorAll<HTMLElement>('.compare')) {
+		const range = compare.querySelector<HTMLInputElement>('.compare-range')!;
+		const setPosition = (percent: number) => {
+			range.value = String(percent);
+			compare.style.setProperty('--pos', `${percent}%`);
+		};
+		const setFromPointer = (event: PointerEvent) => {
+			const rect = compare.getBoundingClientRect();
+			const percent = ((event.clientX - rect.left) / rect.width) * 100;
+			setPosition(Math.min(100, Math.max(0, percent)));
+		};
+
+		compare.addEventListener('pointerdown', (event) => {
+			compare.setPointerCapture(event.pointerId);
+			setFromPointer(event);
+		});
+		compare.addEventListener('pointermove', (event) => {
+			if (compare.hasPointerCapture(event.pointerId)) {
+				setFromPointer(event);
+			}
+		});
+		range.addEventListener('input', () => setPosition(Number(range.value)));
+	}
+</script>

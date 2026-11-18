@@ -1,4 +1,9 @@
-# Build from source
+---
+title: Build from source
+description: Build and run the Wyrm server and web UI from source.
+sidebar:
+  order: 4
+---
 
 Steps on how to build Wyrm from source.
 

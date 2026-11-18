@@ -1,0 +1,146 @@
+:root {
+	--sl-color-accent-low: #3d1e0e;
+	--sl-color-accent: #e8500a;
+	--sl-color-accent-high: #fb8040;
+	--sl-color-black: #16171d;
+	--sl-color-gray-6: #1f2028;
+	--sl-color-gray-5: #2e303a;
+}
+
+:root[data-theme='light'] {
+	--sl-color-accent-low: #fde3d4;
+	--sl-color-accent: #e8500a;
+	--sl-color-accent-high: #8a2f05;
+	--sl-color-black: #fff;
+	--sl-color-gray-6: #f4f3ec;
+	--sl-color-gray-5: #e5e4e7;
+	--sl-color-text-accent: #c2440a;
+}
+
+.hero h1 {
+	font-size: clamp(var(--sl-text-2xl), calc(0.25rem + 4vw), var(--sl-text-4xl));
+}
+
+@media (min-width: 50rem) {
+	.hero {
+		padding-block: 1.5rem 2rem;
+		grid-template-columns: 100%;
+	}
+
+	.hero .stack {
+		text-align: center;
+	}
+
+	.hero .copy {
+		align-items: center;
+	}
+
+	.hero .actions {
+		justify-content: center;
+	}
+}
+
+.features {
+	display: grid;
+	gap: 1.25rem 2rem;
+}
+
+@media (min-width: 40rem) {
+	.features {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (min-width: 60rem) {
+	.features {
+		grid-template-columns: repeat(3, 1fr);
+	}
+}
+
+.features div,
+.features dd {
+	margin: 0;
+}
+
+.features div {
+	border-top: 1px solid var(--sl-color-gray-5);
+	padding-top: 0.75rem;
+}
+
+.features dd {
+	margin-top: 0.25rem;
+	padding-inline-start: 0;
+	font-size: var(--sl-text-sm);
+}
+
+.features dt {
+	font-weight: 600;
+	color: var(--sl-color-white);
+}
+
+.compare {
+	--pos: 50%;
+	position: relative;
+	max-width: 52rem;
+	margin-inline: auto;
+	overflow: hidden;
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.75rem;
+	box-shadow:
+		rgba(0, 0, 0, 0.1) 0 10px 15px -3px,
+		rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+	cursor: ew-resize;
+	touch-action: pan-y;
+	user-select: none;
+}
+
+.compare > img {
+	display: block;
+	width: 100%;
+	height: auto;
+	pointer-events: none;
+}
+
+.compare > .compare-light {
+	position: absolute;
+	inset: 0;
+	clip-path: inset(0 0 0 var(--pos));
+}
+
+.compare-handle {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: var(--pos);
+	width: 2px;
+	translate: -50%;
+	background: var(--sl-color-accent);
+	pointer-events: none;
+}
+
+.compare-handle img {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 3rem;
+	height: 3rem;
+	translate: -50% -50%;
+	padding: 0.5rem;
+	border: 2px solid var(--sl-color-accent);
+	border-radius: 50%;
+	background: var(--sl-color-black);
+	box-shadow: rgba(0, 0, 0, 0.3) 0 2px 8px;
+}
+
+.compare:has(.compare-range:focus-visible) .compare-handle img {
+	outline: 2px solid var(--sl-color-text-accent);
+	outline-offset: 2px;
+}
+
+.compare-range {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
