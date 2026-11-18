@@ -198,9 +198,9 @@ impl Feed {
                     .filter(feeds::url.eq(&source.url))
                     .filter(feeds::filters.eq(&source.filters)),
             )
-                .set((feeds::etag.eq(etag), feeds::last_modified.eq(last_modified)))
-                .execute(conn)
-                .await?;
+            .set((feeds::etag.eq(etag), feeds::last_modified.eq(last_modified)))
+            .execute(conn)
+            .await?;
             Ok::<(), WyrmError>(())
         })
         .await
