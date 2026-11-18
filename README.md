@@ -35,7 +35,7 @@
 - Webhooks - get notified on new posts (Discord, Slack and custom)
 - OPML import and export
 - Background feed polling with configurable interval and retry logic
-- Feed fetch status — see failing feeds and their errors in Settings → Feeds
+- Feed fetch status: see failing feeds and their errors in the Feeds section of Settings
 - Full-text search on post titles and description
 - Hot-reloaded settings (poll interval, HTTP timeouts, page size, reading mode and delay, post expiry) configurable via the UI
 - Easy to install
@@ -48,19 +48,19 @@ to set up. You may also build it from source.
 
 ### Desktop app
 
-See [desktop.md](docs/installation/desktop.md) for macOS, Windows and Linux downloads.
+See [desktop.md](site/src/content/docs/getting-started/desktop.md) for macOS, Windows and Linux downloads.
 
 ### With Docker
 
-See [docker.md](docs/installation/docker.md) for Docker Compose setup.
+See [docker.md](site/src/content/docs/getting-started/docker.mdx) for Docker Compose setup.
 
 ### With Kubernetes
 
-See [kubernetes.yaml](docs/templates/kubernetes.yaml) for Kubernetes manifests.
+See [kubernetes.yaml](templates/kubernetes.yaml) for Kubernetes manifests.
 
 ### From source
 
-See [source.md](docs/installation/source.md) to build from the source code.
+See [source.md](site/src/content/docs/getting-started/source.md) to build from the source code.
 
 ## Configuration
 
@@ -86,7 +86,7 @@ Startup settings can be configured via environment variables (prefixed `WYRM_`) 
 
 ### Optional OpenID Connect sign-in
 
-OIDC is disabled by default. See [OIDC setup](docs/installation/oidc.md) for provider registration, configuration, and session behavior. A valid `x-api-key` always works without an OIDC login when `WYRM_API_KEY` is configured, including when OIDC is enabled.
+OIDC is disabled by default. See [OIDC setup](site/src/content/docs/configuration/oidc.md) for provider registration, configuration, and session behavior. A valid `x-api-key` always works without an OIDC login when `WYRM_API_KEY` is configured, including when OIDC is enabled.
 
 ### Runtime settings
 
@@ -166,7 +166,7 @@ Filters apply as new entries are fetched; posts already saved aren't removed.
 ## Feeds behind authentication
 
 For feeds behind HTTP basic auth (e.g. `.htaccess`) or an API key header, add
-a credential in **Settings → Credentials**. Credentials are per host, not per
+a credential in the **Credentials** section of **Settings**. Credentials are per host, not per
 feed, so one entry covers every feed on that host. They're sent with feed
 polls, feed discovery and icon fetches, but not webhooks.
 
@@ -185,7 +185,7 @@ not read back. They are stored unencrypted in the database.
 
 ## Integrations
 
-Configure available integrations in **Settings → Integrations**.
+Configure available integrations in the **Integrations** section of **Settings**.
 
 ### RSSHub
 

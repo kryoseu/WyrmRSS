@@ -44,6 +44,18 @@ updates:
       prefix: chore
       include: scope
 
+  - package-ecosystem: "npm"
+    open-pull-requests-limit: 10
+    directory: "/site"
+    labels: [skip-changelog]
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore
+      include: scope
+
   # - package-ecosystem: "docker"
   #   open-pull-requests-limit: 5
   #   directory: "/"

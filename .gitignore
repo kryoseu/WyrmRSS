@@ -21,6 +21,14 @@ web/dist
 web/dist-ssr
 web/*.local
 
+# site
+site/node_modules
+site/dist
+site/.astro
+site/pnpm-debug.log*
+site/.env
+site/.env.production
+
 .pnpm-store/
 
 # Editor directories and files

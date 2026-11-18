@@ -1,6 +1,6 @@
 changelog:
   exclude:
-    labels: [skip-changelog]
+    labels: [skip-changelog, documentation]
   categories:
     - title: Features
       labels: [feature]
