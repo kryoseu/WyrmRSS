@@ -22,7 +22,7 @@ exclude = ["desktop/src-tauri"]
 [workspace.package]
 version = "0.38.0"
 edition = "2024"
-description = "A self-hosted RSS reader and aggregator"
+description = "A free, self-hosted RSS reader"
 license = "GPL-3.0-only"
 repository = "https://github.com/kryoseu/WyrmRSS"
 rust-version = "1.94.1"

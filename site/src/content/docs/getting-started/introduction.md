@@ -5,7 +5,7 @@ sidebar:
   order: 0
 ---
 
-Wyrm is a self-hosted RSS and Atom reader and aggregator for web and mobile,
+Wyrm is a free, self-hosted RSS and Atom reader for web and mobile,
 also available as a desktop app. Want to look around first? Try the
 [live demo](https://demo.wyrmrss.com).
 

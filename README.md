@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <i>A self-hosted RSS reader and aggregator for web and mobile, also available as a desktop app.</i>
+  <i>A free, self-hosted RSS reader for web and mobile, also available as a desktop app.</i>
 </p>
 
 <p align="center">
