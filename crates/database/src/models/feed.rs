@@ -68,6 +68,13 @@ pub struct Feed {
     pub display_mode: DisplayMode,
     /// Curated error from the latest failed poll; cleared on success.
     pub last_error: Option<String>,
+    /// Internal HTTP cache validators; never expose these through API/TS.
+    #[serde(skip)]
+    #[ts(skip)]
+    pub etag: Option<String>,
+    #[serde(skip)]
+    #[ts(skip)]
+    pub last_modified: Option<String>,
 }
 
 impl Feed {
@@ -126,6 +133,16 @@ impl Feed {
                 Some(folder) => Some(Folder::resolve_name_on(conn, folder.as_deref()).await?),
             };
 
+            let current = feeds::table.find(form.id).first::<Self>(conn).await?;
+            let invalidate = form.url.as_ref().is_some_and(|url| url != &current.url)
+                || form.filters.as_ref().is_some_and(|filters| filters != &current.filters);
+            if invalidate {
+                diesel::update(feeds::table.find(form.id))
+                    .set((feeds::etag.eq(None::<String>), feeds::last_modified.eq(None::<String>)))
+                    .execute(conn)
+                    .await?;
+            }
+
             let target = feeds::table.find(form.id);
             let feed = match form.expected_url.take() {
                 Some(url) => {
@@ -145,6 +162,37 @@ impl Feed {
             Ok::<Feed, WyrmError>(feed)
         })
         .await
+    }
+
+    /// Persist validators only if the subscription configuration still matches
+    /// the snapshot used for this request.
+    pub async fn record_validators(
+        pool: &DatabasePool,
+        source: &Self,
+        etag: Option<&str>,
+        last_modified: Option<&str>,
+        rsshub_instance: Option<&str>,
+    ) -> WyrmResult<()> {
+        let mut conn = pool.get().await?;
+        let conn = &mut *conn;
+        conn.transaction(async |conn| {
+            if source.url.starts_with("rsshub://") {
+                use crate::{models::settings::Settings, schema::settings};
+                let current = diesel::update(settings::table)
+                    .set(settings::is_singleton.eq(true))
+                    .get_result::<Settings>(conn)
+                    .await?;
+                if current.rsshub_instance.as_deref() != rsshub_instance {
+                    return Ok(());
+                }
+            }
+            diesel::update(feeds::table.find(source.id)
+                .filter(feeds::url.eq(&source.url))
+                .filter(feeds::filters.eq(&source.filters)))
+                .set((feeds::etag.eq(etag), feeds::last_modified.eq(last_modified)))
+                .execute(conn).await?;
+            Ok::<(), WyrmError>(())
+        }).await
     }
 
     pub async fn delete(pool: &DatabasePool, id: FeedId) -> WyrmResult<Self> {

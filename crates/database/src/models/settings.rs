@@ -1,6 +1,6 @@
 use crate::{DatabasePool, schema::settings};
 use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel_async::{AsyncConnection, RunQueryDsl};
 use diesel_derive_enum::DbEnum;
 use serde::{Deserialize, Serialize};
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
@@ -77,11 +77,28 @@ impl Settings {
 
     pub async fn update(pool: &DatabasePool, form: SettingsUpdateForm) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        diesel::update(settings::table)
-            .set(form)
-            .get_result::<Self>(&mut conn)
-            .await
-            .map_err(WyrmError::from)
+        let conn = &mut *conn;
+        conn.transaction(async |conn| {
+            // Updating this row first serializes configuration changes. Any supplied
+            // RSSHub instance invalidates the corresponding HTTP validators.
+            let invalidate_rsshub = form.rsshub_instance.is_some();
+            let updated = diesel::update(settings::table)
+                .set(form)
+                .get_result::<Self>(conn)
+                .await?;
+            if invalidate_rsshub {
+                use crate::schema::feeds;
+                diesel::update(feeds::table.filter(feeds::url.like("rsshub://%")))
+                    .set((
+                        feeds::etag.eq(None::<String>),
+                        feeds::last_modified.eq(None::<String>),
+                    ))
+                    .execute(conn)
+                    .await?;
+            }
+            Ok::<Self, WyrmError>(updated)
+        })
+        .await
     }
 }
 

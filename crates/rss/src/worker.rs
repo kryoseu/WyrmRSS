@@ -1,6 +1,6 @@
 use crate::{
     filter::CompiledFilters,
-    http::{HttpClient, HttpConfig},
+    http::{FeedResponse, HttpClient, HttpConfig},
     url::FeedUrlResolver,
 };
 use chrono::Utc;
@@ -184,8 +184,15 @@ async fn process_feed(
     info!("Processing feed {}", task.feed.title);
 
     let result = fetch_and_store(pool, http, resolver, task).await;
-    Feed::update(pool, FeedUpdateForm::from_poll_result(&task.feed, &result)).await?;
-    result
+    let status = result.as_ref().map(|_| ()).map_err(|e| wyrm_utils::error::WyrmError::WorkerError(e.fetch_error_message()));
+    Feed::update(pool, FeedUpdateForm::from_poll_result(&task.feed, &status)).await?;
+    match result {
+        Ok((etag, last_modified)) => {
+            Feed::record_validators(pool, &task.feed, etag.as_deref(), last_modified.as_deref(), resolver.rsshub_instance()).await?;
+            Ok(())
+        }
+        Err(error) => Err(error),
+    }
 }
 
 async fn fetch_and_store(
@@ -193,9 +200,25 @@ async fn fetch_and_store(
     http: &HttpClient,
     resolver: &FeedUrlResolver,
     task: &FeedTask,
-) -> WyrmResult<()> {
+) -> WyrmResult<(Option<String>, Option<String>)> {
     let fetch_target = resolver.resolve(&task.feed.url)?;
-    let (bytes, _) = http.fetch(&fetch_target).await?;
+    let current = Feed::get(pool, task.feed.id).await?;
+    let cache_matches = current.url == task.feed.url
+        && current.filters.0 == task.feed.filters.0
+        && current.etag == task.feed.etag
+        && current.last_modified == task.feed.last_modified;
+    let rsshub_matches = !task.feed.url.starts_with("rsshub://")
+        || database::models::settings::Settings::get(pool).await?.rsshub_instance.as_deref()
+            == resolver.rsshub_instance();
+    let use_validators = cache_matches && rsshub_matches
+        && !crate::icon::needs_feed_icon(pool, task.feed.id).await;
+    let response = http.fetch_feed(&fetch_target,
+        use_validators.then_some(task.feed.etag.as_deref()).flatten(),
+        use_validators.then_some(task.feed.last_modified.as_deref()).flatten()).await?;
+    let (bytes, etag, last_modified) = match response {
+        FeedResponse::NotModified { etag, last_modified } => return Ok((etag, last_modified)),
+        FeedResponse::Modified { body, etag, last_modified, .. } => (body, etag, last_modified),
+    };
 
     let parsed = feed_rs::parser::parse(&bytes[..])?;
 
@@ -237,7 +260,7 @@ async fn fetch_and_store(
     );
 
     if new_posts.is_empty() {
-        return Ok(());
+        return Ok((etag, last_modified));
     }
 
     for webhook in &task.webhooks {
@@ -257,5 +280,5 @@ async fn fetch_and_store(
         }
     }
 
-    Ok(())
+    Ok((etag, last_modified))
 }

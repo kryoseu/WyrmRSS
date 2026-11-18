@@ -6,3 +6,6 @@ pub mod opml;
 pub mod rsshub;
 pub mod url;
 pub mod worker;
+
+#[cfg(test)]
+mod test_server;

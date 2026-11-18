@@ -38,9 +38,9 @@
 -        display_mode -> Text,
 +        display_mode -> DisplayModeMapping,
          last_error -> Nullable<Text>,
-     }
- }
-@@ -48,13 +51,16 @@
+         etag -> Nullable<Text>,
+         last_modified -> Nullable<Text>,
+@@ -50,13 +53,16 @@
  }
  
  diesel::table! {
@@ -59,7 +59,7 @@
      }
  }
  
-@@ -64,10 +70,10 @@
+@@ -66,10 +72,10 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -72,7 +72,7 @@
      }
  }
  
-@@ -78,14 +84,14 @@
+@@ -80,14 +86,14 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -90,7 +90,7 @@
          thumbnail_url -> Nullable<Text>,
      }
  }
-@@ -93,12 +99,15 @@
+@@ -95,12 +101,15 @@
  diesel::table! {
      sessions (token_hash) {
          token_hash -> Text,
@@ -108,7 +108,7 @@
      settings (is_singleton) {
          is_singleton -> Bool,
          page_size -> Integer,
-@@ -107,7 +116,7 @@
+@@ -109,7 +118,7 @@
          http_connect_timeout -> Integer,
          http_retries -> Integer,
          http_user_agent -> Nullable<Text>,
@@ -117,7 +117,7 @@
          expire_read_after_days -> Nullable<Integer>,
          expire_unread_after_days -> Nullable<Integer>,
          read_delay_secs -> Integer,
-@@ -123,13 +132,16 @@
+@@ -125,13 +134,16 @@
  }
  
  diesel::table! {

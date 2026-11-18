@@ -40,6 +40,8 @@ diesel::table! {
         is_paused -> Bool,
         display_mode -> DisplayModeMapping,
         last_error -> Nullable<Text>,
+        etag -> Nullable<Text>,
+        last_modified -> Nullable<Text>,
     }
 }
 

@@ -93,3 +93,5 @@ Logo by [Pedro Niels](https://www.instagram.com/opedroniels/).
 ## License
 
 GPL v3, see [LICENSE](LICENSE).
+
+Feed polling stores publisher ETag and Last-Modified validators and sends conditional requests on later polls. An unchanged HTTP 304 counts as a successful refresh without parsing posts or sending webhooks. Validators are cleared when a feed URL, exclusion filters, or RSSHub instance changes.
