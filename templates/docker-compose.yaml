@@ -33,7 +33,7 @@ services:
       timeout: 5s
       retries: 10
     volumes:
-      - /path/to/config:/app/config
+      - ./config:/app/config
     depends_on:
       wyrm-db:
         condition: service_healthy
