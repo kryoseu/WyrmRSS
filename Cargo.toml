@@ -20,9 +20,9 @@ members = [
 exclude = ["desktop/src-tauri"]
 
 [workspace.package]
-version = "0.38.0"
+version = "0.39.0"
 edition = "2024"
-description = "A self-hosted RSS reader and aggregator"
+description = "A free, self-hosted RSS reader"
 license = "GPL-3.0-only"
 repository = "https://github.com/kryoseu/WyrmRSS"
 rust-version = "1.94.1"
@@ -45,7 +45,7 @@ diesel-derive-newtype = { version = "2.1.2" }
 diesel_migrations = "2.3.2"
 feed-rs = "2.3.1"
 futures = "0.3.32"
-getrandom = "0.3.4"
+getrandom = "0.4.2"
 hex = "0.4.3"
 libsqlite3-sys = { version = "0.38.2", features = ["bundled"] }
 openidconnect = { version = "4.1.0", default-features = false, features = [

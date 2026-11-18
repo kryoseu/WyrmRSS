@@ -7,7 +7,7 @@ import { AddFeedForm } from "../feeds/AddFeedForm";
 import { EditFeedForm } from "../feeds/EditFeedForm";
 import type { Feed } from "../../types/Feed";
 import { DISPLAY_MODE_LABELS } from "../../utils/displayMode";
-import { formatLastFetched } from "../../utils/utils";
+import { FeedFetchStatus } from "./FeedFetchStatus";
 
 function FeedRow({ feed, folderName }: { feed: Feed; folderName?: string }) {
   const [editing, setEditing] = useState(false);
@@ -25,7 +25,7 @@ function FeedRow({ feed, folderName }: { feed: Feed; folderName?: string }) {
           {folderName && <span className="feed-item-folder">{folderName}</span>}
         </span>
         <span className="settings-table-meta">{DISPLAY_MODE_LABELS[feed.display_mode]}</span>
-        <span className="settings-table-meta">{formatLastFetched(feed.last_fetched_at)}</span>
+        <FeedFetchStatus feed={feed} />
         <div className="settings-table-actions">
           <button
             className="settings-table-btn"

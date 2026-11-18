@@ -66,6 +66,8 @@ pub struct Feed {
     /// Dictates how posts from a feed are displayed.
     /// See the enum above.
     pub display_mode: DisplayMode,
+    /// Curated error from the latest failed poll; cleared on success.
+    pub last_error: Option<String>,
 }
 
 impl Feed {
@@ -108,6 +110,11 @@ impl Feed {
         .await
     }
 
+    /// Applies the form's `Some` fields. With `expected_url` set (worker polls), it only
+    /// updates if the feed's URL still matches, otherwise returns `NotFound`.
+    /// E.g. the user changes a feed's URL in the UI while a poll of the old URL is in
+    /// flight: the edit resets the fetch state, and the late poll result is discarded
+    /// instead of saving the old URL's fetch time or error on the new URL.
     pub async fn update(pool: &DatabasePool, mut form: FeedUpdateForm) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         let conn = &mut *conn;
@@ -119,10 +126,21 @@ impl Feed {
                 Some(folder) => Some(Folder::resolve_name_on(conn, folder.as_deref()).await?),
             };
 
-            let feed = diesel::update(feeds::table.find(form.id))
-                .set((form, folder_id.map(|f| feeds::folder_id.eq(f))))
-                .get_result::<Self>(conn)
-                .await?;
+            let target = feeds::table.find(form.id);
+            let feed = match form.expected_url.take() {
+                Some(url) => {
+                    diesel::update(target.filter(feeds::url.eq(url)))
+                        .set((form, folder_id.map(|f| feeds::folder_id.eq(f))))
+                        .get_result::<Self>(conn)
+                        .await?
+                }
+                None => {
+                    diesel::update(target)
+                        .set((form, folder_id.map(|f| feeds::folder_id.eq(f))))
+                        .get_result::<Self>(conn)
+                        .await?
+                }
+            };
 
             Ok::<Feed, WyrmError>(feed)
         })
@@ -176,7 +194,7 @@ pub struct FeedUpdateForm {
     pub url: Option<String>,
     pub ttl: Option<i32>,
     /// Double `Option` for the nullable column:
-    /// `None` leaves the folder untouched (e.g. the worker bumping `last_fetched_at`);
+    /// `None` leaves the folder untouched (e.g. a title-only edit);
     /// `Some(None)` or a blank name clears it;
     /// `Some(Some(name))` assigns it, resolved inside the update transaction
     /// (creating the folder if the name is new).
@@ -186,8 +204,35 @@ pub struct FeedUpdateForm {
     pub folder: Option<Option<String>>,
     pub filters: Option<Filters>,
     pub is_paused: Option<bool>,
-    pub last_fetched_at: Option<DateTime<Utc>>,
     pub display_mode: Option<DisplayMode>,
+    /// `Some(None)` clears it; the update handler does this for both
+    /// when the URL changes, so the new URL is polled right away.
+    pub last_fetched_at: Option<Option<DateTime<Utc>>>,
+    pub last_error: Option<Option<String>>,
+    /// Only apply when the feed's URL still matches; set by the worker so a poll
+    /// of a URL that has since been changed is discarded.
+    #[diesel(skip_update)]
+    pub expected_url: Option<String>,
+}
+
+impl FeedUpdateForm {
+    /// Built by the feed worker after each poll: success bumps `last_fetched_at`
+    /// and clears the error; failure keeps the last good fetch time and stores the message.
+    pub fn from_poll_result(feed: &Feed, result: &WyrmResult<()>) -> Self {
+        Self {
+            id: feed.id,
+            expected_url: Some(feed.url.clone()),
+            title: None,
+            url: None,
+            ttl: None,
+            folder: None,
+            filters: None,
+            is_paused: None,
+            display_mode: None,
+            last_fetched_at: result.is_ok().then(|| Some(Utc::now())),
+            last_error: Some(result.as_ref().err().map(WyrmError::fetch_error_message)),
+        }
+    }
 }
 
 /// Test helper: inserts a feed with a unique url and returns the `Feed`. Lives
@@ -265,9 +310,11 @@ mod tests {
                 ttl: Some(120),
                 folder: Some(Some(folder.name.clone())),
                 filters: None,
-                display_mode: None,
                 is_paused: Some(true),
                 last_fetched_at: None,
+                last_error: None,
+                expected_url: None,
+                display_mode: None,
             },
         )
         .await

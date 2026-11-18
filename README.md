@@ -1,201 +1,71 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="images/l-o-light.svg" width="65%">
-    <img src="images/l-o-dark.svg" width="65%">
+    <source media="(prefers-color-scheme: dark)" srcset="site/src/assets/logo-on-dark.svg" width="65%">
+    <img src="site/src/assets/logo-on-light.svg" width="65%">
   </picture>
 </p>
 
 <p align="center">
-  <i>A self-hosted RSS reader and aggregator for web and mobile, also available as a desktop app.</i>
+  <i>A free, self-hosted RSS reader for web and mobile, also available as a desktop app.</i>
 </p>
 
 <p align="center">
-  <a href="https://demo.wyrmrss.com"><b>Try the live demo</b></a><br>
-  <sub>Shared and mostly read-only, resets daily.</sub>
+  <a href="https://wyrmrss.com"><b>Documentation</b></a> · <a href="https://demo.wyrmrss.com"><b>Try the live demo</b></a><br>
+  <sub>The demo is shared and mostly read-only, and resets daily.</sub>
 </p>
 
 <p align="center">
-  <img src="images/wyrm.png" width="80%" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshot-dark.png">
+    <img src=".github/assets/screenshot-light.png" width="80%" alt="The Wyrm reader showing a list of posts next to an open article">
+  </picture>
 </p>
 
 ## Features
 
-- Subscribe to RSS and Atom feeds
-- Feed discovery — paste a blog homepage or YouTube channel URL and Wyrm finds the feed for you
-- YouTube channel support — subscribe to any channel and watch videos inline without leaving the reader
-- HLS video playback — posts with `.m3u8` streams or Reddit videos play inline in the reader
-- Browse posts per feed or across all feeds
-- Per-feed display modes — River (home feed), Feed only (posts only shown on Feed directly), or Radar (quiet, visit when nothing else going on)
-- Group feeds into folders — collapsible sidebar sections with unread counts, preserved across OPML import/export
-- Filters per feed — include or exclude entries matching a pattern, scoped to URL, title or content
-- Save posts to Read Later
-- Archive posts
-- Keyboard shortcuts — move between posts and sections, open, mark, save and archive posts without the mouse, all rebindable in Settings
-- Feeds behind authentication — per-host basic auth or custom header credentials, set in Settings
-- Webhooks - get notified on new posts (Discord, Slack and custom)
-- OPML import and export
-- Background feed polling with configurable interval and retry logic
-- Full-text search on post titles and description
-- Hot-reloaded settings (poll interval, HTTP timeouts, page size, reading mode and delay, post expiry) configurable via the UI
-- Easy to install
+- **Feed discovery**: paste a blog homepage or YouTube channel URL and Wyrm finds the feed
+- **Video in the reader**: YouTube, HLS streams and Reddit videos play inline
+- **Folders and OPML**: collapsible folders with unread counts, kept across OPML import and export
+- **Display modes**: show each feed in your River, only on its own page, or on the quiet Radar
+- **Filters**: include or exclude entries by URL, title or content, per feed
+- **Read Later and archive**: save posts for later, archive the keepers, and search titles and descriptions
+- **Keyboard shortcuts**: move, open, mark, save and archive without the mouse, all rebindable
+- **Webhooks**: get notified about new posts on Discord, Slack or a custom endpoint
+- **OIDC sign-in**: optional sign-in through your identity provider
+- **Feeds behind authentication**: per-host basic auth or custom headers
+- **RSSHub**: follow sites without RSS through your own instance
+- **Feed health**: see failing feeds and their errors at a glance in Settings
+- **Live settings**: change poll interval, timeouts, reading mode and post expiry without a restart
+- **Desktop app**: macOS, Windows and Linux, with nothing to set up
 
 ## Installation
 
-Docker compose and Kubernetes manifests are provided for an easy self-hosted
-install. A native desktop app is also available, with no server or database
-to set up. You may also build it from source.
+Try it with Docker Compose (PostgreSQL included):
 
-### Desktop app
-
-See [desktop.md](docs/installation/desktop.md) for macOS, Windows and Linux downloads.
-
-### With Docker
-
-See [docker.md](docs/installation/docker.md) for Docker Compose setup.
-
-### With Kubernetes
-
-See [kubernetes.yaml](docs/templates/kubernetes.yaml) for Kubernetes manifests.
-
-### From source
-
-See [source.md](docs/installation/source.md) to build from the source code.
-
-## Configuration
-
-### Startup configuration
-
-Startup settings can be configured via environment variables (prefixed `WYRM_`) or `config/wyrm.toml`.
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `WYRM_BIND` | `0.0.0.0` | IP address to bind to |
-| `WYRM_PORT` | `3001` | Port to listen on |
-| `WYRM_DATABASE_CONNECTION` | `postgres://wyrm:wyrm@localhost/wyrm` | PostgreSQL connection URI |
-| `WYRM_DATABASE_POOL_SIZE` | `30` | Max database connection pool size |
-| `WYRM_PUBLIC_URL` | _(none)_ | URL users reach Wyrm on, e.g. `https://rss.example.com`; required for OIDC, whose callback is `{public_url}/api/v1/auth/oidc/callback` |
-| `WYRM_API_KEY` | _(none)_ | API key accepted independently of OIDC; the API is open when neither authentication method is configured |
-| `WYRM_OIDC_ISSUER_URL` | _(none)_ | Enable optional OIDC using this provider's issuer URL |
-| `WYRM_OIDC_CLIENT_ID` | _(none)_ | Registered OIDC client ID |
-| `WYRM_OIDC_CLIENT_SECRET` | _(none)_ | OIDC client secret; omit for public clients |
-| `WYRM_OIDC_ALLOWED_SUBJECTS` | _(none)_ | Optional comma-separated `sub` allowlist; unset allows any user authenticated by the provider |
-
-> [!NOTE]
-> Setting `WYRM_API_KEY` on the backend is enough to restrict access. Setting it on the frontend too skips the in-app key prompt. When both API-key and OIDC settings are absent, the API remains open.
-
-### Optional OpenID Connect sign-in
-
-OIDC is disabled by default. See [OIDC setup](docs/installation/oidc.md) for provider registration, configuration, and session behavior. A valid `x-api-key` always works without an OIDC login when `WYRM_API_KEY` is configured, including when OIDC is enabled.
-
-### Runtime settings
-
-The following settings are stored in the database and can be changed at runtime via the Settings page without restarting the server.
-
-| Setting | Default | Description |
-| --- | --- | --- |
-| Page size | `100` | Feed entries returned per page |
-| Feed poll interval | `900` | Seconds between automatic feed polls |
-| HTTP timeout | `30` | Response timeout in seconds |
-| HTTP connect timeout | `10` | Connection timeout in seconds |
-| HTTP retries | `3` | Max retries for failed feed fetches |
-| HTTP user agent | `wyrm-rss/<version>` | User agent sent with feed requests |
-| Mark as read | `On open` | When posts are marked read: `On open`, `Manually`, or `Disabled` (no read tracking) |
-| Mark as read delay | `0` | Seconds a post must stay open before it's marked read (`On open` mode only); `0` marks it immediately |
-| Delete read posts after | _(never)_ | Days before read posts are deleted; Read Later and archived posts are kept |
-| Delete unread posts after | _(never)_ | Days before unread posts are deleted; Read Later and archived posts are kept |
-
-### Frontend
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `WYRM_BACKEND_URL` | `http://localhost:3001` | Backend URL, must match where the backend is running |
-| `WYRM_API_KEY` | _(none)_ | Bake an API key into the frontend build, skipping the key prompt entirely |
-
-## Subscription links
-
-Extensions and bookmarklets can open `/subscribe` to prefill the Add Feed form
-with a URL-encoded `url` and optional `title`:
-
-```text
-https://wyrm.example.com/subscribe?url=https%3A%2F%2Fexample.com%2Ffeed.xml&title=Example
+```bash
+curl -O https://raw.githubusercontent.com/kryoseu/WyrmRSS/main/templates/docker-compose.yaml
+docker compose up -d
 ```
 
-Nothing is added until the user clicks **Add**. Never put an API key in the link.
+Then open http://localhost:3000. Other ways to install:
 
-## YouTube
+- [Desktop app](https://wyrmrss.com/getting-started/desktop/): macOS, Windows and Linux downloads
+- [Docker](https://wyrmrss.com/getting-started/docker/): the Compose setup in detail
+- [Kubernetes](https://wyrmrss.com/getting-started/kubernetes/): manifests for the server and web UI
+- [Build from source](https://wyrmrss.com/getting-started/source/)
 
-Wyrm treats YouTube channels as regular RSS feeds. Add a channel using its feed URL:
+## Documentation
 
-```
-https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID
-```
+Configuration and guides are on [wyrmrss.com](https://wyrmrss.com):
 
-The reader detects YouTube links and renders an embedded player in place of the article body.
-
-### Filtering content
-
-Use filters to exclude entries you don't want from a feed, or prefix a filter
-with `+` to keep only the entries that match it. Each filter is a
-case-insensitive substring pattern, optionally scoped to a field with a
-`url:`, `title:` or `content:` prefix; an unprefixed pattern matches any of
-them. `content:` matches both the entry's summary and body.
-
-Example, for YouTube you may want to exclude:
-
-| Filter | Excludes |
-| -------- | ---------- |
-| `url:/shorts` | YouTube Shorts |
-| `url:/live` | Live streams |
-| `title:trailer` | Entries with "trailer" in the title |
-
-Filters are per-feed, so `url:/shorts` drops any entry from that feed whose
-URL contains `/shorts`.
-
-Include filters keep only matching entries; matching any one of them is
-enough. Exclude filters still apply on top and win over includes:
-
-| Filters | Keeps |
-| -------- | ---------- |
-| `+url:/shorts` | Only YouTube Shorts |
-| `+title:rust`, `+title:zig` | Entries with "rust" or "zig" in the title |
-| `+title:rust`, `title:jobs` | Rust entries, except job posts |
-
-Filters apply as new entries are fetched; posts already saved aren't removed.
-
-## Feeds behind authentication
-
-For feeds behind HTTP basic auth (e.g. `.htaccess`) or an API key header, add
-a credential in **Settings → Credentials**. Credentials are per host, not per
-feed, so one entry covers every feed on that host. They're sent with feed
-polls, feed discovery and icon fetches, but not webhooks.
-
-| Kind | Sent as |
-| --- | --- |
-| Basic auth | `Authorization: Basic …` from a username and password |
-| Custom header | Any header and value, e.g. `X-Api-Key: …` or `Authorization: Bearer …` |
-
-Credentials match on host **and** port. A bare host like `feeds.example.com`
-means `https` on port 443; for an `http://` feed enter
-`http://feeds.example.com`, and for a custom port add it:
-`feeds.example.com:8443`.
-
-Secrets are never returned by the API once saved; they can be replaced but
-not read back. They are stored unencrypted in the database.
-
-## Integrations
-
-Configure available integrations in **Settings → Integrations**.
-
-### RSSHub
-
-[RSSHub](https://docs.rsshub.app) generates feeds for sites without RSS. Set
-your instance URL under **RSSHub** (e.g. `http://localhost:1200`).
-
-Add RSSHub feeds as `rsshub://<route>`, e.g. `rsshub://hackernews`.
-
-- Links to your instance (e.g. from RSSHub Radar) are converted to `rsshub://` automatically.
-- Feeds are fetched from whichever instance is currently set, so switching instances needs no feed edits.
-- Turning the integration off pauses RSSHub feeds until you turn it back on.
+- [Server configuration](https://wyrmrss.com/configuration/server/)
+- [Runtime settings](https://wyrmrss.com/configuration/runtime-settings/)
+- [OpenID Connect (OIDC)](https://wyrmrss.com/configuration/oidc/)
+- [YouTube](https://wyrmrss.com/guides/youtube/)
+- [Filters](https://wyrmrss.com/guides/filters/)
+- [Feeds behind authentication](https://wyrmrss.com/guides/authenticated-feeds/)
+- [Subscription links](https://wyrmrss.com/guides/subscription-links/)
+- [RSSHub](https://wyrmrss.com/integrations/rsshub/)
 
 ## Stack
 
@@ -222,4 +92,4 @@ Logo by [Pedro Niels](https://www.instagram.com/opedroniels/).
 
 ## License
 
-GPL v3 — see [LICENSE](LICENSE).
+GPL v3, see [LICENSE](LICENSE).

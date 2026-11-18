@@ -267,7 +267,8 @@ body.reader-resizing {
   }
 
   @media (hover: hover) {
-    &:hover {
+    &:hover,
+    &:has(.row-menu-trigger.open) {
       .row-menu-trigger {
         display: flex;
       }
@@ -349,7 +350,8 @@ body.reader-resizing {
   }
 
   @media (hover: hover) {
-    &:hover {
+    &:hover,
+    &:has(.row-menu-trigger.open) {
       /* Swap the unread badge for the menu trigger, like feed rows do. */
       .row-menu-trigger {
         display: flex;
@@ -1054,8 +1056,10 @@ body.reader-resizing {
   flex-direction: column;
   border: 1px solid var(--border);
   border-radius: 6px;
-  overflow: hidden;
 }
+/* Round the end rows instead of clipping, so row bubbles can overflow the table. */
+.settings-table > :first-child { border-radius: 5px 5px 0 0; }
+.settings-table > :last-child { border-radius: 0 0 5px 5px; }
 
 .settings-table-header,
 .settings-table-row {
@@ -2835,6 +2839,17 @@ body.reader-resizing {
     flex-basis: 100%;
   }
 
+  /* Fetch status sits at the bottom right; its bubble opens leftwards to stay on screen. */
+  .settings-table-meta.feed-fetch-status,
+  .feed-fetch-wrap {
+    margin-left: auto;
+  }
+  /* Extra specificity: the base bubble rule comes later in the file. */
+  .settings-table-row .feed-fetch-bubble {
+    left: auto;
+    right: 0;
+  }
+
   /* No folder, nothing to show. */
   .settings-table-badge:empty,
   .settings-table-ttl {
@@ -3032,3 +3047,54 @@ kbd {
 .shortcut-footer-hint {
   margin-top: 8px;
 }
+
+/* Fetch health is confined to the settings table. Native popovers support
+   touch, keyboard, Escape and outside-click dismissal above the table clip. */
+.feed-fetch-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.feed-fetch-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+}
+.feed-fetch-dot.healthy { background: #399766; }
+.feed-fetch-dot.error { background: #d8763b; }
+.feed-fetch-dot.never { border: 1px solid currentColor; opacity: .6; }
+.feed-fetch-error {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.feed-fetch-error:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+.feed-fetch-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.feed-fetch-bubble {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: -6px;
+  z-index: 40;
+  width: max-content;
+  max-width: 240px;
+  padding: 6px 9px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+  overflow-wrap: anywhere;
+}
+.feed-fetch-bubble b { color: #d8763b; font-weight: 600; }

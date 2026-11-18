@@ -1,0 +1,40 @@
+---
+title: Kubernetes
+description: Run Wyrm on Kubernetes.
+sidebar:
+  order: 3
+---
+
+import { Code } from '@astrojs/starlight/components';
+import manifest from '../../../../../templates/kubernetes.yaml?raw';
+
+The manifests below define a Deployment and Service for both `wyrm-server`
+(port 3001) and `wyrm-ui` (port 3000). They're also in
+[`templates/kubernetes.yaml`](https://github.com/kryoseu/WyrmRSS/blob/main/templates/kubernetes.yaml)
+on GitHub.
+
+## Prerequisites
+
+- A PostgreSQL database (the manifests don't include one).
+- A `wyrm` namespace.
+- A `wyrm-creds` secret with a `WYRM_DATABASE_CONNECTION` key holding the
+  PostgreSQL connection URI.
+
+```bash
+kubectl create namespace wyrm
+kubectl -n wyrm create secret generic wyrm-creds \
+  --from-literal=WYRM_DATABASE_CONNECTION="postgres://wyrm:wyrm@your-db-host/wyrm"
+```
+
+## Deploy
+
+<Code code={manifest} lang="yaml" title="kubernetes.yaml" />
+
+Save it as `kubernetes.yaml` and apply it:
+
+```bash
+kubectl apply -f kubernetes.yaml
+```
+
+See [Server configuration](/configuration/server/) for the other environment
+variables you can add to the deployments.

@@ -57,6 +57,7 @@ diesel::table! {
         folder_id -> Nullable<Int4>,
         is_paused -> Bool,
         display_mode -> DisplayMode,
+        last_error -> Nullable<Text>,
     }
 }
 

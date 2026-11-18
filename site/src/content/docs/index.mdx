@@ -1,0 +1,89 @@
+---
+title: Wyrm
+description: A free, self-hosted RSS reader for web and mobile, also available as a desktop app.
+template: splash
+editUrl: false
+hero:
+  title: A free, self-hosted RSS reader
+  tagline: For web and mobile, also available as a desktop app.
+  actions:
+    - text: Get started
+      link: /getting-started/introduction/
+      icon: right-arrow
+    - text: Try the live demo
+      link: https://demo.wyrmrss.com
+      icon: external
+      variant: minimal
+      attrs:
+        target: _blank
+        rel: noopener
+---
+
+import ScreenshotCompare from '../../components/ScreenshotCompare.astro';
+
+<ScreenshotCompare />
+
+## Features
+
+<dl class="features">
+	<div>
+		<dt>Feed discovery</dt>
+		<dd>Paste a blog homepage or YouTube channel URL and Wyrm finds the feed.</dd>
+	</div>
+	<div>
+		<dt>Video in the reader</dt>
+		<dd>[YouTube](/guides/youtube/), HLS streams and Reddit videos play inline.</dd>
+	</div>
+	<div>
+		<dt>Folders and OPML</dt>
+		<dd>Collapsible folders with unread counts, kept across OPML import and export.</dd>
+	</div>
+	<div>
+		<dt>Display modes</dt>
+		<dd>Show each feed in your River, only on its own page, or on the quiet Radar.</dd>
+	</div>
+	<div>
+		<dt>Filters</dt>
+		<dd>Include or exclude entries by URL, title or content, [per feed](/guides/filters/).</dd>
+	</div>
+	<div>
+		<dt>Read Later and archive</dt>
+		<dd>Save posts for later, archive the keepers, and search titles and descriptions.</dd>
+	</div>
+	<div>
+		<dt>Keyboard shortcuts</dt>
+		<dd>Move, open, mark, save and archive without the mouse, all rebindable.</dd>
+	</div>
+	<div>
+		<dt>Webhooks</dt>
+		<dd>Get notified about new posts on Discord, Slack or a custom endpoint.</dd>
+	</div>
+	<div>
+		<dt>OIDC sign-in</dt>
+		<dd>Optional sign-in through [your identity provider](/configuration/oidc/).</dd>
+	</div>
+	<div>
+		<dt>Feeds behind authentication</dt>
+		<dd>Per-host [basic auth or custom headers](/guides/authenticated-feeds/).</dd>
+	</div>
+	<div>
+		<dt>RSSHub</dt>
+		<dd>Follow sites without RSS through [your own instance](/integrations/rsshub/).</dd>
+	</div>
+	<div>
+		<dt>Feed health</dt>
+		<dd>See failing feeds and their errors at a glance in Settings.</dd>
+	</div>
+	<div>
+		<dt>Live settings</dt>
+		<dd>Change poll interval, timeouts, reading mode and post expiry [without a restart](/configuration/runtime-settings/).</dd>
+	</div>
+	<div>
+		<dt>Easy to install</dt>
+		<dd>One [Docker Compose](/getting-started/docker/) file with PostgreSQL included, [Kubernetes](/getting-started/kubernetes/), or [build from source](/getting-started/source/).</dd>
+	</div>
+	<div>
+		<dt>Desktop app</dt>
+		<dd>macOS, Windows and Linux, [with nothing to set up](/getting-started/desktop/).</dd>
+	</div>
+</dl>
