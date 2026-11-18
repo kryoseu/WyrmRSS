@@ -6752,7 +6752,7 @@ dependencies = [
  "api_utils",
  "chrono",
  "database",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "hex",
  "serde",
  "sha2 0.11.1",
