@@ -142,7 +142,7 @@ jobs:
             -f previous_tag_name="${{ needs.get-version.outputs.previous_tag }}" \
             --jq .body > notes.md
       - name: Tag & Release
-        uses: softprops/action-gh-release@v3.0.3
+        uses: softprops/action-gh-release@v3.0.4
         with:
           tag_name: ${{ needs.get-version.outputs.tag }}
           name: ${{ needs.get-version.outputs.tag }}
