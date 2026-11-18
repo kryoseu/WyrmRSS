@@ -16,8 +16,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="site/src/assets/screenshot-dark.png">
-    <img src="site/src/assets/screenshot-light.png" width="80%" alt="The Wyrm reader showing a list of posts next to an open article">
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshot-dark.png">
+    <img src=".github/assets/screenshot-light.png" width="80%" alt="The Wyrm reader showing a list of posts next to an open article">
   </picture>
 </p>
 
