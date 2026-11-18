@@ -5073,7 +5073,7 @@ dependencies = [
  "api_utils",
  "chrono",
  "database",
- "getrandom 0.3.4",
+ "getrandom 0.4.2",
  "hex",
  "openidconnect",
  "reqwest",
