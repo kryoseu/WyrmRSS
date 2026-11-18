@@ -135,10 +135,16 @@ impl Feed {
 
             let current = feeds::table.find(form.id).first::<Self>(conn).await?;
             let invalidate = form.url.as_ref().is_some_and(|url| url != &current.url)
-                || form.filters.as_ref().is_some_and(|filters| filters != &current.filters);
+                || form
+                    .filters
+                    .as_ref()
+                    .is_some_and(|filters| filters.0 != current.filters.0);
             if invalidate {
                 diesel::update(feeds::table.find(form.id))
-                    .set((feeds::etag.eq(None::<String>), feeds::last_modified.eq(None::<String>)))
+                    .set((
+                        feeds::etag.eq(None::<String>),
+                        feeds::last_modified.eq(None::<String>),
+                    ))
                     .execute(conn)
                     .await?;
             }
@@ -186,13 +192,18 @@ impl Feed {
                     return Ok(());
                 }
             }
-            diesel::update(feeds::table.find(source.id)
-                .filter(feeds::url.eq(&source.url))
-                .filter(feeds::filters.eq(&source.filters)))
+            diesel::update(
+                feeds::table
+                    .find(source.id)
+                    .filter(feeds::url.eq(&source.url))
+                    .filter(feeds::filters.eq(&source.filters)),
+            )
                 .set((feeds::etag.eq(etag), feeds::last_modified.eq(last_modified)))
-                .execute(conn).await?;
+                .execute(conn)
+                .await?;
             Ok::<(), WyrmError>(())
-        }).await
+        })
+        .await
     }
 
     pub async fn delete(pool: &DatabasePool, id: FeedId) -> WyrmResult<Self> {
