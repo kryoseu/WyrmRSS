@@ -5,11 +5,11 @@
 
 [package]
 name = "desktop"
-version = "0.39.0"
+version = "0.39.1"
 edition = "2024"
 description = "Desktop build of WyrmRSS (Tauri)"
 license = "GPL-3.0-only"
-repository = "https://github.com/kryoseu/WyrmRSS"
+repository = "https://github.com/wyrmrss/WyrmRSS"
 rust-version = "1.94.1"
 
 [lib]

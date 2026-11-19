@@ -37,7 +37,7 @@
       <outline type="rss" text="Computerphile" title="Computerphile" xmlUrl="https://www.youtube.com/feeds/videos.xml?channel_id=UC9-y-6csu5WGm29I7JiwpnA"/>
     </outline>
     <outline text="Releases" title="Releases">
-      <outline type="rss" text="Wyrm" title="Wyrm" xmlUrl="https://github.com/kryoseu/WyrmRSS/releases.atom"/>
+      <outline type="rss" text="Wyrm" title="Wyrm" xmlUrl="https://github.com/wyrmrss/WyrmRSS/releases.atom"/>
       <outline type="rss" text="Rust" title="Rust" xmlUrl="https://github.com/rust-lang/rust/releases.atom"/>
       <outline type="rss" text="Neovim" title="Neovim" xmlUrl="https://github.com/neovim/neovim/releases.atom"/>
     </outline>

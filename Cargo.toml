@@ -20,11 +20,11 @@ members = [
 exclude = ["desktop/src-tauri"]
 
 [workspace.package]
-version = "0.39.0"
+version = "0.39.1"
 edition = "2024"
 description = "A free, self-hosted RSS reader"
 license = "GPL-3.0-only"
-repository = "https://github.com/kryoseu/WyrmRSS"
+repository = "https://github.com/wyrmrss/WyrmRSS"
 rust-version = "1.94.1"
 
 [workspace.dependencies]

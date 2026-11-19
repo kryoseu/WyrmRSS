@@ -11,7 +11,7 @@ separate database to set up. It uses SQLite instead of PostgreSQL.
 
 ## Install
 
-Download the build for your platform from the [Releases](https://github.com/kryoseu/WyrmRSS/releases) page:
+Download the build for your platform from the [Releases](https://github.com/wyrmrss/WyrmRSS/releases) page:
 
 - **macOS**: `.dmg` (separate builds for Apple Silicon and Intel)
 - **Windows**: `.exe` (NSIS installer)
