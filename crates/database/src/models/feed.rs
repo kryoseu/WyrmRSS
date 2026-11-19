@@ -68,10 +68,11 @@ pub struct Feed {
     pub display_mode: DisplayMode,
     /// Curated error from the latest failed poll; cleared on success.
     pub last_error: Option<String>,
-    /// Internal HTTP cache validators; never expose these through API/TS.
+    /// HTTP ETag used to revalidate the feed response.
     #[serde(skip)]
     #[ts(skip)]
     pub etag: Option<String>,
+    /// HTTP Last-Modified value used to revalidate the feed response.
     #[serde(skip)]
     #[ts(skip)]
     pub last_modified: Option<String>,
@@ -133,22 +134,6 @@ impl Feed {
                 Some(folder) => Some(Folder::resolve_name_on(conn, folder.as_deref()).await?),
             };
 
-            let current = feeds::table.find(form.id).first::<Self>(conn).await?;
-            let invalidate = form.url.as_ref().is_some_and(|url| url != &current.url)
-                || form
-                    .filters
-                    .as_ref()
-                    .is_some_and(|filters| filters.0 != current.filters.0);
-            if invalidate {
-                diesel::update(feeds::table.find(form.id))
-                    .set((
-                        feeds::etag.eq(None::<String>),
-                        feeds::last_modified.eq(None::<String>),
-                    ))
-                    .execute(conn)
-                    .await?;
-            }
-
             let target = feeds::table.find(form.id);
             let feed = match form.expected_url.take() {
                 Some(url) => {
@@ -170,40 +155,14 @@ impl Feed {
         .await
     }
 
-    /// Persist validators only if the subscription configuration still matches
-    /// the snapshot used for this request.
-    pub async fn record_validators(
-        pool: &DatabasePool,
-        source: &Self,
-        etag: Option<&str>,
-        last_modified: Option<&str>,
-        rsshub_instance: Option<&str>,
-    ) -> WyrmResult<()> {
+    /// Clear validators for RSSHub feeds after the configured instance changes.
+    pub async fn clear_rsshub_validators(pool: &DatabasePool) -> WyrmResult<()> {
         let mut conn = pool.get().await?;
-        let conn = &mut *conn;
-        conn.transaction(async |conn| {
-            if source.url.starts_with("rsshub://") {
-                use crate::{models::settings::Settings, schema::settings};
-                let current = diesel::update(settings::table)
-                    .set(settings::is_singleton.eq(true))
-                    .get_result::<Settings>(conn)
-                    .await?;
-                if current.rsshub_instance.as_deref() != rsshub_instance {
-                    return Ok(());
-                }
-            }
-            diesel::update(
-                feeds::table
-                    .find(source.id)
-                    .filter(feeds::url.eq(&source.url))
-                    .filter(feeds::filters.eq(&source.filters)),
-            )
-            .set((feeds::etag.eq(etag), feeds::last_modified.eq(last_modified)))
-            .execute(conn)
+        diesel::update(feeds::table.filter(feeds::url.like("rsshub://%")))
+            .set((feeds::etag.eq(None::<String>), feeds::last_modified.eq(None::<String>)))
+            .execute(&mut conn)
             .await?;
-            Ok::<(), WyrmError>(())
-        })
-        .await
+        Ok(())
     }
 
     pub async fn delete(pool: &DatabasePool, id: FeedId) -> WyrmResult<Self> {
@@ -268,6 +227,10 @@ pub struct FeedUpdateForm {
     /// when the URL changes, so the new URL is polled right away.
     pub last_fetched_at: Option<Option<DateTime<Utc>>>,
     pub last_error: Option<Option<String>>,
+    /// `Some(None)` clears the ETag; `None` leaves it untouched.
+    pub etag: Option<Option<String>>,
+    /// `Some(None)` clears Last-Modified; `None` leaves it untouched.
+    pub last_modified: Option<Option<String>>,
     /// Only apply when the feed's URL still matches; set by the worker so a poll
     /// of a URL that has since been changed is discarded.
     #[diesel(skip_update)]
@@ -277,7 +240,10 @@ pub struct FeedUpdateForm {
 impl FeedUpdateForm {
     /// Built by the feed worker after each poll: success bumps `last_fetched_at`
     /// and clears the error; failure keeps the last good fetch time and stores the message.
-    pub fn from_poll_result(feed: &Feed, result: &WyrmResult<()>) -> Self {
+    pub fn from_poll_result(
+        feed: &Feed,
+        result: &WyrmResult<(Option<String>, Option<String>)>,
+    ) -> Self {
         Self {
             id: feed.id,
             expected_url: Some(feed.url.clone()),
@@ -290,6 +256,11 @@ impl FeedUpdateForm {
             display_mode: None,
             last_fetched_at: result.is_ok().then(|| Some(Utc::now())),
             last_error: Some(result.as_ref().err().map(WyrmError::fetch_error_message)),
+            etag: result.as_ref().ok().map(|(etag, _)| Some(etag.clone())),
+            last_modified: result
+                .as_ref()
+                .ok()
+                .map(|(_, last_modified)| Some(last_modified.clone())),
         }
     }
 }
@@ -372,6 +343,8 @@ mod tests {
                 is_paused: Some(true),
                 last_fetched_at: None,
                 last_error: None,
+                etag: None,
+                last_modified: None,
                 expected_url: None,
                 display_mode: None,
             },

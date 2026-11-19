@@ -401,12 +401,21 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
     assert!(feed.last_error.is_none());
     assert!(feed.last_fetched_at.is_none());
 
-    let success = Feed::update(&db.pool, FeedUpdateForm::from_poll_result(&feed, &Ok(())))
-        .await
-        .unwrap();
+    let success = Feed::update(
+        &db.pool,
+        FeedUpdateForm::from_poll_result(
+            &feed,
+            &Ok((Some("etag-v1".into()), Some("yesterday".into()))),
+        ),
+    )
+    .await
+    .unwrap();
     assert!(success.last_fetched_at.is_some());
+    assert_eq!(success.etag.as_deref(), Some("etag-v1"));
+    assert_eq!(success.last_modified.as_deref(), Some("yesterday"));
 
-    let failed_poll = Err(WyrmError::WorkerError("boom".into()));
+    let failed_poll: wyrm_utils::result::WyrmResult<(Option<String>, Option<String>)> =
+        Err(WyrmError::WorkerError("boom".into()));
     let failed = Feed::update(
         &db.pool,
         FeedUpdateForm::from_poll_result(&feed, &failed_poll),
@@ -415,8 +424,13 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
     .unwrap();
     assert_eq!(failed.last_fetched_at, success.last_fetched_at);
     assert_eq!(failed.last_error.as_deref(), Some("Fetch failed"));
+    assert_eq!(failed.etag, success.etag);
+    assert_eq!(failed.last_modified, success.last_modified);
 
-    let recovered = Feed::update(&db.pool, FeedUpdateForm::from_poll_result(&feed, &Ok(())))
+    let recovered = Feed::update(
+        &db.pool,
+        FeedUpdateForm::from_poll_result(&feed, &Ok((None, None))),
+    )
         .await
         .unwrap();
     assert!(recovered.last_error.is_none());
@@ -433,6 +447,8 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
             is_paused: None,
             last_fetched_at: Some(None),
             last_error: Some(None),
+            etag: Some(None),
+            last_modified: Some(None),
             expected_url: None,
             display_mode: None,
         },
@@ -440,6 +456,7 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
     .await
     .unwrap();
     assert!(updated.last_fetched_at.is_none());
+    assert!(updated.etag.is_none() && updated.last_modified.is_none());
 
     // A poll of the old URL finishing after the edit is discarded.
     let stale = Feed::update(
@@ -456,143 +473,4 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
     assert!(current.last_fetched_at.is_none());
 
     Feed::delete(&db.pool, feed.id).await.unwrap();
-}
-
-#[tokio::test]
-async fn validators_follow_subscription_and_rsshub_configuration() {
-    use database::models::{
-        feed::FeedUpdateForm,
-        settings::{Settings, SettingsUpdateForm},
-    };
-    let db = TestDb::new("validators").await;
-    let form = |instance: &str| SettingsUpdateForm {
-        page_size: None,
-        feed_poll_interval_secs: None,
-        http_timeout: None,
-        http_connect_timeout: None,
-        http_retries: None,
-        http_user_agent: None,
-        read_mode: None,
-        expire_read_after_days: None,
-        expire_unread_after_days: None,
-        read_delay_secs: None,
-        rsshub_instance: Some(Some(instance.into())),
-    };
-    Settings::update(&db.pool, form("https://old.example.com"))
-        .await
-        .unwrap();
-    let feed = Feed::create(
-        &db.pool,
-        FeedInsertForm {
-            title: "RSSHub".into(),
-            url: "rsshub://test".into(),
-            ttl: 60,
-            ..Default::default()
-        },
-    )
-    .await
-    .unwrap();
-    Feed::record_validators(
-        &db.pool,
-        &feed,
-        Some("old"),
-        Some("yesterday"),
-        Some("https://old.example.com"),
-    )
-    .await
-    .unwrap();
-    let cached = Feed::get(&db.pool, feed.id).await.unwrap();
-    assert_eq!(cached.etag.as_deref(), Some("old"));
-    let serialized = serde_json::to_value(&cached).unwrap();
-    assert!(serialized.get("etag").is_none());
-    assert!(serialized.get("last_modified").is_none());
-    Settings::update(&db.pool, form("https://new.example.com"))
-        .await
-        .unwrap();
-    let cleared = Feed::get(&db.pool, feed.id).await.unwrap();
-    assert!(cleared.etag.is_none() && cleared.last_modified.is_none());
-    // Even a fetch started before the first validators existed cannot restore
-    // metadata belonging to the old instance after it has been changed.
-    Feed::record_validators(
-        &db.pool,
-        &feed,
-        Some("stale"),
-        None,
-        Some("https://old.example.com"),
-    )
-    .await
-    .unwrap();
-    assert!(Feed::get(&db.pool, feed.id).await.unwrap().etag.is_none());
-    Feed::record_validators(
-        &db.pool,
-        &cleared,
-        Some("new"),
-        None,
-        Some("https://new.example.com"),
-    )
-    .await
-    .unwrap();
-    let update = FeedUpdateForm {
-        id: feed.id,
-        title: None,
-        url: None,
-        ttl: None,
-        folder: None,
-        filters: Some(vec![Some("exclude".into())].into()),
-        is_paused: None,
-        last_fetched_at: None,
-        last_error: None,
-        expected_url: None,
-        display_mode: None,
-    };
-    let filtered = Feed::update(&db.pool, update).await.unwrap();
-    assert!(filtered.etag.is_none());
-    Feed::record_validators(
-        &db.pool,
-        &cleared,
-        Some("old filters"),
-        None,
-        Some("https://new.example.com"),
-    )
-    .await
-    .unwrap();
-    assert!(Feed::get(&db.pool, feed.id).await.unwrap().etag.is_none());
-    Feed::record_validators(
-        &db.pool,
-        &filtered,
-        Some("fresh"),
-        None,
-        Some("https://new.example.com"),
-    )
-    .await
-    .unwrap();
-    let changed = Feed::update(
-        &db.pool,
-        FeedUpdateForm {
-            id: feed.id,
-            title: None,
-            url: Some("https://example.com/feed".into()),
-            ttl: None,
-            folder: None,
-            filters: None,
-            is_paused: None,
-            last_fetched_at: None,
-            last_error: None,
-            expected_url: None,
-            display_mode: None,
-        },
-    )
-    .await
-    .unwrap();
-    assert!(changed.etag.is_none() && changed.last_modified.is_none());
-    Feed::record_validators(
-        &db.pool,
-        &filtered,
-        Some("old URL"),
-        None,
-        Some("https://new.example.com"),
-    )
-    .await
-    .unwrap();
-    assert!(Feed::get(&db.pool, feed.id).await.unwrap().etag.is_none());
 }

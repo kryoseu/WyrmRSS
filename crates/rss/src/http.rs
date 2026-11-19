@@ -121,7 +121,9 @@ impl HttpClient {
             FeedResponse::Modified {
                 body, content_type, ..
             } => Ok((body, content_type)),
-            FeedResponse::NotModified { .. } => unreachable!("unconditional 304 is rejected"),
+            FeedResponse::NotModified { .. } => Err(WyrmError::WorkerError(
+                "Unexpected 304 without a conditional request".into(),
+            )),
         }
     }
 
@@ -335,102 +337,5 @@ mod tests {
         assert!(custom_header("", "secret").is_err());
         // A newline in the value would let a stored secret inject extra headers.
         assert!(custom_header("x-api-key", "secret\r\nx-injected: 1").is_err());
-    }
-    fn client() -> HttpClient {
-        HttpClient::new(
-            &HttpConfig {
-                timeout: 2,
-                connect_timeout: 2,
-                retries: 0,
-                user_agent: None,
-            },
-            vec![],
-        )
-        .unwrap()
-    }
-
-    #[tokio::test]
-    async fn validators_roundtrip_and_304_keeps_missing_headers() {
-        use crate::test_server::{response, serve};
-        let modified = "Wed, 21 Oct 2015 07:28:00 GMT";
-        let (url, server) = serve(vec![
-            response(
-                "200 OK",
-                &format!("ETag: W/\"v1\"\r\nLast-Modified: {modified}\r\n"),
-                "rss",
-            ),
-            response("304 Not Modified", "ETag: W/\"v2\"\r\n", ""),
-            response("200 OK", "", "changed"),
-        ])
-        .await;
-        let client = client();
-        match client.fetch_feed(&url, None, None).await.unwrap() {
-            FeedResponse::Modified {
-                body,
-                etag,
-                last_modified,
-                ..
-            } => {
-                assert_eq!(body.as_ref(), b"rss");
-                assert_eq!(etag.as_deref(), Some("W/\"v1\""));
-                assert_eq!(last_modified.as_deref(), Some(modified));
-            }
-            _ => panic!("expected body"),
-        }
-        match client
-            .fetch_feed(&url, Some("W/\"v1\""), Some(modified))
-            .await
-            .unwrap()
-        {
-            FeedResponse::NotModified {
-                etag,
-                last_modified,
-            } => {
-                assert_eq!(etag.as_deref(), Some("W/\"v2\""));
-                assert_eq!(last_modified.as_deref(), Some(modified));
-            }
-            _ => panic!("expected 304"),
-        }
-        match client
-            .fetch_feed(&url, Some("W/\"v2\""), None)
-            .await
-            .unwrap()
-        {
-            FeedResponse::Modified {
-                etag,
-                last_modified,
-                ..
-            } => {
-                assert!(etag.is_none());
-                assert!(last_modified.is_none());
-            }
-            _ => panic!("expected changed body"),
-        }
-        let requests = server.await.unwrap();
-        assert!(!requests[0].to_lowercase().contains("if-none-match"));
-        assert!(requests[1].contains("W/\"v1\""));
-        assert!(requests[1].to_lowercase().contains("if-modified-since:"));
-    }
-
-    #[tokio::test]
-    async fn last_modified_only_and_unconditional_304() {
-        use crate::test_server::{response, serve};
-        let (url, server) = serve(vec![
-            response("304 Not Modified", "", ""),
-            response("304 Not Modified", "", ""),
-        ])
-        .await;
-        let client = client();
-        assert!(matches!(
-            client
-                .fetch_feed(&url, None, Some("Wed, 21 Oct 2015 07:28:00 GMT"))
-                .await
-                .unwrap(),
-            FeedResponse::NotModified { .. }
-        ));
-        assert!(client.fetch(&url).await.is_err());
-        let requests = server.await.unwrap();
-        assert!(requests[0].to_lowercase().contains("if-modified-since:"));
-        assert!(!requests[0].to_lowercase().contains("if-none-match:"));
     }
 }

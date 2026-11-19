@@ -186,23 +186,10 @@ async fn process_feed(
     let result = fetch_and_store(pool, http, resolver, task).await;
     let status = result
         .as_ref()
-        .map(|_| ())
+        .map(|(etag, last_modified)| (etag.clone(), last_modified.clone()))
         .map_err(|e| wyrm_utils::error::WyrmError::WorkerError(e.fetch_error_message()));
     Feed::update(pool, FeedUpdateForm::from_poll_result(&task.feed, &status)).await?;
-    match result {
-        Ok((etag, last_modified)) => {
-            Feed::record_validators(
-                pool,
-                &task.feed,
-                etag.as_deref(),
-                last_modified.as_deref(),
-                resolver.rsshub_instance(),
-            )
-            .await?;
-            Ok(())
-        }
-        Err(error) => Err(error),
-    }
+    result.map(|_| ())
 }
 
 async fn fetch_and_store(

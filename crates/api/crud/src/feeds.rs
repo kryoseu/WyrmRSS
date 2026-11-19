@@ -108,6 +108,11 @@ pub async fn update(
         None => (None, FetchedUrl::None),
     };
     let url_changed = url.as_deref().is_some_and(|u| u != feed.url);
+    let filters = data.filters.map(|v| v.into_iter().map(Some).collect());
+    let filters_changed = filters
+        .as_ref()
+        .is_some_and(|filters| filters.0 != feed.filters.0);
+    let invalidate = url_changed || filters_changed;
 
     let feed = Feed::update(
         &ctx.db_pool,
@@ -117,11 +122,13 @@ pub async fn update(
             url,
             ttl: data.ttl,
             folder: data.folder,
-            filters: data.filters.map(|v| v.into_iter().map(Some).collect()),
+            filters,
             is_paused: data.is_paused,
             display_mode: data.display_mode,
             last_fetched_at: url_changed.then_some(None),
             last_error: url_changed.then_some(None),
+            etag: invalidate.then_some(None),
+            last_modified: invalidate.then_some(None),
             expected_url: None,
         },
     )
