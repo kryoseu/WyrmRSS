@@ -43,7 +43,7 @@
 Try it with Docker Compose (PostgreSQL included):
 
 ```bash
-curl -O https://raw.githubusercontent.com/kryoseu/WyrmRSS/main/templates/docker-compose.yaml
+curl -O https://raw.githubusercontent.com/wyrmrss/WyrmRSS/main/templates/docker-compose.yaml
 docker compose up -d
 ```
 

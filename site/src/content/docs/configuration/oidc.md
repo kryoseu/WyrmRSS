@@ -13,7 +13,7 @@ desktop app uses its generated API key.
 
 All authenticated users share the same feeds, settings, and read state. If
 you'd like separate accounts per user, upvote
-[#372](https://github.com/kryoseu/WyrmRSS/issues/372). By default, any user authenticated by the configured provider can access the
+[#372](https://github.com/wyrmrss/WyrmRSS/issues/372). By default, any user authenticated by the configured provider can access the
 instance. Set `oidc_allowed_subjects` to restrict access to specific provider
 subject identifiers (`sub` claims).
 

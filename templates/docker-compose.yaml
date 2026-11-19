@@ -17,7 +17,7 @@ services:
     restart: unless-stopped
 
   wyrm-server:
-    image: ghcr.io/kryoseu/wyrm-server:latest
+    image: ghcr.io/wyrmrss/wyrm-server:latest
     container_name: wyrm-rss
     environment:
       # all env vars are optional, these are default values
@@ -40,7 +40,7 @@ services:
     restart: unless-stopped
 
   wyrm-ui:
-    image: ghcr.io/kryoseu/wyrm-ui:latest
+    image: ghcr.io/wyrmrss/wyrm-ui:latest
     container_name: wyrm-ui
     environment:
       WYRM_WEB_PORT: 3000

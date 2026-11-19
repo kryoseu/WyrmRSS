@@ -15,6 +15,10 @@ on:
         description: When true, images are tagged with `version` only -- `:latest` is never touched
         required: true
         type: boolean
+    secrets:
+      LEGACY_GHCR_TOKEN:
+        description: kryoseu PAT (write:packages) for mirroring to the pre-org image path
+        required: false
 
 env:
   # Skip buildx's per-build .dockerbuild summary artifact.
@@ -245,3 +249,26 @@ jobs:
       - name: Inspect image
         run: |
           docker buildx imagetools inspect "ghcr.io/${{ github.repository_owner }}/wyrm-ui:${{ inputs.version }}"
+
+  # Temporary: keeps pre-org installs (ghcr.io/kryoseu/...) updating.
+  # Remove this job and the LEGACY_GHCR_TOKEN secret once the token expires.
+  mirror-legacy:
+    needs: [push-backend, push-frontend]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: docker/setup-buildx-action@v4.4.1
+      - uses: docker/login-action@v4.8.0
+        with:
+          registry: ghcr.io
+          username: kryoseu
+          password: ${{ secrets.LEGACY_GHCR_TOKEN }}
+      - name: Copy manifests to the legacy path
+        run: |
+          for image in wyrm-server wyrm-ui; do
+            tag_args=("-t" "ghcr.io/kryoseu/${image}:${{ inputs.version }}")
+            if [ "${{ inputs.is_prerelease }}" = "false" ]; then
+              tag_args+=("-t" "ghcr.io/kryoseu/${image}:latest")
+            fi
+            docker buildx imagetools create "${tag_args[@]}" "ghcr.io/${{ github.repository_owner }}/${image}:${{ inputs.version }}"
+          done
