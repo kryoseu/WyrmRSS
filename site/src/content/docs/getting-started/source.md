@@ -19,7 +19,7 @@ Steps on how to build Wyrm from source.
 First clone the repository:
 
 ```bash
-git clone git@github.com:kryoseu/WyrmRSS.git
+git clone git@github.com:wyrmrss/WyrmRSS.git
 ```
 
 Run the backend:

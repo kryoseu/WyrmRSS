@@ -15,9 +15,9 @@ export default defineConfig({
         replacesTitle: true,
       },
       customCss: ['./src/styles/custom.css'],
-      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kryoseu/WyrmRSS' }],
+      social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/wyrmrss/WyrmRSS' }],
       editLink: {
-        baseUrl: 'https://github.com/kryoseu/WyrmRSS/edit/main/site/',
+        baseUrl: 'https://github.com/wyrmrss/WyrmRSS/edit/main/site/',
       },
       sidebar: [
         { label: 'Getting started', items: [{ autogenerate: { directory: 'getting-started' } }] },
