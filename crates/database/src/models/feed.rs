@@ -259,11 +259,11 @@ impl FeedUpdateForm {
             display_mode: None,
             last_fetched_at: result.is_ok().then(|| Some(Utc::now())),
             last_error: Some(result.as_ref().err().map(WyrmError::fetch_error_message)),
-            etag: result.as_ref().ok().map(|(etag, _)| Some(etag.clone())),
+            etag: result.as_ref().ok().map(|(etag, _)| etag.clone()),
             last_modified: result
                 .as_ref()
                 .ok()
-                .map(|(_, last_modified)| Some(last_modified.clone())),
+                .map(|(_, last_modified)| last_modified.clone()),
         }
     }
 }

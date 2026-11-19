@@ -5,7 +5,7 @@ use database::{
         feed::{DisplayMode, Feed, FeedInsertForm, FeedUpdateForm},
         feed_icon::FeedIcon,
     },
-    newtypes::FeedId,
+    newtypes::{FeedId, Filters},
 };
 use serde::Deserialize;
 use wyrm_rss::{
@@ -108,7 +108,7 @@ pub async fn update(
         None => (None, FetchedUrl::None),
     };
     let url_changed = url.as_deref().is_some_and(|u| u != feed.url);
-    let filters = data.filters.map(|v| v.into_iter().map(Some).collect());
+    let filters: Option<Filters> = data.filters.map(|v| v.into_iter().map(Some).collect());
     let filters_changed = filters
         .as_ref()
         .is_some_and(|filters| filters.0 != feed.filters.0);
