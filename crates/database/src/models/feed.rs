@@ -159,7 +159,10 @@ impl Feed {
     pub async fn clear_rsshub_validators(pool: &DatabasePool) -> WyrmResult<()> {
         let mut conn = pool.get().await?;
         diesel::update(feeds::table.filter(feeds::url.like("rsshub://%")))
-            .set((feeds::etag.eq(None::<String>), feeds::last_modified.eq(None::<String>)))
+            .set((
+                feeds::etag.eq(None::<String>),
+                feeds::last_modified.eq(None::<String>),
+            ))
             .execute(&mut conn)
             .await?;
         Ok(())

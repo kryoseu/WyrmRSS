@@ -431,8 +431,8 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
         &db.pool,
         FeedUpdateForm::from_poll_result(&feed, &Ok((None, None))),
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
     assert!(recovered.last_error.is_none());
 
     let updated = Feed::update(
