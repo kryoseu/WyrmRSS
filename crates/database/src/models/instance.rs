@@ -1,10 +1,7 @@
-use diesel::prelude::*;
-use diesel::{Selectable, deserialize::Queryable};
+use crate::{DatabaseConn, DatabasePool, schema, schema::local_instance};
+use diesel::{Selectable, deserialize::Queryable, prelude::*};
 use diesel_async::RunQueryDsl;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
-
-use crate::schema::local_instance;
-use crate::{DatabaseConn, DatabasePool, schema};
 
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = schema::local_instance)]

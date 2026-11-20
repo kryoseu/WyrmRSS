@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router";
 import "./App.css";
 import { AuthGate } from "./components/layout/AuthGate";
+import { SetupGate } from "./components/layout/SetupGate";
 import { ArchiveList } from "./components/archive/ArchiveList";
 import { BookmarkedPostList } from "./components/posts/BookmarkedPostList";
 import { PostList } from "./components/posts/PostList";
@@ -24,32 +25,34 @@ const qc = new QueryClient({
 export default function App() {
   return (
     <ThemeProvider>
-      <AuthGate>
-        <QueryClientProvider client={qc}>
-          <BrowserRouter>
-            <Routes>
-              <Route element={<AppLayout />}>
-                <Route element={<ReaderPage />}>
-                  <Route path="/" element={<PostList />} />
-                  <Route path="/posts/:postId" element={<PostList />} />
-                  <Route path="/feeds/:feedId" element={<PostList />} />
-                  <Route path="/feeds/:feedId/posts/:postId" element={<PostList />} />
-                  <Route path="/folders/:folderId" element={<PostList />} />
-                  <Route path="/folders/:folderId/posts/:postId" element={<PostList />} />
-                  <Route path="/read-later" element={<BookmarkedPostList />} />
-                  <Route path="/read-later/:postId" element={<BookmarkedPostList />} />
-                  <Route path="/archive" element={<ArchiveList />} />
-                  <Route path="/archive/:postId" element={<ArchiveList />} />
+      <SetupGate>
+        <AuthGate>
+          <QueryClientProvider client={qc}>
+            <BrowserRouter>
+              <Routes>
+                <Route element={<AppLayout />}>
+                  <Route element={<ReaderPage />}>
+                    <Route path="/" element={<PostList />} />
+                    <Route path="/posts/:postId" element={<PostList />} />
+                    <Route path="/feeds/:feedId" element={<PostList />} />
+                    <Route path="/feeds/:feedId/posts/:postId" element={<PostList />} />
+                    <Route path="/folders/:folderId" element={<PostList />} />
+                    <Route path="/folders/:folderId/posts/:postId" element={<PostList />} />
+                    <Route path="/read-later" element={<BookmarkedPostList />} />
+                    <Route path="/read-later/:postId" element={<BookmarkedPostList />} />
+                    <Route path="/archive" element={<ArchiveList />} />
+                    <Route path="/archive/:postId" element={<ArchiveList />} />
+                  </Route>
+                  <Route path="/feeds" element={<FeedsPage />} />
+                  <Route path="/subscribe" element={<SubscribePage />} />
+                  <Route path="/radar" element={<RadarBoard />} />
+                  <Route path="/settings" element={<SettingsPage />} />
                 </Route>
-                <Route path="/feeds" element={<FeedsPage />} />
-                <Route path="/subscribe" element={<SubscribePage />} />
-                <Route path="/radar" element={<RadarBoard />} />
-                <Route path="/settings" element={<SettingsPage />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </QueryClientProvider>
-      </AuthGate>
+              </Routes>
+            </BrowserRouter>
+          </QueryClientProvider>
+        </AuthGate>
+      </SetupGate>
     </ThemeProvider>
   );
 }

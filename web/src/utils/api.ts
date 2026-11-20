@@ -36,6 +36,9 @@ export const ENDPOINTS = {
     login: () => `${apiBase()}/auth/oidc/login`,
     logout: () => `${apiBase()}/auth/logout`,
   },
+  instance: {
+    get: () => `${apiBase()}/instance`,
+  },
   feeds: {
     list: () => `${apiBase()}/feeds`,
     create: () => `${apiBase()}/feeds`,
