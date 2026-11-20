@@ -431,6 +431,7 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
         &db.pool,
         FeedUpdateForm {
             id: feed.id,
+            user_id: feed.user_id,
             title: None,
             url: Some("https://example.com/new".into()),
             ttl: None,

@@ -102,7 +102,8 @@ impl Feed {
             // Folder name resolved to a FolderId.
             // Resolved inside the transaction so a failed feed insert can't
             // leave behind a newly created folder.
-            let folder_id = Folder::resolve_name_on(conn, form.folder.take().as_deref()).await?;
+            let folder_id =
+                Folder::resolve_name_on(conn, form.user_id, form.folder.take().as_deref()).await?;
 
             let feed = diesel::insert_into(feeds::table)
                 .values((form, feeds::folder_id.eq(folder_id)))
@@ -128,7 +129,9 @@ impl Feed {
             // Folder name resolved to a FolderId.
             let folder_id = match form.folder.take() {
                 None => None,
-                Some(folder) => Some(Folder::resolve_name_on(conn, folder.as_deref()).await?),
+                Some(folder) => {
+                    Some(Folder::resolve_name_on(conn, form.user_id, folder.as_deref()).await?)
+                }
             };
 
             let target = feeds::table.find(form.id);
@@ -198,6 +201,9 @@ pub struct FeedInsertForm {
 #[diesel(check_for_backend(crate::Backend))]
 pub struct FeedUpdateForm {
     pub id: FeedId,
+    /// Owner, used to resolve the folder name. Never written.
+    #[diesel(skip_update)]
+    pub user_id: UserId,
     pub title: Option<String>,
     pub url: Option<String>,
     pub ttl: Option<i32>,
@@ -229,6 +235,7 @@ impl FeedUpdateForm {
     pub fn from_poll_result(feed: &Feed, result: &WyrmResult<()>) -> Self {
         Self {
             id: feed.id,
+            user_id: feed.user_id,
             expected_url: Some(feed.url.clone()),
             title: None,
             url: None,
@@ -308,7 +315,7 @@ mod tests {
         let feed = test_feed!(&pool);
         // Pre-created so the name below resolves to a known id we can assert
         // against and clean up.
-        let folder = Folder::resolve_or_create(&pool, "feed update test")
+        let folder = Folder::resolve_or_create(&pool, UserId(1), "feed update test")
             .await
             .expect("should create folder");
 
@@ -316,6 +323,7 @@ mod tests {
             &pool,
             FeedUpdateForm {
                 id: feed.id,
+                user_id: feed.user_id,
                 title: Some("Renamed".to_string()),
                 url: None,
                 ttl: Some(120),

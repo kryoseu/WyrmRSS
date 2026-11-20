@@ -2,7 +2,7 @@ use actix_web::web::{Data, Json, Path};
 use api_utils::context::WyrmContext;
 use database::{
     models::folder::{Folder, FolderUpdateForm},
-    newtypes::FolderId,
+    newtypes::{FolderId, UserId},
 };
 use serde::Deserialize;
 use wyrm_utils::result::WyrmResult;
@@ -25,7 +25,8 @@ pub async fn create(
 ) -> WyrmResult<Json<Folder>> {
     ctx.deny_in_demo()?;
 
-    let folder = Folder::resolve_or_create(&ctx.db_pool, &data.name).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let folder = Folder::resolve_or_create(&ctx.db_pool, UserId(1), &data.name).await?;
     Ok(Json(folder))
 }
 

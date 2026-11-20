@@ -115,6 +115,8 @@ pub async fn update(
         &ctx.db_pool,
         FeedUpdateForm {
             id,
+            // TODO(#372): the requesting user, once the middleware provides it.
+            user_id: UserId(1),
             title: data.title,
             url,
             ttl: data.ttl,
