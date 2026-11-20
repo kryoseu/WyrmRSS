@@ -62,7 +62,7 @@ pub async fn create(
             url,
             ttl: data.ttl,
             folder: data.folder,
-            filters: data.filters.map(|v| v.into_iter().map(Some).collect()),
+            filters: data.filters.map(Filters::from),
             display_mode: data.display_mode,
         },
     )
@@ -108,10 +108,10 @@ pub async fn update(
         None => (None, FetchedUrl::None),
     };
     let url_changed = url.as_deref().is_some_and(|u| u != feed.url);
-    let filters: Option<Filters> = data.filters.map(|v| v.into_iter().map(Some).collect());
+    let filters = data.filters.map(Filters::from);
     let filters_changed = filters
         .as_ref()
-        .is_some_and(|filters| filters.0 != feed.filters.0);
+        .is_some_and(|filters| *filters != feed.filters);
     let invalidate = url_changed || filters_changed;
 
     let feed = Feed::update(

@@ -4,7 +4,7 @@ use database::{
     utils::settings::RuntimeSettings,
 };
 use http::{Extensions, HeaderName, HeaderValue};
-use reqwest::{Request, Response, StatusCode, Url};
+use reqwest::{Request, Response, StatusCode, Url, header};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next, Result};
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 use std::{collections::HashMap, time::Duration};
@@ -58,18 +58,19 @@ impl From<&RuntimeSettings> for HttpConfig {
     }
 }
 
+pub struct HttpValidators {
+    pub etag: Option<String>,
+    pub last_modified: Option<String>,
+}
+
 /// Feed polling can skip parsing and storage when the publisher returns 304.
 pub enum FeedResponse {
     Modified {
         body: Bytes,
         content_type: Option<String>,
-        etag: Option<String>,
-        last_modified: Option<String>,
+        validators: HttpValidators,
     },
-    NotModified {
-        etag: Option<String>,
-        last_modified: Option<String>,
-    },
+    NotModified(HttpValidators),
 }
 
 #[derive(Clone)]
@@ -121,7 +122,7 @@ impl HttpClient {
             FeedResponse::Modified {
                 body, content_type, ..
             } => Ok((body, content_type)),
-            FeedResponse::NotModified { .. } => Err(WyrmError::WorkerError(
+            FeedResponse::NotModified(_) => Err(WyrmError::WorkerError(
                 "Unexpected 304 without a conditional request".into(),
             )),
         }
@@ -137,10 +138,10 @@ impl HttpClient {
     ) -> WyrmResult<FeedResponse> {
         let mut request = self.inner.get(url);
         if let Some(etag) = etag {
-            request = request.header(reqwest::header::IF_NONE_MATCH, etag);
+            request = request.header(header::IF_NONE_MATCH, etag);
         }
         if let Some(last_modified) = last_modified {
-            request = request.header(reqwest::header::IF_MODIFIED_SINCE, last_modified);
+            request = request.header(header::IF_MODIFIED_SINCE, last_modified);
         }
 
         let parsed_url = Url::parse(url).ok();
@@ -183,25 +184,25 @@ impl HttpClient {
         }
 
         let mut response = response.error_for_status()?;
-        let header = |name| {
+        let read_header = |name| {
             response
                 .headers()
                 .get(name)
                 .and_then(|value| value.to_str().ok())
                 .map(String::from)
         };
-        let response_etag = header(reqwest::header::ETAG);
-        let response_modified = header(reqwest::header::LAST_MODIFIED);
+        let response_etag = read_header(header::ETAG);
+        let response_modified = read_header(header::LAST_MODIFIED);
         if status == StatusCode::NOT_MODIFIED {
             if etag.is_none() && last_modified.is_none() {
                 return Err(WyrmError::WorkerError(
                     "Unexpected 304 without a conditional request".into(),
                 ));
             }
-            return Ok(FeedResponse::NotModified {
+            return Ok(FeedResponse::NotModified(HttpValidators {
                 etag: response_etag.or_else(|| etag.map(String::from)),
                 last_modified: response_modified.or_else(|| last_modified.map(String::from)),
-            });
+            }));
         }
 
         if response
@@ -213,7 +214,7 @@ impl HttpClient {
 
         let content_type = response
             .headers()
-            .get(reqwest::header::CONTENT_TYPE)
+            .get(header::CONTENT_TYPE)
             .and_then(|v| v.to_str().ok())
             .map(|v| v.split(';').next().unwrap_or(v).trim().to_ascii_lowercase());
 
@@ -228,15 +229,17 @@ impl HttpClient {
         Ok(FeedResponse::Modified {
             body: body.freeze(),
             content_type,
-            etag: response_etag,
-            last_modified: response_modified,
+            validators: HttpValidators {
+                etag: response_etag,
+                last_modified: response_modified,
+            },
         })
     }
 
     pub async fn post_json(&self, url: &str, body: &serde_json::Value) -> WyrmResult<()> {
         self.inner
             .post(url)
-            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .header(header::CONTENT_TYPE, "application/json")
             .body(body.to_string())
             .send()
             .await?

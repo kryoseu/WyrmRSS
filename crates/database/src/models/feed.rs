@@ -243,10 +243,7 @@ pub struct FeedUpdateForm {
 impl FeedUpdateForm {
     /// Built by the feed worker after each poll: success bumps `last_fetched_at`
     /// and clears the error; failure keeps the last good fetch time and stores the message.
-    pub fn from_poll_result(
-        feed: &Feed,
-        result: &WyrmResult<(Option<String>, Option<String>)>,
-    ) -> Self {
+    pub fn from_poll_result<T>(feed: &Feed, result: &WyrmResult<T>) -> Self {
         Self {
             id: feed.id,
             expected_url: Some(feed.url.clone()),
@@ -259,11 +256,8 @@ impl FeedUpdateForm {
             display_mode: None,
             last_fetched_at: result.is_ok().then(|| Some(Utc::now())),
             last_error: Some(result.as_ref().err().map(WyrmError::fetch_error_message)),
-            etag: result.as_ref().ok().map(|(etag, _)| etag.clone()),
-            last_modified: result
-                .as_ref()
-                .ok()
-                .map(|(_, last_modified)| last_modified.clone()),
+            etag: None,
+            last_modified: None,
         }
     }
 }

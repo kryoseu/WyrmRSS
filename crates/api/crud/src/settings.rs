@@ -1,7 +1,10 @@
 use actix_web::web::{Data, Json};
 use api_utils::{context::WyrmContext, response::SettingsResponse};
 use database::{
-    models::settings::{ReadMode, Settings, SettingsUpdateForm},
+    models::{
+        feed::Feed,
+        settings::{ReadMode, Settings, SettingsUpdateForm},
+    },
     utils::settings::RuntimeSettings,
 };
 use serde::Deserialize;
@@ -67,7 +70,7 @@ pub async fn update(
     .await?;
 
     if settings.rsshub_instance != previous_instance {
-        database::models::feed::Feed::clear_rsshub_validators(&ctx.db_pool).await?;
+        Feed::clear_rsshub_validators(&ctx.db_pool).await?;
     }
 
     *ctx.runtime_settings.write()? = RuntimeSettings::from(&settings);
