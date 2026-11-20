@@ -116,6 +116,7 @@ fn post_form(feed_id: FeedId, url: &str) -> PostInsertForm {
 fn session_form(token_hash: &str, expires_at: DateTime<Utc>) -> SessionInsertForm {
     SessionInsertForm {
         token_hash: token_hash.to_string(),
+        user_id: UserId(1),
         expires_at,
         last_seen_at: Utc::now(),
     }

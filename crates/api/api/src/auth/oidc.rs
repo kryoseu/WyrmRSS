@@ -5,6 +5,7 @@ use actix_web::{
     web::{Data, Query},
 };
 use api_utils::context::WyrmContext;
+use database::newtypes::UserId;
 use serde::Deserialize;
 use wyrm_auth::{Auth, session::Authenticated};
 use wyrm_utils::{error::AuthError, result::WyrmResult};
@@ -96,7 +97,8 @@ async fn sign_in(
         .sessions()
         .ok_or_else(|| AuthError::AuthMethodDisabled("sessions".into()))?;
 
-    let authenticated = sessions.create(&ctx.db_pool).await?;
+    // TODO(#372): the user matched by oidc_subject.
+    let authenticated = sessions.create(&ctx.db_pool, UserId(1)).await?;
 
     Ok((return_to, authenticated))
 }

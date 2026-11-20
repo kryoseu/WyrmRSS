@@ -1,4 +1,4 @@
-use crate::{DatabasePool, schema::sessions};
+use crate::{DatabasePool, newtypes::UserId, schema::sessions};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
@@ -8,6 +8,8 @@ use wyrm_utils::{error::WyrmError, result::WyrmResult};
 #[diesel(table_name = sessions)]
 #[diesel(check_for_backend(crate::Backend))]
 pub struct Session {
+    /// The user this session logs in as.
+    pub user_id: UserId,
     pub token_hash: String,
     pub expires_at: DateTime<Utc>,
     pub last_seen_at: DateTime<Utc>,
@@ -81,10 +83,11 @@ impl Session {
     }
 }
 
-#[derive(Default, Insertable)]
+#[derive(Insertable)]
 #[diesel(table_name = crate::schema::sessions)]
 #[diesel(check_for_backend(crate::Backend))]
 pub struct SessionInsertForm {
+    pub user_id: UserId,
     pub token_hash: String,
     pub expires_at: DateTime<Utc>,
     pub last_seen_at: DateTime<Utc>,
@@ -115,6 +118,7 @@ mod tests {
     fn insert_form(token_hash: &str, expires_at: DateTime<Utc>) -> SessionInsertForm {
         SessionInsertForm {
             token_hash: token_hash.to_owned(),
+            user_id: UserId(1),
             expires_at,
             last_seen_at: hours_from_now(0),
         }

@@ -7,6 +7,7 @@ use chrono::{DateTime, TimeDelta, Utc};
 use database::{
     DatabasePool,
     models::session::{Session, SessionInsertForm},
+    newtypes::UserId,
 };
 use sha2::{Digest, Sha256};
 use url::Url;
@@ -37,7 +38,7 @@ pub struct Authenticated {
 }
 
 impl SessionManager {
-    pub async fn create(&self, pool: &DatabasePool) -> WyrmResult<Authenticated> {
+    pub async fn create(&self, pool: &DatabasePool, user_id: UserId) -> WyrmResult<Authenticated> {
         let token = generate_session_token();
         let now = Utc::now();
         let expires_at = now + SESSION_IDLE_TIMEOUT;
@@ -50,6 +51,7 @@ impl SessionManager {
         Session::create(
             pool,
             SessionInsertForm {
+                user_id,
                 token_hash: token_hash(&token),
                 expires_at,
                 last_seen_at: now,
