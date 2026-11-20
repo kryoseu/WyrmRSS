@@ -1,4 +1,8 @@
-use crate::{DatabasePool, newtypes::HostCredentialId, schema::host_credentials};
+use crate::{
+    DatabasePool,
+    newtypes::{HostCredentialId, UserId},
+    schema::host_credentials,
+};
 use chrono::{DateTime, Utc};
 use diesel::{Selectable, deserialize::Queryable, prelude::*};
 use diesel_async::RunQueryDsl;
@@ -34,6 +38,10 @@ pub enum HostCredentialKind {
 pub struct HostCredential {
     /// Primary key
     pub id: HostCredentialId,
+    /// User who owns these host credentials.
+    #[serde(skip)]
+    #[ts(skip)]
+    pub user_id: UserId,
     /// Host the credentials apply to, as `host:port`. Matched exactly.
     pub host: String,
     /// Selects how `name` and `secret` are sent.
@@ -72,7 +80,8 @@ impl HostCredential {
         let mut conn = pool.get().await?;
         diesel::insert_into(host_credentials::table)
             .values(form)
-            .get_result::<Self>(&mut conn)
+            .returning(HostCredential::as_returning())
+            .get_result(&mut conn)
             .await
             .map_err(WyrmError::from)
     }
@@ -81,7 +90,8 @@ impl HostCredential {
         let mut conn = pool.get().await?;
         diesel::update(host_credentials::table.find(form.id))
             .set(form)
-            .get_result::<Self>(&mut conn)
+            .returning(HostCredential::as_returning())
+            .get_result(&mut conn)
             .await
             .map_err(WyrmError::from)
     }
@@ -100,6 +110,7 @@ impl HostCredential {
 #[diesel(table_name = crate::schema::host_credentials)]
 #[diesel(check_for_backend(crate::Backend))]
 pub struct HostCredentialInsertForm {
+    pub user_id: UserId,
     pub host: String,
     pub kind: HostCredentialKind,
     pub name: String,
@@ -125,6 +136,7 @@ mod tests {
     fn secret_is_never_serialized() {
         let credential = HostCredential {
             id: HostCredentialId(1),
+            user_id: UserId(1),
             host: "feeds.example.com:443".into(),
             kind: HostCredentialKind::BasicAuth,
             name: "reader".into(),
@@ -152,6 +164,7 @@ mod tests {
                 .expect("timestamp in range")
         );
         let insert_form = || HostCredentialInsertForm {
+            user_id: UserId(1),
             host: host.clone(),
             kind: HostCredentialKind::BasicAuth,
             name: "reader".into(),

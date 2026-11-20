@@ -2,12 +2,9 @@ use actix_web::web::{Data, Json, Path};
 use api_utils::context::WyrmContext;
 use database::{
     models::host_credential::{
-        HostCredential,
-        HostCredentialInsertForm,
-        HostCredentialKind,
-        HostCredentialUpdateForm,
+        HostCredential, HostCredentialInsertForm, HostCredentialKind, HostCredentialUpdateForm,
     },
-    newtypes::HostCredentialId,
+    newtypes::{HostCredentialId, UserId},
 };
 use serde::Deserialize;
 use wyrm_rss::http::{custom_header, parse_host_key};
@@ -56,6 +53,8 @@ pub async fn create(
     let host_credential = HostCredential::create(
         &ctx.db_pool,
         HostCredentialInsertForm {
+            // TODO(#372): the requesting user, once the middleware provides it.
+            user_id: UserId(1),
             host: parsed_host,
             kind: data.kind,
             name: data.name,
