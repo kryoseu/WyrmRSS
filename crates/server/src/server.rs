@@ -1,8 +1,11 @@
 use actix_web::{App, HttpServer, dev::ServerHandle, web};
 use api_utils::context::WyrmContext;
-use database::{models::settings::Settings, utils::settings::RuntimeSettings};
+use database::{
+    models::{instance::LocalInstance, settings::Settings},
+    utils::settings::RuntimeSettings,
+};
 use std::sync::{Arc, RwLock};
-use tracing::info;
+use tracing::{info, warn};
 use wyrm_auth::Auth;
 use wyrm_rss::worker::{FeedWorker, WorkerCommand};
 use wyrm_utils::{
@@ -14,7 +17,8 @@ use wyrm_utils::{
 pub async fn start_server() -> WyrmResult<()> {
     info!("Loading settings");
     let startup_conf = WyrmStartupConfig::load()?;
-    let auth = web::Data::new(Auth::new(&startup_conf)?);
+
+    let mut auth = Auth::new(&startup_conf)?;
 
     info!("Establishing database connection for migrations");
     let mut db_sync_conn = database::establish_sync_connection(&startup_conf)?;
@@ -24,6 +28,19 @@ pub async fn start_server() -> WyrmResult<()> {
 
     info!("Creating database pool");
     let db_pool = database::create_pool(&startup_conf).await?;
+
+    let instance = LocalInstance::get(&db_pool).await?;
+
+    // Instance not yet set up. Generate token and log it.
+    if !instance.is_setup {
+        auth = auth.with_setup_token();
+    }
+
+    if let Some(token) = auth.setup_token() {
+        warn!("No owner account yet. Open Wyrm and enter this setup token: {token}");
+    }
+
+    let auth = web::Data::new(auth);
 
     let settings = Settings::get(&db_pool).await?;
 
