@@ -1,7 +1,7 @@
 use crate::{
     DatabasePool,
     models::folder::Folder,
-    newtypes::{FeedId, Filters, FolderId},
+    newtypes::{FeedId, Filters, FolderId, UserId},
     schema::feeds,
 };
 use chrono::{DateTime, Utc};
@@ -44,6 +44,10 @@ pub enum DisplayMode {
 #[ts(optional_fields, export)]
 pub struct Feed {
     pub id: FeedId,
+    /// User who owns this feed.
+    #[serde(skip)]
+    #[ts(skip)]
+    pub user_id: UserId,
     /// Human-readable feed name shown in the UI.
     pub title: String,
     /// URL the feed is fetched from.
@@ -102,7 +106,8 @@ impl Feed {
 
             let feed = diesel::insert_into(feeds::table)
                 .values((form, feeds::folder_id.eq(folder_id)))
-                .get_result::<Self>(conn)
+                .returning(Feed::as_returning())
+                .get_result(conn)
                 .await?;
 
             Ok::<Feed, WyrmError>(feed)
@@ -131,13 +136,15 @@ impl Feed {
                 Some(url) => {
                     diesel::update(target.filter(feeds::url.eq(url)))
                         .set((form, folder_id.map(|f| feeds::folder_id.eq(f))))
-                        .get_result::<Self>(conn)
+                        .returning(Feed::as_returning())
+                        .get_result(conn)
                         .await?
                 }
                 None => {
                     diesel::update(target)
                         .set((form, folder_id.map(|f| feeds::folder_id.eq(f))))
-                        .get_result::<Self>(conn)
+                        .returning(Feed::as_returning())
+                        .get_result(conn)
                         .await?
                 }
             };
@@ -167,10 +174,11 @@ impl Feed {
     }
 }
 
-#[derive(Default, Insertable)]
+#[derive(Insertable)]
 #[diesel(table_name = crate::schema::feeds)]
 #[diesel(check_for_backend(crate::Backend))]
 pub struct FeedInsertForm {
+    pub user_id: UserId,
     pub title: String,
     pub url: String,
     pub ttl: i32,
@@ -261,7 +269,10 @@ macro_rules! test_feed {
                         .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
                 ),
                 ttl: 60,
-                ..Default::default()
+                user_id: $crate::newtypes::UserId(1),
+                folder: None,
+                filters: None,
+                display_mode: Default::default(),
             },
         )
         .await

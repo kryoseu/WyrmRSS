@@ -5,7 +5,7 @@ use database::{
         feed::{DisplayMode, Feed, FeedInsertForm, FeedUpdateForm},
         feed_icon::FeedIcon,
     },
-    newtypes::FeedId,
+    newtypes::{FeedId, UserId},
 };
 use serde::Deserialize;
 use wyrm_rss::{
@@ -58,6 +58,8 @@ pub async fn create(
     let feed = Feed::create(
         &ctx.db_pool,
         FeedInsertForm {
+            // TODO(#372): the requesting user, once the middleware provides it.
+            user_id: UserId(1),
             title: data.title,
             url,
             ttl: data.ttl,

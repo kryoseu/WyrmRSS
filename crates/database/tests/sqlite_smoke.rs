@@ -15,11 +15,11 @@ use database::{
     create_pool,
     establish_sync_connection,
     models::{
-        feed::{Feed, FeedInsertForm, FeedUpdateForm},
+        feed::{DisplayMode, Feed, FeedInsertForm, FeedUpdateForm},
         post::{Post, PostInsertForm},
         session::{Session, SessionInsertForm},
     },
-    newtypes::{FeedId, Filters},
+    newtypes::{FeedId, Filters, UserId},
     run_migrations,
     schema::posts,
 };
@@ -90,7 +90,9 @@ fn feed_form(url: &str, filters: Option<Filters>) -> FeedInsertForm {
         url: url.to_string(),
         ttl: 60,
         filters,
-        ..Default::default()
+        user_id: UserId(1),
+        folder: None,
+        display_mode: DisplayMode::default(),
     }
 }
 
@@ -393,7 +395,10 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
             title: "Health".into(),
             url: "https://example.com/health".into(),
             ttl: 60,
-            ..Default::default()
+            user_id: UserId(1),
+            folder: None,
+            filters: None,
+            display_mode: DisplayMode::default(),
         },
     )
     .await

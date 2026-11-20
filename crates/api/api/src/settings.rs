@@ -8,11 +8,11 @@ use api_utils::{
 };
 use database::{
     models::{
-        feed::{Feed, FeedInsertForm},
+        feed::{DisplayMode, Feed, FeedInsertForm},
         folder::Folder,
         settings::Settings,
     },
-    newtypes::FolderId,
+    newtypes::{FolderId, UserId},
 };
 use std::{collections::HashMap, time::Duration};
 use tracing::warn;
@@ -134,11 +134,14 @@ async fn create_feed(
     match Feed::create(
         &ctx.db_pool,
         FeedInsertForm {
+            // TODO(#372): the requesting user, once the middleware provides it.
+            user_id: UserId(1),
             title: title.to_string(),
             url: url.to_string(),
             ttl: 60,
             folder: folder.map(String::from),
-            ..Default::default()
+            filters: None,
+            display_mode: DisplayMode::default(),
         },
     )
     .await
