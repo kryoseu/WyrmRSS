@@ -65,6 +65,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    local_instance (is_singleton) {
+        is_singleton -> Bool,
+        is_setup -> Bool,
+    }
+}
+
+diesel::table! {
     post_archive (id) {
         id -> Integer,
         title -> Nullable<Text>,
@@ -159,6 +166,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     feeds,
     folders,
     host_credentials,
+    local_instance,
     post_archive,
     posts,
     sessions,
