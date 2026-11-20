@@ -1,7 +1,7 @@
 use crate::{
     DatabasePool,
     models::post::Post,
-    newtypes::PostId,
+    newtypes::{PostId, UserId},
     schema::{
         post_archive,
         posts::{self},
@@ -25,6 +25,10 @@ pub struct PostArchive {
     /// The original post's id, reused as this row's primary key — there is no
     /// foreign key back to `posts`, so the archive outlives the post.
     pub id: PostId,
+    /// The user who owns this archived post.
+    #[serde(skip)]
+    #[ts(skip)]
+    pub user_id: UserId,
     /// Post title at the time it was archived.
     pub title: Option<String>,
     /// Link to the original post.
@@ -64,7 +68,8 @@ impl PostArchive {
         conn.transaction(async |conn| {
             let archived = diesel::insert_into(post_archive::table)
                 .values(form)
-                .get_result::<PostArchive>(conn)
+                .returning(PostArchive::as_returning())
+                .get_result(conn)
                 .await?;
 
             diesel::update(posts::table.find(id))
@@ -107,6 +112,7 @@ impl PostArchive {
 #[diesel(check_for_backend(crate::Backend))]
 pub struct PostArchiveInsertForm {
     pub id: PostId,
+    pub user_id: UserId,
     pub title: Option<String>,
     pub url: Option<String>,
     pub authors: Option<String>,
@@ -115,10 +121,11 @@ pub struct PostArchiveInsertForm {
     pub content: Option<String>,
 }
 
-impl From<Post> for PostArchiveInsertForm {
-    fn from(p: Post) -> Self {
+impl From<(Post, UserId)> for PostArchiveInsertForm {
+    fn from((p, user_id): (Post, UserId)) -> Self {
         PostArchiveInsertForm {
             id: p.id,
+            user_id,
             title: p.title,
             url: p.url,
             authors: p.authors,
@@ -132,7 +139,7 @@ impl From<Post> for PostArchiveInsertForm {
 #[cfg(all(test, feature = "postgres"))]
 mod tests {
     use super::*;
-    use crate::{models::feed::Feed, setup_test_db};
+    use crate::{models::feed::Feed, setup_test_db, views::archive::get_post_archive_insert_form};
 
     #[tokio::test]
     async fn archive_and_unarchive_roundtrip() {
@@ -142,7 +149,10 @@ mod tests {
         let post = test_post!(&pool, feed_id);
         let post_id = post.id;
 
-        let archived = PostArchive::create(&pool, post.into())
+        let form = get_post_archive_insert_form(&pool, post_id)
+            .await
+            .expect("insert form should build");
+        let archived = PostArchive::create(&pool, form)
             .await
             .expect("archive should succeed");
         assert_eq!(archived.id, post_id);

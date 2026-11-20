@@ -97,6 +97,7 @@ macro_rules! id_newtype {
     };
 }
 
+id_newtype!(UserId, "The User ID");
 id_newtype!(PostId, "The Post ID");
 id_newtype!(FeedId, "The Feed ID");
 id_newtype!(WebhookId, "The Webhook ID");

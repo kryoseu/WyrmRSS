@@ -4,7 +4,7 @@ use crate::{
         archive::{PostArchive, PostArchiveInsertForm},
         post::Post,
     },
-    newtypes::PostId,
+    newtypes::{PostId, UserId},
     schema::post_archive,
     utils::pagination::{PagedResponse, PaginationCursor},
 };
@@ -82,13 +82,15 @@ pub async fn get_post_archive_insert_form(
     pool: &DatabasePool,
     post_id: PostId,
 ) -> WyrmResult<PostArchiveInsertForm> {
-    use crate::schema::posts;
+    use crate::schema::{feeds, posts};
 
     let mut conn = pool.get().await?;
 
-    let post: Post = posts::table
-        .find(post_id)
-        .select(Post::as_select())
+    // The archive belongs to whoever owns the post's feed.
+    let (post, user_id): (Post, UserId) = posts::table
+        .inner_join(feeds::table)
+        .filter(posts::id.eq(post_id))
+        .select((Post::as_select(), feeds::user_id))
         .first(&mut conn)
         .await
         .map_err(WyrmError::from)?;
@@ -99,5 +101,5 @@ pub async fn get_post_archive_insert_form(
         )));
     }
 
-    Ok(post.into())
+    Ok((post, user_id).into())
 }
