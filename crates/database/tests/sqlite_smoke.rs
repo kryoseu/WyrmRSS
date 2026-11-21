@@ -218,7 +218,7 @@ async fn filters_round_trip_through_json() {
     );
 
     // Re-read so the value comes back through FromSql rather than RETURNING.
-    let fetched = Feed::get(&db.pool, created.id).await.expect("should get");
+    let fetched = Feed::get(&db.pool, created.user_id, created.id).await.expect("should get");
     assert_eq!(fetched.filters.0, created.filters.0);
 
     // The column default is the JSON literal '[]', not NULL.
@@ -313,7 +313,7 @@ async fn deleting_a_feed_cascades_to_posts() {
         .expect("should count posts");
     assert_eq!(before, 1);
 
-    Feed::delete(&db.pool, feed.id)
+    Feed::delete(&db.pool, feed.user_id, feed.id)
         .await
         .expect("should delete feed");
 
@@ -458,9 +458,9 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
         stale,
         Err(WyrmError::Database(DatabaseError::NotFound))
     ));
-    let current = Feed::get(&db.pool, feed.id).await.unwrap();
+    let current = Feed::get(&db.pool, feed.user_id, feed.id).await.unwrap();
     assert!(current.last_error.is_none());
     assert!(current.last_fetched_at.is_none());
 
-    Feed::delete(&db.pool, feed.id).await.unwrap();
+    Feed::delete(&db.pool, feed.user_id, feed.id).await.unwrap();
 }

@@ -156,7 +156,7 @@ mod tests {
         assert!(hits.contains(&(feed.id, url_a.clone())));
 
         // Deleting the feed cascades its expired-post records away.
-        Feed::delete(&pool, feed.id)
+        Feed::delete(&pool, feed.user_id, feed.id)
             .await
             .expect("should delete feed");
         let hits = ExpiredPost::matching(
@@ -168,7 +168,7 @@ mod tests {
         .unwrap();
         assert!(hits.is_empty());
 
-        Feed::delete(&pool, other_feed.id)
+        Feed::delete(&pool, other_feed.user_id, other_feed.id)
             .await
             .expect("should delete feed");
     }

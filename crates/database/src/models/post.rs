@@ -576,7 +576,7 @@ mod tests {
             assert!(!got.is_archived);
 
             // Deleting the feed cascades to the post, so a follow-up get fails.
-            Feed::delete(&pool, feed.id)
+            Feed::delete(&pool, feed.user_id, feed.id)
                 .await
                 .expect("should delete feed");
             assert!(Post::get(&pool, id).await.is_err());
@@ -607,7 +607,7 @@ mod tests {
             };
             assert_eq!(count, 1);
 
-            Feed::delete(&pool, feed.id)
+            Feed::delete(&pool, feed.user_id, feed.id)
                 .await
                 .expect("should delete feed");
         }
@@ -641,7 +641,7 @@ mod tests {
             };
             assert_eq!(count, 3);
 
-            Feed::delete(&pool, feed.id)
+            Feed::delete(&pool, feed.user_id, feed.id)
                 .await
                 .expect("should delete feed");
         }
@@ -666,7 +666,7 @@ mod tests {
             assert!(updated.bookmarked);
             assert!(updated.is_read);
 
-            Feed::delete(&pool, feed.id)
+            Feed::delete(&pool, feed.user_id, feed.id)
                 .await
                 .expect("should delete feed");
         }
@@ -702,10 +702,10 @@ mod tests {
                 assert_eq!(count, 2);
             }
 
-            Feed::delete(&pool, other_feed.id)
+            Feed::delete(&pool, other_feed.user_id, other_feed.id)
                 .await
                 .expect("should delete feed");
-            Feed::delete(&pool, feed.id)
+            Feed::delete(&pool, feed.user_id, feed.id)
                 .await
                 .expect("should delete feed");
         }
@@ -720,7 +720,7 @@ mod tests {
             assert!(Post::toggle_is_read(&pool, id).await.unwrap().is_read);
             assert!(!Post::toggle_is_read(&pool, id).await.unwrap().is_read);
 
-            Feed::delete(&pool, feed.id)
+            Feed::delete(&pool, feed.user_id, feed.id)
                 .await
                 .expect("should delete feed");
         }
@@ -798,7 +798,7 @@ mod tests {
             assert_eq!(inserted.len(), 1);
             assert_eq!(inserted[0].url.as_deref(), Some(fresh_url.as_str()));
 
-            Feed::delete(&pool, feed.id)
+            Feed::delete(&pool, feed.user_id, feed.id)
                 .await
                 .expect("should delete feed");
         }

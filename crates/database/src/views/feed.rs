@@ -125,10 +125,10 @@ mod tests {
         assert!(find(&views, feed.id).has_icon);
         assert!(!find(&views, postless_feed.id).has_icon);
 
-        Feed::delete(&pool, feed.id)
+        Feed::delete(&pool, feed.user_id, feed.id)
             .await
             .expect("should delete feed");
-        Feed::delete(&pool, postless_feed.id)
+        Feed::delete(&pool, postless_feed.user_id, postless_feed.id)
             .await
             .expect("should delete feed");
     }

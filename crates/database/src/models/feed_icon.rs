@@ -123,7 +123,7 @@ mod tests {
         assert!(icon.data.is_none());
         assert!(icon.content_type.is_none());
 
-        crate::models::feed::Feed::delete(&pool, feed.id)
+        crate::models::feed::Feed::delete(&pool, feed.user_id, feed.id)
             .await
             .expect("should delete feed");
     }

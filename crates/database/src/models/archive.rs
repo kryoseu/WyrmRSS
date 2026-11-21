@@ -170,7 +170,7 @@ mod tests {
         assert!(PostArchive::get(&pool, post_id).await.is_err());
         assert!(!Post::get(&pool, post_id).await.unwrap().is_archived);
 
-        Feed::delete(&pool, feed_id)
+        Feed::delete(&pool, feed.user_id, feed_id)
             .await
             .expect("should delete feed");
     }
