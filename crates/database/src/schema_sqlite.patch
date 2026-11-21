@@ -59,7 +59,16 @@
          user_id -> Integer,
      }
  }
-@@ -74,10 +80,10 @@
+@@ -75,7 +81,7 @@
+         password_hash -> Nullable<Text>,
+         oidc_subject -> Nullable<Text>,
+         is_admin -> Bool,
+-        created_at -> Timestamp,
++        created_at -> TimestamptzSqlite,
+     }
+ }
+ 
+@@ -85,10 +91,10 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -72,7 +81,7 @@
          user_id -> Integer,
      }
  }
-@@ -89,14 +95,14 @@
+@@ -100,14 +106,14 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -90,7 +99,7 @@
          thumbnail_url -> Nullable<Text>,
      }
  }
-@@ -104,13 +110,16 @@
+@@ -115,13 +121,16 @@
  diesel::table! {
      sessions (token_hash) {
          token_hash -> Text,
@@ -109,7 +118,7 @@
      settings (is_singleton) {
          is_singleton -> Bool,
          page_size -> Integer,
-@@ -119,7 +128,7 @@
+@@ -130,7 +139,7 @@
          http_connect_timeout -> Integer,
          http_retries -> Integer,
          http_user_agent -> Nullable<Text>,
@@ -118,13 +127,7 @@
          expire_read_after_days -> Nullable<Integer>,
          expire_unread_after_days -> Nullable<Integer>,
          read_delay_secs -> Integer,
-@@ -142,18 +151,21 @@
-         password_hash -> Nullable<Text>,
-         oidc_subject -> Nullable<Text>,
-         is_admin -> Bool,
--        created_at -> Timestamp,
-+        created_at -> TimestamptzSqlite,
-     }
+@@ -147,13 +156,16 @@
  }
  
  diesel::table! {

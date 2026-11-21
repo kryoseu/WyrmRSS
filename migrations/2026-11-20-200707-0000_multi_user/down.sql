@@ -23,4 +23,4 @@ ALTER TABLE post_archive       DROP COLUMN user_id;
 ALTER TABLE sessions           DROP COLUMN user_id;
 ALTER TABLE shortcut_overrides DROP COLUMN user_id;
 
-DROP TABLE users;
+DROP TABLE local_users;

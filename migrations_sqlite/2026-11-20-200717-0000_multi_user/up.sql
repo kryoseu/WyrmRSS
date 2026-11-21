@@ -1,7 +1,7 @@
 -- The desktop stays single-user; these columns exist so the shared database code
 -- compiles against both backends. Everything belongs to the admin user (id 1).
 
-CREATE TABLE users (
+CREATE TABLE local_users (
     id            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     username      TEXT NOT NULL UNIQUE,
     password_hash TEXT,
@@ -10,7 +10,7 @@ CREATE TABLE users (
     created_at    TIMESTAMP NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
-INSERT INTO users (username, is_admin) VALUES ('admin', TRUE);
+INSERT INTO local_users (username, is_admin) VALUES ('admin', TRUE);
 
 -- No REFERENCES: SQLite can't drop a column that's part of a foreign key, which
 -- would force table rebuilds in down.sql. The default stays since there's only one user.

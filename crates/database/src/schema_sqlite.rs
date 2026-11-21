@@ -75,6 +75,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    local_users (id) {
+        id -> Integer,
+        username -> Text,
+        password_hash -> Nullable<Text>,
+        oidc_subject -> Nullable<Text>,
+        is_admin -> Bool,
+        created_at -> TimestamptzSqlite,
+    }
+}
+
+diesel::table! {
     post_archive (id) {
         id -> Integer,
         title -> Nullable<Text>,
@@ -145,17 +156,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    users (id) {
-        id -> Integer,
-        username -> Text,
-        password_hash -> Nullable<Text>,
-        oidc_subject -> Nullable<Text>,
-        is_admin -> Bool,
-        created_at -> TimestamptzSqlite,
-    }
-}
-
-diesel::table! {
     use diesel::sql_types::*;
     use crate::models::webhook::WebhookKindMapping;
 
@@ -185,11 +185,11 @@ diesel::allow_tables_to_appear_in_same_query!(
     folders,
     host_credentials,
     local_instance,
+    local_users,
     post_archive,
     posts,
     sessions,
     settings,
     shortcut_overrides,
-    users,
     webhooks,
 );

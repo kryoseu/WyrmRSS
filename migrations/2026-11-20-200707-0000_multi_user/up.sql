@@ -1,4 +1,4 @@
-CREATE TABLE users (
+CREATE TABLE local_users (
     id SERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT,
@@ -8,15 +8,15 @@ CREATE TABLE users (
 );
 
 -- Existing single-user data belongs to the first (admin) user
-INSERT INTO users (username, is_admin) VALUES ('admin', TRUE);
+INSERT INTO local_users (username, is_admin) VALUES ('admin', TRUE);
 
-ALTER TABLE feeds            ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE folders          ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE webhooks         ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE host_credentials ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE post_archive     ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE sessions         ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE shortcut_overrides ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE feeds            ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES local_users(id) ON DELETE CASCADE;
+ALTER TABLE folders          ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES local_users(id) ON DELETE CASCADE;
+ALTER TABLE webhooks         ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES local_users(id) ON DELETE CASCADE;
+ALTER TABLE host_credentials ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES local_users(id) ON DELETE CASCADE;
+ALTER TABLE post_archive     ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES local_users(id) ON DELETE CASCADE;
+ALTER TABLE sessions         ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES local_users(id) ON DELETE CASCADE;
+ALTER TABLE shortcut_overrides ADD COLUMN user_id INT NOT NULL DEFAULT 1 REFERENCES local_users(id) ON DELETE CASCADE;
 
 -- The default above is temporary to allow setting non-nullable user_id;
 -- dropping it prevents an insert without user_id from silently going to admin.

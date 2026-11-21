@@ -93,6 +93,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    local_users (id) {
+        id -> Int4,
+        username -> Text,
+        password_hash -> Nullable<Text>,
+        oidc_subject -> Nullable<Text>,
+        is_admin -> Bool,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     post_archive (id) {
         id -> Int4,
         title -> Nullable<Text>,
@@ -163,17 +174,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    users (id) {
-        id -> Int4,
-        username -> Text,
-        password_hash -> Nullable<Text>,
-        oidc_subject -> Nullable<Text>,
-        is_admin -> Bool,
-        created_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::WebhookKind;
 
@@ -193,14 +193,14 @@ diesel::joinable!(feed_icons -> feeds (feed_id));
 diesel::joinable!(feed_webhooks -> feeds (feed_id));
 diesel::joinable!(feed_webhooks -> webhooks (webhook_id));
 diesel::joinable!(feeds -> folders (folder_id));
-diesel::joinable!(feeds -> users (user_id));
-diesel::joinable!(folders -> users (user_id));
-diesel::joinable!(host_credentials -> users (user_id));
-diesel::joinable!(post_archive -> users (user_id));
+diesel::joinable!(feeds -> local_users (user_id));
+diesel::joinable!(folders -> local_users (user_id));
+diesel::joinable!(host_credentials -> local_users (user_id));
+diesel::joinable!(post_archive -> local_users (user_id));
 diesel::joinable!(posts -> feeds (feed_id));
-diesel::joinable!(sessions -> users (user_id));
-diesel::joinable!(shortcut_overrides -> users (user_id));
-diesel::joinable!(webhooks -> users (user_id));
+diesel::joinable!(sessions -> local_users (user_id));
+diesel::joinable!(shortcut_overrides -> local_users (user_id));
+diesel::joinable!(webhooks -> local_users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     expired_posts,
@@ -210,11 +210,11 @@ diesel::allow_tables_to_appear_in_same_query!(
     folders,
     host_credentials,
     local_instance,
+    local_users,
     post_archive,
     posts,
     sessions,
     settings,
     shortcut_overrides,
-    users,
     webhooks,
 );
