@@ -1,6 +1,9 @@
 use bytes::{Bytes, BytesMut};
 use database::{
-    models::host_credential::{HostCredential, HostCredentialKind},
+    models::{
+        feed::Feed,
+        host_credential::{HostCredential, HostCredentialKind},
+    },
     utils::settings::RuntimeSettings,
 };
 use http::{Extensions, HeaderName, HeaderValue};
@@ -58,16 +61,25 @@ impl From<&RuntimeSettings> for HttpConfig {
     }
 }
 
+#[derive(Default)]
 pub struct HttpValidators {
     pub etag: Option<String>,
     pub last_modified: Option<String>,
+}
+
+impl From<&Feed> for HttpValidators {
+    fn from(feed: &Feed) -> Self {
+        Self {
+            etag: feed.etag.clone(),
+            last_modified: feed.last_modified.clone(),
+        }
+    }
 }
 
 /// Feed polling can skip parsing and storage when the publisher returns 304.
 pub enum FeedResponse {
     Modified {
         body: Bytes,
-        content_type: Option<String>,
         validators: HttpValidators,
     },
     NotModified(HttpValidators),
@@ -118,30 +130,56 @@ impl HttpClient {
     /// Fetches `url`, returning the body and the response's `Content-Type`
     /// header (stripped of parameters like `; charset=`).
     pub async fn fetch(&self, url: &str) -> WyrmResult<(Bytes, Option<String>)> {
-        match self.fetch_feed(url, None, None).await? {
-            FeedResponse::Modified {
-                body, content_type, ..
-            } => Ok((body, content_type)),
-            FeedResponse::NotModified(_) => Err(WyrmError::WorkerError(
-                "Unexpected 304 without a conditional request".into(),
-            )),
-        }
+        let response = self.send(url, None).await?;
+        let content_type = response
+            .headers()
+            .get(header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .map(|v| v.split(';').next().unwrap_or(v).trim().to_ascii_lowercase());
+
+        Ok((Self::read_body(response).await?, content_type))
     }
 
-    /// Validators are supplied only by the poller after a successfully stored feed.
-    /// Discovery/icon requests continue to use unconditional fetches.
-    pub async fn fetch_feed(
+    pub async fn fetch_conditional(
         &self,
         url: &str,
-        etag: Option<&str>,
-        last_modified: Option<&str>,
+        validators: &HttpValidators,
     ) -> WyrmResult<FeedResponse> {
-        let mut request = self.inner.get(url);
-        if let Some(etag) = etag {
-            request = request.header(header::IF_NONE_MATCH, etag);
+        let response = self.send(url, Some(validators)).await?;
+        let read_header = |name| {
+            response
+                .headers()
+                .get(name)
+                .and_then(|value| value.to_str().ok())
+                .map(String::from)
+        };
+        let etag = read_header(header::ETAG);
+        let last_modified = read_header(header::LAST_MODIFIED);
+        if response.status() == StatusCode::NOT_MODIFIED {
+            return Ok(FeedResponse::NotModified(HttpValidators {
+                etag: etag.or_else(|| validators.etag.clone()),
+                last_modified: last_modified.or_else(|| validators.last_modified.clone()),
+            }));
         }
-        if let Some(last_modified) = last_modified {
-            request = request.header(header::IF_MODIFIED_SINCE, last_modified);
+
+        Ok(FeedResponse::Modified {
+            body: Self::read_body(response).await?,
+            validators: HttpValidators {
+                etag,
+                last_modified,
+            },
+        })
+    }
+
+    async fn send(&self, url: &str, validators: Option<&HttpValidators>) -> WyrmResult<Response> {
+        let mut request = self.inner.get(url);
+        if let Some(validators) = validators {
+            if let Some(etag) = &validators.etag {
+                request = request.header(header::IF_NONE_MATCH, etag);
+            }
+            if let Some(last_modified) = &validators.last_modified {
+                request = request.header(header::IF_MODIFIED_SINCE, last_modified);
+            }
         }
 
         let parsed_url = Url::parse(url).ok();
@@ -183,40 +221,16 @@ impl HttpClient {
             );
         }
 
-        let mut response = response.error_for_status()?;
-        let read_header = |name| {
-            response
-                .headers()
-                .get(name)
-                .and_then(|value| value.to_str().ok())
-                .map(String::from)
-        };
-        let response_etag = read_header(header::ETAG);
-        let response_modified = read_header(header::LAST_MODIFIED);
-        if status == StatusCode::NOT_MODIFIED {
-            if etag.is_none() && last_modified.is_none() {
-                return Err(WyrmError::WorkerError(
-                    "Unexpected 304 without a conditional request".into(),
-                ));
-            }
-            return Ok(FeedResponse::NotModified(HttpValidators {
-                etag: response_etag.or_else(|| etag.map(String::from)),
-                last_modified: response_modified.or_else(|| last_modified.map(String::from)),
-            }));
-        }
+        Ok(response.error_for_status()?)
+    }
 
+    async fn read_body(mut response: Response) -> WyrmResult<Bytes> {
         if response
             .content_length()
             .is_some_and(|len| len as usize > MAX_RESPONSE_BYTES)
         {
             return Err(HttpClientError::ResponseTooLarge(MAX_RESPONSE_BYTES).into());
         }
-
-        let content_type = response
-            .headers()
-            .get(header::CONTENT_TYPE)
-            .and_then(|v| v.to_str().ok())
-            .map(|v| v.split(';').next().unwrap_or(v).trim().to_ascii_lowercase());
 
         let mut body = BytesMut::new();
         while let Some(chunk) = response.chunk().await? {
@@ -226,14 +240,7 @@ impl HttpClient {
             body.extend_from_slice(&chunk);
         }
 
-        Ok(FeedResponse::Modified {
-            body: body.freeze(),
-            content_type,
-            validators: HttpValidators {
-                etag: response_etag,
-                last_modified: response_modified,
-            },
-        })
+        Ok(body.freeze())
     }
 
     pub async fn post_json(&self, url: &str, body: &serde_json::Value) -> WyrmResult<()> {

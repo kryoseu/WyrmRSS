@@ -201,34 +201,15 @@ async fn fetch_and_store(
 ) -> WyrmResult<HttpValidators> {
     let fetch_target = resolver.resolve(&task.feed.url)?;
     let current = Feed::get(pool, task.feed.id).await?;
-    let cache_matches = current.url == task.feed.url
-        && current.filters == task.feed.filters
-        && current.etag == task.feed.etag
-        && current.last_modified == task.feed.last_modified;
-    let rsshub_matches = !task.feed.url.starts_with("rsshub://")
-        || database::models::settings::Settings::get(pool)
-            .await?
-            .rsshub_instance
-            .as_deref()
-            == resolver.rsshub_instance();
-    let use_validators =
-        cache_matches && rsshub_matches && !crate::icon::needs_feed_icon(pool, task.feed.id).await;
-    let response = http
-        .fetch_feed(
-            &fetch_target,
-            use_validators
-                .then_some(task.feed.etag.as_deref())
-                .flatten(),
-            use_validators
-                .then_some(task.feed.last_modified.as_deref())
-                .flatten(),
-        )
-        .await?;
+    let validators = if crate::icon::needs_feed_icon(pool, task.feed.id).await {
+        HttpValidators::default() // Fetch the body so the icon can be resolved.
+    } else {
+        HttpValidators::from(&current)
+    };
+    let response = http.fetch_conditional(&fetch_target, &validators).await?;
     let (bytes, validators) = match response {
         FeedResponse::NotModified(validators) => return Ok(validators),
-        FeedResponse::Modified {
-            body, validators, ..
-        } => (body, validators),
+        FeedResponse::Modified { body, validators } => (body, validators),
     };
 
     let parsed = feed_rs::parser::parse(&bytes[..])?;

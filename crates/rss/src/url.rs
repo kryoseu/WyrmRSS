@@ -18,10 +18,6 @@ impl From<&RuntimeSettings> for FeedUrlResolver {
 }
 
 impl FeedUrlResolver {
-    pub(crate) fn rsshub_instance(&self) -> Option<&str> {
-        self.rsshub_instance.as_deref()
-    }
-
     /// The URL to request: rsshub:// resolves against the configured instance;
     /// plain URLs are fetched as is.
     pub fn resolve(&self, url: &str) -> WyrmResult<String> {
