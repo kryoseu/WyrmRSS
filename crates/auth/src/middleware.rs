@@ -1,6 +1,6 @@
 use crate::{Auth, api_key};
 use actix_web::{
-    Error,
+    Error, HttpMessage,
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse},
     error::ErrorUnauthorized,
@@ -39,6 +39,8 @@ pub async fn middleware(
     if !safe_method(req.method()) {
         sessions.check_csrf(req.request())?;
     }
+
+    req.extensions_mut().insert(authenticated.user_id);
 
     let mut response = next.call(req).await?;
     if let Some(cookie) = authenticated.cookie {

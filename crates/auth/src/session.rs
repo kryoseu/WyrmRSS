@@ -33,6 +33,8 @@ pub struct SessionManager {
 
 /// Outcome of `authenticate`.
 pub struct Authenticated {
+    /// Authenticated user.
+    pub user_id: UserId,
     /// (Re-)issued session cookie: set when the session was just created or its expiry extended.
     pub cookie: Option<Cookie<'static>>,
 }
@@ -60,6 +62,7 @@ impl SessionManager {
         .await?;
 
         Ok(Authenticated {
+            user_id,
             cookie: Some(self.cookie(token, expires_at)),
         })
     }
@@ -81,7 +84,10 @@ impl SessionManager {
         // Refreshed recently: valid as is, no write needed.
         let now = Utc::now();
         if !needs_refresh(session.last_seen_at, now) {
-            return Ok(Some(Authenticated { cookie: None }));
+            return Ok(Some(Authenticated {
+                user_id: session.user_id,
+                cookie: None,
+            }));
         }
 
         // None if it expired or was revoked between the read and this write.
@@ -91,6 +97,7 @@ impl SessionManager {
         };
 
         Ok(Some(Authenticated {
+            user_id: session.user_id,
             cookie: Some(self.cookie(cookie.value().to_owned(), session.expires_at)),
         }))
     }
