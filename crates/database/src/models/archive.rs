@@ -167,7 +167,12 @@ mod tests {
             .expect("archive should succeed");
         assert_eq!(archived.id, post_id);
         assert_eq!(archived.title.as_deref(), Some("test post"));
-        assert!(Post::get(&pool, post_id).await.unwrap().is_archived);
+        assert!(
+            Post::get(&pool, feed.user_id, post_id)
+                .await
+                .unwrap()
+                .is_archived
+        );
         assert_eq!(
             PostArchive::get(&pool, feed.user_id, post_id)
                 .await
@@ -185,7 +190,12 @@ mod tests {
                 .await
                 .is_err()
         );
-        assert!(!Post::get(&pool, post_id).await.unwrap().is_archived);
+        assert!(
+            !Post::get(&pool, feed.user_id, post_id)
+                .await
+                .unwrap()
+                .is_archived
+        );
 
         Feed::delete(&pool, feed.user_id, feed_id)
             .await

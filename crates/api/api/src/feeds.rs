@@ -22,12 +22,16 @@ pub async fn get(path: Path<FeedId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<
 }
 
 pub async fn list(ctx: Data<WyrmContext>) -> WyrmResult<Json<Vec<FeedView>>> {
-    let feeds = views::feed::list(&ctx.db_pool).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
+    let feeds = views::feed::list(&ctx.db_pool, user_id).await?;
     Ok(Json(feeds))
 }
 
 pub async fn icon(path: Path<FeedId>, ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
-    let icon = FeedIcon::get(&ctx.db_pool, path.into_inner()).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
+    let icon = FeedIcon::get(&ctx.db_pool, user_id, path.into_inner()).await?;
     let Some(FeedIcon {
         data: Some(data),
         content_type,

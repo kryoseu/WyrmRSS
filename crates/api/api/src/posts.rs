@@ -31,8 +31,10 @@ pub struct MarkRead {
 }
 
 pub async fn get(path: Path<PostId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Post>> {
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
     let post_id = path.into_inner();
-    let post = Post::get(&ctx.db_pool, post_id).await?;
+    let post = Post::get(&ctx.db_pool, user_id, post_id).await?;
     Ok(Json(post))
 }
 
@@ -57,7 +59,9 @@ pub async fn mark_as_read(
     Json(data): Json<MarkRead>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<HttpResponse> {
-    let _ = Post::mark_many_as_read(&ctx.db_pool, data.feed_id, data.folder_id).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
+    let _ = Post::mark_many_as_read(&ctx.db_pool, user_id, data.feed_id, data.folder_id).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 
@@ -65,6 +69,8 @@ pub async fn list(
     query: Query<ListPosts>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<PagedResponse<Vec<Post>>>> {
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
     let query = query.into_inner();
     let page_size = ctx.runtime_settings.read()?.page_size;
     let page = PostQuery {
@@ -75,7 +81,7 @@ pub async fn list(
         unread_only: query.unread_only.or(Some(true)),
         search: query.search,
     }
-    .list(&ctx.db_pool, page_size)
+    .list(&ctx.db_pool, user_id, page_size)
     .await?;
     Ok(Json(page))
 }

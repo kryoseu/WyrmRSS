@@ -1,7 +1,7 @@
 use crate::{
     DatabasePool,
     models::feed::Feed,
-    newtypes::FeedId,
+    newtypes::{FeedId, UserId},
     schema::{feed_icons, feeds, posts},
 };
 use diesel::{dsl::count, prelude::*};
@@ -21,12 +21,12 @@ pub struct FeedView {
 }
 
 /// List of feeds with post unread count
-pub async fn list(pool: &DatabasePool) -> WyrmResult<Vec<FeedView>> {
+pub async fn list(pool: &DatabasePool, user_id: UserId) -> WyrmResult<Vec<FeedView>> {
     let mut conn = pool.get().await?;
     // The is_read filter lives in the join's ON clause, not a WHERE: filtering
     // after a left join would drop feeds whose posts are all read, while here
     // they survive with no joined rows and count to 0.
-    let rows: Vec<(Feed, i64)> = feeds::table
+    let rows: Vec<(Feed, i64)> = Feed::owned(user_id)
         .left_join(posts::table.on(posts::feed_id.eq(feeds::id).and(posts::is_read.eq(false))))
         .group_by(feeds::id)
         .select((Feed::as_select(), count(posts::id.nullable())))
@@ -117,7 +117,9 @@ mod tests {
         .await
         .expect("should store icon lookup");
 
-        let views = list(&pool).await.expect("list should succeed");
+        let views = list(&pool, feed.user_id)
+            .await
+            .expect("list should succeed");
         assert_eq!(find(&views, feed.id).unread_count, 2);
         // A feed with no unread rows must survive the left join with a 0,
         // not vanish from the list.
