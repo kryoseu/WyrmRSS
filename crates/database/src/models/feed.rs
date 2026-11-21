@@ -349,7 +349,7 @@ mod tests {
         Feed::delete(&pool, feed.id)
             .await
             .expect("should delete feed");
-        Folder::delete(&pool, folder.id)
+        Folder::delete(&pool, UserId(1), folder.id)
             .await
             .expect("should delete folder");
     }

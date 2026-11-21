@@ -29,19 +29,21 @@ pub struct Folder {
 }
 
 impl Folder {
-    pub async fn get(pool: &DatabasePool, id: FolderId) -> WyrmResult<Self> {
+    pub async fn get(pool: &DatabasePool, user_id: UserId, id: FolderId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         folders::table
             .find(id)
+            .filter(folders::user_id.eq(user_id))
             .select(Folder::as_select())
             .first(&mut *conn)
             .await
             .map_err(WyrmError::from)
     }
 
-    pub async fn get_all(pool: &DatabasePool) -> WyrmResult<Vec<Self>> {
+    pub async fn get_all(pool: &DatabasePool, user_id: UserId) -> WyrmResult<Vec<Self>> {
         let mut conn = pool.get().await?;
         folders::table
+            .filter(folders::user_id.eq(user_id))
             .select(Self::as_select())
             .load(&mut conn)
             .await
@@ -113,7 +115,10 @@ impl Folder {
     pub async fn update(pool: &DatabasePool, mut form: FolderUpdateForm) -> WyrmResult<Self> {
         form.name = normalize_name(&form.name)?.to_string();
         let mut conn = pool.get().await?;
-        diesel::update(folders::table.find(form.id))
+        let target = folders::table
+            .find(form.id)
+            .filter(folders::user_id.eq(form.user_id));
+        diesel::update(target)
             .set(form)
             .returning(Folder::as_returning())
             .get_result(&mut conn)
@@ -121,9 +126,12 @@ impl Folder {
             .map_err(WyrmError::from)
     }
 
-    pub async fn delete(pool: &DatabasePool, id: FolderId) -> WyrmResult<Self> {
+    pub async fn delete(pool: &DatabasePool, user_id: UserId, id: FolderId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        diesel::delete(folders::table.find(id))
+        let target = folders::table
+            .find(id)
+            .filter(folders::user_id.eq(user_id));
+        diesel::delete(target)
             .returning(Self::as_returning())
             .get_result(&mut conn)
             .await
@@ -155,6 +163,9 @@ pub struct FolderInsertForm {
 #[diesel(check_for_backend(crate::Backend))]
 pub struct FolderUpdateForm {
     pub id: FolderId,
+    /// Owner; scopes the update, never written.
+    #[diesel(skip_update)]
+    pub user_id: UserId,
     pub name: String,
 }
 
@@ -190,7 +201,7 @@ mod tests {
         assert_eq!(resolved.id, created.id, "case variant should reuse the row");
         assert_eq!(resolved.name, name, "stored casing should win");
 
-        Folder::delete(&pool, created.id)
+        Folder::delete(&pool, UserId(1), created.id)
             .await
             .expect("should delete folder");
     }
@@ -219,6 +230,7 @@ mod tests {
             &pool,
             FolderUpdateForm {
                 id: folder.id,
+                user_id: UserId(1),
                 name: format!("  {new_name} "),
             },
         )
@@ -227,7 +239,7 @@ mod tests {
         assert_eq!(renamed.id, folder.id);
         assert_eq!(renamed.name, new_name, "rename should be stored trimmed");
 
-        Folder::delete(&pool, folder.id)
+        Folder::delete(&pool, UserId(1), folder.id)
             .await
             .expect("should delete folder");
     }

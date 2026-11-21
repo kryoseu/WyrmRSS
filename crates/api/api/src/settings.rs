@@ -82,9 +82,11 @@ pub async fn import(body: web::Bytes, ctx: Data<WyrmContext>) -> WyrmResult<Http
 /// folder outline; standalone feeds are top-level outlines.
 pub async fn export(ctx: Data<WyrmContext>) -> WyrmResult<XmlResponse> {
     let url_resolver = ctx.url_resolver()?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
 
     let feeds = Feed::get_all(&ctx.db_pool).await?;
-    let folders = Folder::get_all(&ctx.db_pool).await?;
+    let folders = Folder::get_all(&ctx.db_pool, user_id).await?;
     let folder_names: HashMap<FolderId, String> =
         folders.into_iter().map(|f| (f.id, f.name)).collect();
 
