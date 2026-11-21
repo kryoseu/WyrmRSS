@@ -201,10 +201,14 @@ pub struct ShortcutOverride {
 }
 
 impl ShortcutOverride {
+    #[diesel::dsl::auto_type(no_type_alias)]
+    pub(crate) fn owned(user_id: UserId) -> _ {
+        shortcut_overrides::table.filter(shortcut_overrides::user_id.eq(user_id))
+    }
+
     pub async fn get_all(pool: &DatabasePool, user_id: UserId) -> WyrmResult<Vec<Self>> {
         let mut conn = pool.get().await?;
-        shortcut_overrides::table
-            .filter(shortcut_overrides::user_id.eq(user_id))
+        Self::owned(user_id)
             .select(ShortcutOverride::as_select())
             .load(&mut conn)
             .await

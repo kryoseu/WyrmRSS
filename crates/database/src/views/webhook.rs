@@ -46,8 +46,7 @@ pub async fn list_for_feed(
     feed_id: FeedId,
 ) -> WyrmResult<Vec<FeedWebhookView>> {
     let mut conn = pool.get().await?;
-    let rows: Vec<(Webhook, bool)> = webhooks::table
-        .filter(webhooks::user_id.eq(user_id))
+    let rows: Vec<(Webhook, bool)> = Webhook::owned(user_id)
         .left_join(
             feed_webhooks::table.on(feed_webhooks::webhook_id
                 .eq(webhooks::id)

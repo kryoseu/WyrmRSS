@@ -57,15 +57,19 @@ pub struct HostCredential {
 }
 
 impl HostCredential {
+    #[diesel::dsl::auto_type(no_type_alias)]
+    pub(crate) fn owned(user_id: UserId) -> _ {
+        host_credentials::table.filter(host_credentials::user_id.eq(user_id))
+    }
+
     pub async fn get(
         pool: &DatabasePool,
         user_id: UserId,
         id: HostCredentialId,
     ) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        host_credentials::table
+        Self::owned(user_id)
             .find(id)
-            .filter(host_credentials::user_id.eq(user_id))
             .select(HostCredential::as_select())
             .first(&mut conn)
             .await
@@ -85,8 +89,7 @@ impl HostCredential {
 
     pub async fn get_all_for_user(pool: &DatabasePool, user_id: UserId) -> WyrmResult<Vec<Self>> {
         let mut conn = pool.get().await?;
-        host_credentials::table
-            .filter(host_credentials::user_id.eq(user_id))
+        Self::owned(user_id)
             .select(HostCredential::as_select())
             .load(&mut conn)
             .await
@@ -105,10 +108,7 @@ impl HostCredential {
 
     pub async fn update(pool: &DatabasePool, form: HostCredentialUpdateForm) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        let target = host_credentials::table
-            .find(form.id)
-            .filter(host_credentials::user_id.eq(form.user_id));
-        diesel::update(target)
+        diesel::update(Self::owned(form.user_id).find(form.id))
             .set(form)
             .returning(HostCredential::as_returning())
             .get_result(&mut conn)
@@ -122,10 +122,7 @@ impl HostCredential {
         id: HostCredentialId,
     ) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        let target = host_credentials::table
-            .find(id)
-            .filter(host_credentials::user_id.eq(user_id));
-        diesel::delete(target)
+        diesel::delete(Self::owned(user_id).find(id))
             .returning(Self::as_returning())
             .get_result(&mut conn)
             .await

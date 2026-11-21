@@ -69,11 +69,15 @@ pub struct Webhook {
 }
 
 impl Webhook {
+    #[diesel::dsl::auto_type(no_type_alias)]
+    pub(crate) fn owned(user_id: UserId) -> _ {
+        webhooks::table.filter(webhooks::user_id.eq(user_id))
+    }
+
     pub async fn get(pool: &DatabasePool, user_id: UserId, id: WebhookId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        webhooks::table
+        Self::owned(user_id)
             .find(id)
-            .filter(webhooks::user_id.eq(user_id))
             .select(Webhook::as_select())
             .first(&mut conn)
             .await
@@ -82,8 +86,7 @@ impl Webhook {
 
     pub async fn get_all(pool: &DatabasePool, user_id: UserId) -> WyrmResult<Vec<Self>> {
         let mut conn = pool.get().await?;
-        webhooks::table
-            .filter(webhooks::user_id.eq(user_id))
+        Self::owned(user_id)
             .select(Webhook::as_select())
             .load(&mut conn)
             .await
@@ -102,10 +105,7 @@ impl Webhook {
 
     pub async fn update(pool: &DatabasePool, form: WebhookUpdateForm) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        let target = webhooks::table
-            .find(form.id)
-            .filter(webhooks::user_id.eq(form.user_id));
-        diesel::update(target)
+        diesel::update(Self::owned(form.user_id).find(form.id))
             .set(form)
             .returning(Webhook::as_returning())
             .get_result(&mut conn)
@@ -119,10 +119,7 @@ impl Webhook {
         webhook_id: WebhookId,
     ) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        let target = webhooks::table
-            .find(webhook_id)
-            .filter(webhooks::user_id.eq(user_id));
-        diesel::delete(target)
+        diesel::delete(Self::owned(user_id).find(webhook_id))
             .returning(Self::as_returning())
             .get_result(&mut conn)
             .await

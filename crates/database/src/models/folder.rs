@@ -29,11 +29,15 @@ pub struct Folder {
 }
 
 impl Folder {
+    #[diesel::dsl::auto_type(no_type_alias)]
+    pub(crate) fn owned(user_id: UserId) -> _ {
+        folders::table.filter(folders::user_id.eq(user_id))
+    }
+
     pub async fn get(pool: &DatabasePool, user_id: UserId, id: FolderId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        folders::table
+        Self::owned(user_id)
             .find(id)
-            .filter(folders::user_id.eq(user_id))
             .select(Folder::as_select())
             .first(&mut *conn)
             .await
@@ -42,8 +46,7 @@ impl Folder {
 
     pub async fn get_all(pool: &DatabasePool, user_id: UserId) -> WyrmResult<Vec<Self>> {
         let mut conn = pool.get().await?;
-        folders::table
-            .filter(folders::user_id.eq(user_id))
+        Self::owned(user_id)
             .select(Self::as_select())
             .load(&mut conn)
             .await
@@ -71,8 +74,7 @@ impl Folder {
     ) -> WyrmResult<Self> {
         let name = normalize_name(name)?;
 
-        let existing = folders::table
-            .filter(folders::user_id.eq(user_id))
+        let existing = Self::owned(user_id)
             .filter(lower(folders::name).eq(lower(name)))
             .select(Self::as_select())
             .first(&mut *conn)
@@ -115,10 +117,7 @@ impl Folder {
     pub async fn update(pool: &DatabasePool, mut form: FolderUpdateForm) -> WyrmResult<Self> {
         form.name = normalize_name(&form.name)?.to_string();
         let mut conn = pool.get().await?;
-        let target = folders::table
-            .find(form.id)
-            .filter(folders::user_id.eq(form.user_id));
-        diesel::update(target)
+        diesel::update(Self::owned(form.user_id).find(form.id))
             .set(form)
             .returning(Folder::as_returning())
             .get_result(&mut conn)
@@ -128,10 +127,7 @@ impl Folder {
 
     pub async fn delete(pool: &DatabasePool, user_id: UserId, id: FolderId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        let target = folders::table
-            .find(id)
-            .filter(folders::user_id.eq(user_id));
-        diesel::delete(target)
+        diesel::delete(Self::owned(user_id).find(id))
             .returning(Self::as_returning())
             .get_result(&mut conn)
             .await

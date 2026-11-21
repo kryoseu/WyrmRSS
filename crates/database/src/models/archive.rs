@@ -46,11 +46,15 @@ pub struct PostArchive {
 }
 
 impl PostArchive {
+    #[diesel::dsl::auto_type(no_type_alias)]
+    pub(crate) fn owned(user_id: UserId) -> _ {
+        post_archive::table.filter(post_archive::user_id.eq(user_id))
+    }
+
     pub async fn get(pool: &DatabasePool, user_id: UserId, id: PostId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        post_archive::table
+        Self::owned(user_id)
             .find(id)
-            .filter(post_archive::user_id.eq(user_id))
             .select(PostArchive::as_select())
             .first(&mut conn)
             .await
@@ -91,10 +95,9 @@ impl PostArchive {
         let conn = &mut *conn;
 
         conn.transaction(async |conn| {
-            let target = post_archive::table
-                .find(post_id)
-                .filter(post_archive::user_id.eq(user_id));
-            let deleted = diesel::delete(target).execute(conn).await?;
+            let deleted = diesel::delete(Self::owned(user_id).find(post_id))
+                .execute(conn)
+                .await?;
 
             // Nothing archived for this user: leave the post alone.
             if deleted == 0 {

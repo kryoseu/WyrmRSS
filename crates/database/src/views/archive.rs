@@ -2,6 +2,7 @@ use crate::{
     DatabasePool,
     models::{
         archive::{PostArchive, PostArchiveInsertForm},
+        feed::Feed,
         post::Post,
     },
     newtypes::{PostId, UserId},
@@ -40,8 +41,7 @@ impl PostArchiveQuery {
 
         let cursor = self.cursor.as_ref().and_then(|c| c.decode());
 
-        let mut query = post_archive::table
-            .filter(post_archive::user_id.eq(user_id))
+        let mut query = PostArchive::owned(user_id)
             .select(PostArchive::as_select())
             .order((post_archive::archived_at.desc(), post_archive::id.desc()))
             .limit(page_size as i64 + 1)
@@ -91,9 +91,8 @@ pub async fn get_post_archive_insert_form(
 
     // Only the owner of the post's feed can archive it.
     let post: Post = posts::table
-        .inner_join(feeds::table)
-        .filter(posts::id.eq(post_id))
-        .filter(feeds::user_id.eq(user_id))
+        .find(post_id)
+        .filter(posts::feed_id.eq_any(Feed::owned(user_id).select(feeds::id)))
         .select(Post::as_select())
         .first(&mut conn)
         .await
