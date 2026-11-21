@@ -32,6 +32,7 @@ impl WyrmContext {
     /// Builds an HTTP client from the runtime settings and stored host
     /// credentials, for feed discovery and icon fetches.
     pub async fn http(&self) -> WyrmResult<HttpClient> {
+        // TODO(#372): load only the requesting user's credentials.
         let host_credentials = HostCredential::get_all(&self.db_pool).await?;
         HttpClient::new(
             &HttpConfig::from(&*self.runtime_settings.read()?),

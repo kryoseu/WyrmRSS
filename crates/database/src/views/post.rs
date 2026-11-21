@@ -1,7 +1,7 @@
 use crate::{
     DatabasePool,
     models::{feed::DisplayMode, post::Post},
-    newtypes::{FeedId, FolderId},
+    newtypes::{FeedId, FolderId, UserId},
     schema::{feeds, posts},
     utils::pagination::{PagedResponse, PaginationCursor},
 };
@@ -33,13 +33,14 @@ impl PostQuery {
     pub async fn list(
         self,
         pool: &DatabasePool,
+        user_id: UserId,
         page_size: i32,
     ) -> WyrmResult<PagedResponse<Vec<Post>>> {
         let mut conn = pool.get().await?;
 
         let cursor = self.cursor.as_ref().and_then(|c| c.decode());
 
-        let mut query = posts::table
+        let mut query = Post::owned(user_id)
             .select(Post::as_select())
             .order((posts::created_at.desc(), posts::id.desc()))
             .limit(page_size as i64 + 1)

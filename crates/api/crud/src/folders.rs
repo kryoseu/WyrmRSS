@@ -2,7 +2,7 @@ use actix_web::web::{Data, Json, Path};
 use api_utils::context::WyrmContext;
 use database::{
     models::folder::{Folder, FolderUpdateForm},
-    newtypes::FolderId,
+    newtypes::{FolderId, UserId},
 };
 use serde::Deserialize;
 use wyrm_utils::result::WyrmResult;
@@ -25,7 +25,8 @@ pub async fn create(
 ) -> WyrmResult<Json<Folder>> {
     ctx.deny_in_demo()?;
 
-    let folder = Folder::resolve_or_create(&ctx.db_pool, &data.name).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let folder = Folder::resolve_or_create(&ctx.db_pool, UserId(1), &data.name).await?;
     Ok(Json(folder))
 }
 
@@ -36,10 +37,13 @@ pub async fn update(
 ) -> WyrmResult<Json<Folder>> {
     ctx.deny_in_demo()?;
 
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
     let folder = Folder::update(
         &ctx.db_pool,
         FolderUpdateForm {
             id: path.into_inner(),
+            user_id,
             name: data.name,
         },
     )
@@ -50,6 +54,8 @@ pub async fn update(
 pub async fn delete(path: Path<FolderId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Folder>> {
     ctx.deny_in_demo()?;
 
-    let folder = Folder::delete(&ctx.db_pool, path.into_inner()).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
+    let folder = Folder::delete(&ctx.db_pool, user_id, path.into_inner()).await?;
     Ok(Json(folder))
 }

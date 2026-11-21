@@ -2,9 +2,10 @@ use crate::{
     DatabasePool,
     models::{
         archive::{PostArchive, PostArchiveInsertForm},
+        feed::Feed,
         post::Post,
     },
-    newtypes::PostId,
+    newtypes::{PostId, UserId},
     schema::post_archive,
     utils::pagination::{PagedResponse, PaginationCursor},
 };
@@ -33,13 +34,14 @@ impl PostArchiveQuery {
     pub async fn list(
         self,
         pool: &DatabasePool,
+        user_id: UserId,
         page_size: i32,
     ) -> WyrmResult<PagedResponse<Vec<PostArchive>>> {
         let mut conn = pool.get().await?;
 
         let cursor = self.cursor.as_ref().and_then(|c| c.decode());
 
-        let mut query = post_archive::table
+        let mut query = PostArchive::owned(user_id)
             .select(PostArchive::as_select())
             .order((post_archive::archived_at.desc(), post_archive::id.desc()))
             .limit(page_size as i64 + 1)
@@ -80,14 +82,17 @@ impl PostArchiveQuery {
 
 pub async fn get_post_archive_insert_form(
     pool: &DatabasePool,
+    user_id: UserId,
     post_id: PostId,
 ) -> WyrmResult<PostArchiveInsertForm> {
-    use crate::schema::posts;
+    use crate::schema::{feeds, posts};
 
     let mut conn = pool.get().await?;
 
+    // Only the owner of the post's feed can archive it.
     let post: Post = posts::table
         .find(post_id)
+        .filter(posts::feed_id.eq_any(Feed::owned(user_id).select(feeds::id)))
         .select(Post::as_select())
         .first(&mut conn)
         .await
@@ -99,5 +104,5 @@ pub async fn get_post_archive_insert_form(
         )));
     }
 
-    Ok(post.into())
+    Ok((post, user_id).into())
 }

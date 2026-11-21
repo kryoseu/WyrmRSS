@@ -7,6 +7,7 @@ use chrono::{DateTime, TimeDelta, Utc};
 use database::{
     DatabasePool,
     models::session::{Session, SessionInsertForm},
+    newtypes::UserId,
 };
 use sha2::{Digest, Sha256};
 use url::Url;
@@ -32,12 +33,14 @@ pub struct SessionManager {
 
 /// Outcome of `authenticate`.
 pub struct Authenticated {
+    /// Authenticated user.
+    pub user_id: UserId,
     /// (Re-)issued session cookie: set when the session was just created or its expiry extended.
     pub cookie: Option<Cookie<'static>>,
 }
 
 impl SessionManager {
-    pub async fn create(&self, pool: &DatabasePool) -> WyrmResult<Authenticated> {
+    pub async fn create(&self, pool: &DatabasePool, user_id: UserId) -> WyrmResult<Authenticated> {
         let token = generate_session_token();
         let now = Utc::now();
         let expires_at = now + SESSION_IDLE_TIMEOUT;
@@ -50,6 +53,7 @@ impl SessionManager {
         Session::create(
             pool,
             SessionInsertForm {
+                user_id,
                 token_hash: token_hash(&token),
                 expires_at,
                 last_seen_at: now,
@@ -58,6 +62,7 @@ impl SessionManager {
         .await?;
 
         Ok(Authenticated {
+            user_id,
             cookie: Some(self.cookie(token, expires_at)),
         })
     }
@@ -79,7 +84,10 @@ impl SessionManager {
         // Refreshed recently: valid as is, no write needed.
         let now = Utc::now();
         if !needs_refresh(session.last_seen_at, now) {
-            return Ok(Some(Authenticated { cookie: None }));
+            return Ok(Some(Authenticated {
+                user_id: session.user_id,
+                cookie: None,
+            }));
         }
 
         // None if it expired or was revoked between the read and this write.
@@ -89,6 +97,7 @@ impl SessionManager {
         };
 
         Ok(Some(Authenticated {
+            user_id: session.user_id,
             cookie: Some(self.cookie(cookie.value().to_owned(), session.expires_at)),
         }))
     }

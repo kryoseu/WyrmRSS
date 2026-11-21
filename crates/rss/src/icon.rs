@@ -40,7 +40,7 @@ pub async fn ensure_feed_icon(
     feed: &Feed,
     parsed: &feed_rs::model::Feed,
 ) {
-    let existing = match FeedIcon::get(pool, feed.id).await {
+    let existing = match FeedIcon::get(pool, feed.user_id, feed.id).await {
         Ok(existing) => existing,
         Err(_) => return,
     };

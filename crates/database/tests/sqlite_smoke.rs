@@ -15,11 +15,11 @@ use database::{
     create_pool,
     establish_sync_connection,
     models::{
-        feed::{Feed, FeedInsertForm, FeedUpdateForm},
+        feed::{DisplayMode, Feed, FeedInsertForm, FeedUpdateForm},
         post::{Post, PostInsertForm},
         session::{Session, SessionInsertForm},
     },
-    newtypes::{FeedId, Filters},
+    newtypes::{FeedId, Filters, UserId},
     run_migrations,
     schema::posts,
 };
@@ -90,7 +90,9 @@ fn feed_form(url: &str, filters: Option<Filters>) -> FeedInsertForm {
         url: url.to_string(),
         ttl: 60,
         filters,
-        ..Default::default()
+        user_id: UserId(1),
+        folder: None,
+        display_mode: DisplayMode::default(),
     }
 }
 
@@ -114,6 +116,7 @@ fn post_form(feed_id: FeedId, url: &str) -> PostInsertForm {
 fn session_form(token_hash: &str, expires_at: DateTime<Utc>) -> SessionInsertForm {
     SessionInsertForm {
         token_hash: token_hash.to_string(),
+        user_id: UserId(1),
         expires_at,
         last_seen_at: Utc::now(),
     }
@@ -215,7 +218,9 @@ async fn filters_round_trip_through_json() {
     );
 
     // Re-read so the value comes back through FromSql rather than RETURNING.
-    let fetched = Feed::get(&db.pool, created.id).await.expect("should get");
+    let fetched = Feed::get(&db.pool, created.user_id, created.id)
+        .await
+        .expect("should get");
     assert_eq!(fetched.filters.0, created.filters.0);
 
     // The column default is the JSON literal '[]', not NULL.
@@ -310,7 +315,7 @@ async fn deleting_a_feed_cascades_to_posts() {
         .expect("should count posts");
     assert_eq!(before, 1);
 
-    Feed::delete(&db.pool, feed.id)
+    Feed::delete(&db.pool, feed.user_id, feed.id)
         .await
         .expect("should delete feed");
 
@@ -393,7 +398,10 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
             title: "Health".into(),
             url: "https://example.com/health".into(),
             ttl: 60,
-            ..Default::default()
+            user_id: UserId(1),
+            folder: None,
+            filters: None,
+            display_mode: DisplayMode::default(),
         },
     )
     .await
@@ -425,6 +433,7 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
         &db.pool,
         FeedUpdateForm {
             id: feed.id,
+            user_id: feed.user_id,
             title: None,
             url: Some("https://example.com/new".into()),
             ttl: None,
@@ -451,9 +460,9 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
         stale,
         Err(WyrmError::Database(DatabaseError::NotFound))
     ));
-    let current = Feed::get(&db.pool, feed.id).await.unwrap();
+    let current = Feed::get(&db.pool, feed.user_id, feed.id).await.unwrap();
     assert!(current.last_error.is_none());
     assert!(current.last_fetched_at.is_none());
 
-    Feed::delete(&db.pool, feed.id).await.unwrap();
+    Feed::delete(&db.pool, feed.user_id, feed.id).await.unwrap();
 }

@@ -40,6 +40,7 @@ diesel::table! {
         is_paused -> Bool,
         display_mode -> DisplayModeMapping,
         last_error -> Nullable<Text>,
+        user_id -> Integer,
     }
 }
 
@@ -47,6 +48,7 @@ diesel::table! {
     folders (id) {
         id -> Integer,
         name -> Text,
+        user_id -> Integer,
     }
 }
 
@@ -61,6 +63,25 @@ diesel::table! {
         name -> Text,
         secret -> Text,
         created_at -> TimestamptzSqlite,
+        user_id -> Integer,
+    }
+}
+
+diesel::table! {
+    local_instance (is_singleton) {
+        is_singleton -> Bool,
+        is_setup -> Bool,
+    }
+}
+
+diesel::table! {
+    local_users (id) {
+        id -> Integer,
+        username -> Text,
+        password_hash -> Nullable<Text>,
+        oidc_subject -> Nullable<Text>,
+        is_admin -> Bool,
+        created_at -> TimestamptzSqlite,
     }
 }
 
@@ -74,6 +95,7 @@ diesel::table! {
         description -> Nullable<Text>,
         content -> Nullable<Text>,
         archived_at -> TimestamptzSqlite,
+        user_id -> Integer,
     }
 }
 
@@ -101,6 +123,7 @@ diesel::table! {
         token_hash -> Text,
         expires_at -> TimestamptzSqlite,
         last_seen_at -> TimestamptzSqlite,
+        user_id -> Integer,
     }
 }
 
@@ -125,7 +148,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    shortcut_overrides (shortcut_action) {
+    shortcut_overrides (user_id, shortcut_action) {
+        user_id -> Integer,
         shortcut_action -> Text,
         key -> Text,
     }
@@ -142,6 +166,7 @@ diesel::table! {
         kind -> WebhookKindMapping,
         payload_template -> Nullable<Text>,
         created_at -> TimestamptzSqlite,
+        user_id -> Integer,
     }
 }
 
@@ -159,6 +184,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     feeds,
     folders,
     host_credentials,
+    local_instance,
+    local_users,
     post_archive,
     posts,
     sessions,

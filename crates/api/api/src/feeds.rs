@@ -6,7 +6,7 @@ use actix_web::{
 use api_utils::context::WyrmContext;
 use database::{
     models::{feed::Feed, feed_icon::FeedIcon},
-    newtypes::FeedId,
+    newtypes::{FeedId, UserId},
     views::{self, feed::FeedView},
 };
 use std::time::Duration;
@@ -15,17 +15,23 @@ use wyrm_rss::worker::WorkerCommand;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
 
 pub async fn get(path: Path<FeedId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Feed>> {
-    let feed = Feed::get(&ctx.db_pool, path.into_inner()).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
+    let feed = Feed::get(&ctx.db_pool, user_id, path.into_inner()).await?;
     Ok(Json(feed))
 }
 
 pub async fn list(ctx: Data<WyrmContext>) -> WyrmResult<Json<Vec<FeedView>>> {
-    let feeds = views::feed::list(&ctx.db_pool).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
+    let feeds = views::feed::list(&ctx.db_pool, user_id).await?;
     Ok(Json(feeds))
 }
 
 pub async fn icon(path: Path<FeedId>, ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
-    let icon = FeedIcon::get(&ctx.db_pool, path.into_inner()).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
+    let icon = FeedIcon::get(&ctx.db_pool, user_id, path.into_inner()).await?;
     let Some(FeedIcon {
         data: Some(data),
         content_type,

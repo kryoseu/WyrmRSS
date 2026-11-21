@@ -1,4 +1,8 @@
-use crate::{DatabasePool, newtypes::HostCredentialId, schema::host_credentials};
+use crate::{
+    DatabasePool,
+    newtypes::{HostCredentialId, UserId},
+    schema::host_credentials,
+};
 use chrono::{DateTime, Utc};
 use diesel::{Selectable, deserialize::Queryable, prelude::*};
 use diesel_async::RunQueryDsl;
@@ -34,6 +38,10 @@ pub enum HostCredentialKind {
 pub struct HostCredential {
     /// Primary key
     pub id: HostCredentialId,
+    /// User who owns these host credentials.
+    #[serde(skip)]
+    #[ts(skip)]
+    pub user_id: UserId,
     /// Host the credentials apply to, as `host:port`. Matched exactly.
     pub host: String,
     /// Selects how `name` and `secret` are sent.
@@ -49,9 +57,18 @@ pub struct HostCredential {
 }
 
 impl HostCredential {
-    pub async fn get(pool: &DatabasePool, id: HostCredentialId) -> WyrmResult<Self> {
+    #[diesel::dsl::auto_type(no_type_alias)]
+    pub(crate) fn owned(user_id: UserId) -> _ {
+        host_credentials::table.filter(host_credentials::user_id.eq(user_id))
+    }
+
+    pub async fn get(
+        pool: &DatabasePool,
+        user_id: UserId,
+        id: HostCredentialId,
+    ) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        host_credentials::table
+        Self::owned(user_id)
             .find(id)
             .select(HostCredential::as_select())
             .first(&mut conn)
@@ -59,9 +76,20 @@ impl HostCredential {
             .map_err(WyrmError::from)
     }
 
+    /// Every user's credentials, for building HTTP clients. Handlers use
+    /// [`get_all_for_user`](Self::get_all_for_user).
     pub async fn get_all(pool: &DatabasePool) -> WyrmResult<Vec<Self>> {
         let mut conn = pool.get().await?;
         host_credentials::table
+            .select(HostCredential::as_select())
+            .load(&mut conn)
+            .await
+            .map_err(WyrmError::from)
+    }
+
+    pub async fn get_all_for_user(pool: &DatabasePool, user_id: UserId) -> WyrmResult<Vec<Self>> {
+        let mut conn = pool.get().await?;
+        Self::owned(user_id)
             .select(HostCredential::as_select())
             .load(&mut conn)
             .await
@@ -72,23 +100,29 @@ impl HostCredential {
         let mut conn = pool.get().await?;
         diesel::insert_into(host_credentials::table)
             .values(form)
-            .get_result::<Self>(&mut conn)
+            .returning(HostCredential::as_returning())
+            .get_result(&mut conn)
             .await
             .map_err(WyrmError::from)
     }
 
     pub async fn update(pool: &DatabasePool, form: HostCredentialUpdateForm) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        diesel::update(host_credentials::table.find(form.id))
+        diesel::update(Self::owned(form.user_id).find(form.id))
             .set(form)
-            .get_result::<Self>(&mut conn)
+            .returning(HostCredential::as_returning())
+            .get_result(&mut conn)
             .await
             .map_err(WyrmError::from)
     }
 
-    pub async fn delete(pool: &DatabasePool, id: HostCredentialId) -> WyrmResult<Self> {
+    pub async fn delete(
+        pool: &DatabasePool,
+        user_id: UserId,
+        id: HostCredentialId,
+    ) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        diesel::delete(host_credentials::table.find(id))
+        diesel::delete(Self::owned(user_id).find(id))
             .returning(Self::as_returning())
             .get_result(&mut conn)
             .await
@@ -100,6 +134,7 @@ impl HostCredential {
 #[diesel(table_name = crate::schema::host_credentials)]
 #[diesel(check_for_backend(crate::Backend))]
 pub struct HostCredentialInsertForm {
+    pub user_id: UserId,
     pub host: String,
     pub kind: HostCredentialKind,
     pub name: String,
@@ -111,6 +146,8 @@ pub struct HostCredentialInsertForm {
 #[diesel(check_for_backend(crate::Backend))]
 pub struct HostCredentialUpdateForm {
     pub id: HostCredentialId,
+    #[diesel(skip_update)]
+    pub user_id: UserId,
     pub host: Option<String>,
     pub kind: Option<HostCredentialKind>,
     pub name: Option<String>,
@@ -125,6 +162,7 @@ mod tests {
     fn secret_is_never_serialized() {
         let credential = HostCredential {
             id: HostCredentialId(1),
+            user_id: UserId(1),
             host: "feeds.example.com:443".into(),
             kind: HostCredentialKind::BasicAuth,
             name: "reader".into(),
@@ -152,6 +190,7 @@ mod tests {
                 .expect("timestamp in range")
         );
         let insert_form = || HostCredentialInsertForm {
+            user_id: UserId(1),
             host: host.clone(),
             kind: HostCredentialKind::BasicAuth,
             name: "reader".into(),
@@ -176,6 +215,7 @@ mod tests {
             &pool,
             HostCredentialUpdateForm {
                 id: created.id,
+                user_id: created.user_id,
                 host: None,
                 kind: None,
                 name: None,
@@ -188,16 +228,18 @@ mod tests {
         assert_eq!(updated.name, "reader");
         assert_eq!(updated.host, host);
 
-        let fetched = HostCredential::get(&pool, created.id)
+        let fetched = HostCredential::get(&pool, created.user_id, created.id)
             .await
             .expect("get should succeed");
         assert_eq!(fetched.secret, "correct horse");
 
-        HostCredential::delete(&pool, created.id)
+        HostCredential::delete(&pool, created.user_id, created.id)
             .await
             .expect("delete should succeed");
         assert!(
-            HostCredential::get(&pool, created.id).await.is_err(),
+            HostCredential::get(&pool, created.user_id, created.id)
+                .await
+                .is_err(),
             "deleted credential should be gone"
         );
     }

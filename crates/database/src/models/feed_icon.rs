@@ -1,4 +1,8 @@
-use crate::{DatabasePool, newtypes::FeedId, schema::feed_icons};
+use crate::{
+    DatabasePool,
+    newtypes::{FeedId, UserId},
+    schema::{feed_icons, feeds},
+};
 use chrono::{DateTime, Utc};
 use diesel::{prelude::*, upsert::excluded};
 use diesel_async::RunQueryDsl;
@@ -22,10 +26,22 @@ pub struct FeedIcon {
 }
 
 impl FeedIcon {
+    #[diesel::dsl::auto_type(no_type_alias)]
+    pub(crate) fn owned(user_id: UserId) -> _ {
+        let users_feeds = feeds::table
+            .filter(feeds::user_id.eq(user_id))
+            .select(feeds::id);
+        feed_icons::table.filter(feed_icons::feed_id.eq_any(users_feeds))
+    }
+
     /// `None` = the feed has never been checked for an icon.
-    pub async fn get(pool: &DatabasePool, feed_id: FeedId) -> WyrmResult<Option<Self>> {
+    pub async fn get(
+        pool: &DatabasePool,
+        user_id: UserId,
+        feed_id: FeedId,
+    ) -> WyrmResult<Option<Self>> {
         let mut conn = pool.get().await?;
-        feed_icons::table
+        Self::owned(user_id)
             .find(feed_id)
             .select(Self::as_select())
             .first(&mut conn)
@@ -85,7 +101,12 @@ mod tests {
         let pool = setup_test_db().await;
         let feed = test_feed!(&pool);
 
-        assert!(FeedIcon::get(&pool, feed.id).await.unwrap().is_none());
+        assert!(
+            FeedIcon::get(&pool, feed.user_id, feed.id)
+                .await
+                .unwrap()
+                .is_none()
+        );
 
         FeedIcon::create(
             &pool,
@@ -97,7 +118,7 @@ mod tests {
         )
         .await
         .expect("create should succeed");
-        let icon = FeedIcon::get(&pool, feed.id)
+        let icon = FeedIcon::get(&pool, feed.user_id, feed.id)
             .await
             .unwrap()
             .expect("icon row should exist");
@@ -116,14 +137,14 @@ mod tests {
         )
         .await
         .expect("create should succeed");
-        let icon = FeedIcon::get(&pool, feed.id)
+        let icon = FeedIcon::get(&pool, feed.user_id, feed.id)
             .await
             .unwrap()
             .expect("icon row should exist");
         assert!(icon.data.is_none());
         assert!(icon.content_type.is_none());
 
-        crate::models::feed::Feed::delete(&pool, feed.id)
+        crate::models::feed::Feed::delete(&pool, feed.user_id, feed.id)
             .await
             .expect("should delete feed");
     }

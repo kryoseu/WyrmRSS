@@ -1,7 +1,7 @@
 use crate::{
     DatabasePool,
     models::post::Post,
-    newtypes::PostId,
+    newtypes::{PostId, UserId},
     schema::{
         post_archive,
         posts::{self},
@@ -25,6 +25,10 @@ pub struct PostArchive {
     /// The original post's id, reused as this row's primary key — there is no
     /// foreign key back to `posts`, so the archive outlives the post.
     pub id: PostId,
+    /// The user who owns this archived post.
+    #[serde(skip)]
+    #[ts(skip)]
+    pub user_id: UserId,
     /// Post title at the time it was archived.
     pub title: Option<String>,
     /// Link to the original post.
@@ -42,9 +46,14 @@ pub struct PostArchive {
 }
 
 impl PostArchive {
-    pub async fn get(pool: &DatabasePool, id: PostId) -> WyrmResult<Self> {
+    #[diesel::dsl::auto_type(no_type_alias)]
+    pub(crate) fn owned(user_id: UserId) -> _ {
+        post_archive::table.filter(post_archive::user_id.eq(user_id))
+    }
+
+    pub async fn get(pool: &DatabasePool, user_id: UserId, id: PostId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        post_archive::table
+        Self::owned(user_id)
             .find(id)
             .select(PostArchive::as_select())
             .first(&mut conn)
@@ -64,7 +73,8 @@ impl PostArchive {
         conn.transaction(async |conn| {
             let archived = diesel::insert_into(post_archive::table)
                 .values(form)
-                .get_result::<PostArchive>(conn)
+                .returning(PostArchive::as_returning())
+                .get_result(conn)
                 .await?;
 
             diesel::update(posts::table.find(id))
@@ -80,14 +90,19 @@ impl PostArchive {
     /// Unarchives a post: deletes the `post_archive` row and sets `posts.is_archived = false`
     /// atomically. If the original post no longer exists (e.g. feed was deleted), the archive
     /// row is still removed.
-    pub async fn delete(pool: &DatabasePool, post_id: PostId) -> WyrmResult<()> {
+    pub async fn delete(pool: &DatabasePool, user_id: UserId, post_id: PostId) -> WyrmResult<()> {
         let mut conn = pool.get().await?;
         let conn = &mut *conn;
 
         conn.transaction(async |conn| {
-            diesel::delete(post_archive::table.filter(post_archive::id.eq(post_id)))
+            let deleted = diesel::delete(Self::owned(user_id).find(post_id))
                 .execute(conn)
                 .await?;
+
+            // Nothing archived for this user: leave the post alone.
+            if deleted == 0 {
+                return Ok(());
+            }
 
             diesel::update(posts::table.find(post_id))
                 .set(posts::is_archived.eq(false))
@@ -107,6 +122,7 @@ impl PostArchive {
 #[diesel(check_for_backend(crate::Backend))]
 pub struct PostArchiveInsertForm {
     pub id: PostId,
+    pub user_id: UserId,
     pub title: Option<String>,
     pub url: Option<String>,
     pub authors: Option<String>,
@@ -115,10 +131,11 @@ pub struct PostArchiveInsertForm {
     pub content: Option<String>,
 }
 
-impl From<Post> for PostArchiveInsertForm {
-    fn from(p: Post) -> Self {
+impl From<(Post, UserId)> for PostArchiveInsertForm {
+    fn from((p, user_id): (Post, UserId)) -> Self {
         PostArchiveInsertForm {
             id: p.id,
+            user_id,
             title: p.title,
             url: p.url,
             authors: p.authors,
@@ -132,7 +149,7 @@ impl From<Post> for PostArchiveInsertForm {
 #[cfg(all(test, feature = "postgres"))]
 mod tests {
     use super::*;
-    use crate::{models::feed::Feed, setup_test_db};
+    use crate::{models::feed::Feed, setup_test_db, views::archive::get_post_archive_insert_form};
 
     #[tokio::test]
     async fn archive_and_unarchive_roundtrip() {
@@ -142,25 +159,45 @@ mod tests {
         let post = test_post!(&pool, feed_id);
         let post_id = post.id;
 
-        let archived = PostArchive::create(&pool, post.into())
+        let form = get_post_archive_insert_form(&pool, feed.user_id, post_id)
+            .await
+            .expect("insert form should build");
+        let archived = PostArchive::create(&pool, form)
             .await
             .expect("archive should succeed");
         assert_eq!(archived.id, post_id);
         assert_eq!(archived.title.as_deref(), Some("test post"));
-        assert!(Post::get(&pool, post_id).await.unwrap().is_archived);
+        assert!(
+            Post::get(&pool, feed.user_id, post_id)
+                .await
+                .unwrap()
+                .is_archived
+        );
         assert_eq!(
-            PostArchive::get(&pool, post_id).await.unwrap().id,
+            PostArchive::get(&pool, feed.user_id, post_id)
+                .await
+                .unwrap()
+                .id,
             post_id,
             "get should return the archived row"
         );
 
-        PostArchive::delete(&pool, post_id)
+        PostArchive::delete(&pool, feed.user_id, post_id)
             .await
             .expect("unarchive should succeed");
-        assert!(PostArchive::get(&pool, post_id).await.is_err());
-        assert!(!Post::get(&pool, post_id).await.unwrap().is_archived);
+        assert!(
+            PostArchive::get(&pool, feed.user_id, post_id)
+                .await
+                .is_err()
+        );
+        assert!(
+            !Post::get(&pool, feed.user_id, post_id)
+                .await
+                .unwrap()
+                .is_archived
+        );
 
-        Feed::delete(&pool, feed_id)
+        Feed::delete(&pool, feed.user_id, feed_id)
             .await
             .expect("should delete feed");
     }

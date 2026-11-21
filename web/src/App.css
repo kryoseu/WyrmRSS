@@ -1928,6 +1928,59 @@ body.reader-resizing {
   }
 }
 
+.setup-logo {
+  align-self: center;
+  width: 55%;
+  height: auto;
+  margin-bottom: 5px;
+}
+
+.api-key-form h2.setup-title {
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.api-key-form p.setup-note {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.setup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-h);
+
+  small {
+    font-size: 0.64rem;
+    font-weight: 400;
+    color: var(--text);
+  }
+
+  code {
+    font-family: var(--mono);
+  }
+}
+
+.setup-password {
+  display: flex;
+  gap: 6px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .btn {
+    flex: 0 0 auto;
+  }
+}
+
 /* ── Radar ──────────────────────────────────────────────────── */
 
 .pane-radar {

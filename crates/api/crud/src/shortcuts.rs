@@ -1,10 +1,8 @@
 use actix_web::web::{Data, Json, Path};
 use api_utils::context::WyrmContext;
-use database::models::shortcut::{
-    ShortcutAction,
-    ShortcutOverride,
-    ShortcutOverrideInsertForm,
-    Shortcuts,
+use database::{
+    models::shortcut::{ShortcutAction, ShortcutOverride, ShortcutOverrideInsertForm, Shortcuts},
+    newtypes::UserId,
 };
 use serde::Deserialize;
 use wyrm_utils::{
@@ -25,6 +23,8 @@ pub async fn update(
 ) -> WyrmResult<Json<Shortcuts>> {
     ctx.deny_in_demo()?;
 
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
     let shortcut_action = path.into_inner();
 
     // User sent an unknown shortcut action. 404 like any missing resource.
@@ -38,7 +38,8 @@ pub async fn update(
         return Err(WyrmError::InvalidInput("key cannot be empty".into()));
     }
 
-    let current = Shortcuts::from_overrides(ShortcutOverride::get_all(&ctx.db_pool).await?);
+    let current =
+        Shortcuts::from_overrides(ShortcutOverride::get_all(&ctx.db_pool, user_id).await?);
 
     // Re-saving an action's own key is fine, only another action's key conflicts.
     if let Some(owner) = current.action_for_key(&key)
@@ -52,13 +53,14 @@ pub async fn update(
     ShortcutOverride::create(
         &ctx.db_pool,
         ShortcutOverrideInsertForm {
+            user_id,
             shortcut_action,
             key,
         },
     )
     .await?;
 
-    let overrides = ShortcutOverride::get_all(&ctx.db_pool).await?;
+    let overrides = ShortcutOverride::get_all(&ctx.db_pool, user_id).await?;
 
     Ok(Json(Shortcuts::from_overrides(overrides)))
 }
@@ -66,6 +68,8 @@ pub async fn update(
 pub async fn delete(path: Path<String>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Shortcuts>> {
     ctx.deny_in_demo()?;
 
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
     let action = path.into_inner();
 
     // User sent an unknown shortcut action. 404 like any missing resource.
@@ -73,9 +77,9 @@ pub async fn delete(path: Path<String>, ctx: Data<WyrmContext>) -> WyrmResult<Js
         .parse::<ShortcutAction>()
         .map_err(|_| WyrmError::Database(DatabaseError::NotFound))?;
 
-    ShortcutOverride::delete(&ctx.db_pool, action.as_str()).await?;
+    ShortcutOverride::delete(&ctx.db_pool, user_id, action.as_str()).await?;
 
-    let overrides = ShortcutOverride::get_all(&ctx.db_pool).await?;
+    let overrides = ShortcutOverride::get_all(&ctx.db_pool, user_id).await?;
 
     let shortcuts = Shortcuts::from_overrides(overrides);
 

@@ -132,12 +132,13 @@ mod tests {
     use chrono::Utc;
     use database::{
         models::feed::DisplayMode,
-        newtypes::{FeedId, Filters, PostId},
+        newtypes::{FeedId, Filters, PostId, UserId},
     };
 
     fn feed() -> Feed {
         Feed {
             id: FeedId(1),
+            user_id: UserId(1),
             title: "MyFeed".to_string(),
             url: "https://feed.test".to_string(),
             ttl: 60,

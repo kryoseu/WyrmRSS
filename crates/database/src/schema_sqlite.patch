@@ -38,9 +38,9 @@
 -        display_mode -> Text,
 +        display_mode -> DisplayModeMapping,
          last_error -> Nullable<Text>,
+         user_id -> Integer,
      }
- }
-@@ -48,13 +51,16 @@
+@@ -50,13 +53,16 @@
  }
  
  diesel::table! {
@@ -56,10 +56,19 @@
          secret -> Text,
 -        created_at -> Timestamp,
 +        created_at -> TimestamptzSqlite,
+         user_id -> Integer,
+     }
+ }
+@@ -75,7 +81,7 @@
+         password_hash -> Nullable<Text>,
+         oidc_subject -> Nullable<Text>,
+         is_admin -> Bool,
+-        created_at -> Timestamp,
++        created_at -> TimestamptzSqlite,
      }
  }
  
-@@ -64,10 +70,10 @@
+@@ -85,10 +91,10 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -69,10 +78,10 @@
          content -> Nullable<Text>,
 -        archived_at -> Timestamp,
 +        archived_at -> TimestamptzSqlite,
+         user_id -> Integer,
      }
  }
- 
-@@ -78,14 +84,14 @@
+@@ -100,14 +106,14 @@
          title -> Nullable<Text>,
          url -> Nullable<Text>,
          authors -> Nullable<Text>,
@@ -90,7 +99,7 @@
          thumbnail_url -> Nullable<Text>,
      }
  }
-@@ -93,12 +99,15 @@
+@@ -115,13 +121,16 @@
  diesel::table! {
      sessions (token_hash) {
          token_hash -> Text,
@@ -98,6 +107,7 @@
 -        last_seen_at -> Timestamp,
 +        expires_at -> TimestamptzSqlite,
 +        last_seen_at -> TimestamptzSqlite,
+         user_id -> Integer,
      }
  }
  
@@ -108,7 +118,7 @@
      settings (is_singleton) {
          is_singleton -> Bool,
          page_size -> Integer,
-@@ -107,7 +116,7 @@
+@@ -130,7 +139,7 @@
          http_connect_timeout -> Integer,
          http_retries -> Integer,
          http_user_agent -> Nullable<Text>,
@@ -117,7 +127,7 @@
          expire_read_after_days -> Nullable<Integer>,
          expire_unread_after_days -> Nullable<Integer>,
          read_delay_secs -> Integer,
-@@ -123,13 +132,16 @@
+@@ -147,13 +156,16 @@
  }
  
  diesel::table! {
@@ -133,6 +143,6 @@
          payload_template -> Nullable<Text>,
 -        created_at -> Timestamp,
 +        created_at -> TimestamptzSqlite,
+         user_id -> Integer,
      }
  }
- 

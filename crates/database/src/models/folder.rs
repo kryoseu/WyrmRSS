@@ -1,4 +1,9 @@
-use crate::{DatabaseConn, DatabasePool, newtypes::FolderId, schema::folders};
+use crate::{
+    DatabaseConn,
+    DatabasePool,
+    newtypes::{FolderId, UserId},
+    schema::folders,
+};
 use diesel::{define_sql_function, prelude::*};
 use diesel_async::RunQueryDsl;
 use serde::Serialize;
@@ -18,13 +23,21 @@ define_sql_function! {
 #[ts(optional_fields, export)]
 pub struct Folder {
     pub id: FolderId,
+    #[serde(skip)]
+    #[ts(skip)]
+    pub user_id: UserId,
     pub name: String,
 }
 
 impl Folder {
-    pub async fn get(pool: &DatabasePool, id: FolderId) -> WyrmResult<Self> {
+    #[diesel::dsl::auto_type(no_type_alias)]
+    pub(crate) fn owned(user_id: UserId) -> _ {
+        folders::table.filter(folders::user_id.eq(user_id))
+    }
+
+    pub async fn get(pool: &DatabasePool, user_id: UserId, id: FolderId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        folders::table
+        Self::owned(user_id)
             .find(id)
             .select(Folder::as_select())
             .first(&mut *conn)
@@ -32,9 +45,9 @@ impl Folder {
             .map_err(WyrmError::from)
     }
 
-    pub async fn get_all(pool: &DatabasePool) -> WyrmResult<Vec<Self>> {
+    pub async fn get_all(pool: &DatabasePool, user_id: UserId) -> WyrmResult<Vec<Self>> {
         let mut conn = pool.get().await?;
-        folders::table
+        Self::owned(user_id)
             .select(Self::as_select())
             .load(&mut conn)
             .await
@@ -44,17 +57,25 @@ impl Folder {
     /// Finds a folder by name (ignoring case and surrounding whitespace) or
     /// creates it. If the folder exists, its stored spelling is kept — the
     /// caller's casing does not overwrite it. Blank names are rejected.
-    pub async fn resolve_or_create(pool: &DatabasePool, name: &str) -> WyrmResult<Self> {
+    pub async fn resolve_or_create(
+        pool: &DatabasePool,
+        user_id: UserId,
+        name: &str,
+    ) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        Self::resolve_or_create_on(&mut conn, name).await
+        Self::resolve_or_create_on(&mut conn, user_id, name).await
     }
 
     /// Like [`resolve_or_create`](Self::resolve_or_create), but runs on an
     /// existing connection so it can join a caller's transaction.
-    pub async fn resolve_or_create_on(conn: &mut DatabaseConn, name: &str) -> WyrmResult<Self> {
+    pub async fn resolve_or_create_on(
+        conn: &mut DatabaseConn,
+        user_id: UserId,
+        name: &str,
+    ) -> WyrmResult<Self> {
         let name = normalize_name(name)?;
 
-        let existing = folders::table
+        let existing = Self::owned(user_id)
             .filter(lower(folders::name).eq(lower(name)))
             .select(Self::as_select())
             .first(&mut *conn)
@@ -65,7 +86,11 @@ impl Folder {
         match existing {
             Some(folder) => Ok(folder),
             None => diesel::insert_into(folders::table)
-                .values(FolderInsertForm { name: name.into() })
+                .values(FolderInsertForm {
+                    user_id,
+                    name: name.into(),
+                })
+                .returning(Folder::as_returning())
                 .get_result(&mut *conn)
                 .await
                 .map_err(WyrmError::from),
@@ -79,10 +104,13 @@ impl Folder {
     /// to `None` (no folder) rather than erroring.
     pub(crate) async fn resolve_name_on(
         conn: &mut DatabaseConn,
+        user_id: UserId,
         name: Option<&str>,
     ) -> WyrmResult<Option<FolderId>> {
         match name.map(str::trim).filter(|n| !n.is_empty()) {
-            Some(name) => Ok(Some(Self::resolve_or_create_on(conn, name).await?.id)),
+            Some(name) => Ok(Some(
+                Self::resolve_or_create_on(conn, user_id, name).await?.id,
+            )),
             None => Ok(None),
         }
     }
@@ -90,16 +118,17 @@ impl Folder {
     pub async fn update(pool: &DatabasePool, mut form: FolderUpdateForm) -> WyrmResult<Self> {
         form.name = normalize_name(&form.name)?.to_string();
         let mut conn = pool.get().await?;
-        diesel::update(folders::table.find(form.id))
+        diesel::update(Self::owned(form.user_id).find(form.id))
             .set(form)
-            .get_result::<Self>(&mut conn)
+            .returning(Folder::as_returning())
+            .get_result(&mut conn)
             .await
             .map_err(WyrmError::from)
     }
 
-    pub async fn delete(pool: &DatabasePool, id: FolderId) -> WyrmResult<Self> {
+    pub async fn delete(pool: &DatabasePool, user_id: UserId, id: FolderId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        diesel::delete(folders::table.find(id))
+        diesel::delete(Self::owned(user_id).find(id))
             .returning(Self::as_returning())
             .get_result(&mut conn)
             .await
@@ -122,6 +151,7 @@ fn normalize_name(name: &str) -> WyrmResult<&str> {
 #[diesel(table_name = crate::schema::folders)]
 #[diesel(check_for_backend(crate::Backend))]
 pub struct FolderInsertForm {
+    pub user_id: UserId,
     pub name: String,
 }
 
@@ -130,6 +160,9 @@ pub struct FolderInsertForm {
 #[diesel(check_for_backend(crate::Backend))]
 pub struct FolderUpdateForm {
     pub id: FolderId,
+    /// Owner; scopes the update, never written.
+    #[diesel(skip_update)]
+    pub user_id: UserId,
     pub name: String,
 }
 
@@ -154,18 +187,18 @@ mod tests {
         let pool = setup_test_db().await;
         let name = unique_name("YouTube");
 
-        let created = Folder::resolve_or_create(&pool, &format!("  {name} "))
+        let created = Folder::resolve_or_create(&pool, UserId(1), &format!("  {name} "))
             .await
             .expect("create should succeed");
         assert_eq!(created.name, name, "name should be stored trimmed");
 
-        let resolved = Folder::resolve_or_create(&pool, &name.to_lowercase())
+        let resolved = Folder::resolve_or_create(&pool, UserId(1), &name.to_lowercase())
             .await
             .expect("resolve should succeed");
         assert_eq!(resolved.id, created.id, "case variant should reuse the row");
         assert_eq!(resolved.name, name, "stored casing should win");
 
-        Folder::delete(&pool, created.id)
+        Folder::delete(&pool, UserId(1), created.id)
             .await
             .expect("should delete folder");
     }
@@ -175,7 +208,7 @@ mod tests {
         let pool = setup_test_db().await;
         assert!(
             matches!(
-                Folder::resolve_or_create(&pool, "   ").await,
+                Folder::resolve_or_create(&pool, UserId(1), "   ").await,
                 Err(WyrmError::EmptyFolderName)
             ),
             "blank name should be rejected"
@@ -185,7 +218,7 @@ mod tests {
     #[tokio::test]
     async fn update_trims_renamed_folder() {
         let pool = setup_test_db().await;
-        let folder = Folder::resolve_or_create(&pool, &unique_name("News"))
+        let folder = Folder::resolve_or_create(&pool, UserId(1), &unique_name("News"))
             .await
             .expect("create should succeed");
 
@@ -194,6 +227,7 @@ mod tests {
             &pool,
             FolderUpdateForm {
                 id: folder.id,
+                user_id: UserId(1),
                 name: format!("  {new_name} "),
             },
         )
@@ -202,7 +236,7 @@ mod tests {
         assert_eq!(renamed.id, folder.id);
         assert_eq!(renamed.name, new_name, "rename should be stored trimmed");
 
-        Folder::delete(&pool, folder.id)
+        Folder::delete(&pool, UserId(1), folder.id)
             .await
             .expect("should delete folder");
     }

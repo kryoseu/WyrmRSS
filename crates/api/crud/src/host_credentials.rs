@@ -7,7 +7,7 @@ use database::{
         HostCredentialKind,
         HostCredentialUpdateForm,
     },
-    newtypes::HostCredentialId,
+    newtypes::{HostCredentialId, UserId},
 };
 use serde::Deserialize;
 use wyrm_rss::http::{custom_header, parse_host_key};
@@ -56,6 +56,8 @@ pub async fn create(
     let host_credential = HostCredential::create(
         &ctx.db_pool,
         HostCredentialInsertForm {
+            // TODO(#372): the requesting user, once the middleware provides it.
+            user_id: UserId(1),
             host: parsed_host,
             kind: data.kind,
             name: data.name,
@@ -74,11 +76,13 @@ pub async fn update(
 ) -> WyrmResult<Json<HostCredential>> {
     ctx.deny_in_demo()?;
 
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
     let id = path.into_inner();
 
     let parsed_host = data.host.as_deref().map(parse_host_key).transpose()?;
 
-    let existing = HostCredential::get(&ctx.db_pool, id).await?;
+    let existing = HostCredential::get(&ctx.db_pool, user_id, id).await?;
 
     let kind = data.kind.as_ref().unwrap_or(&existing.kind);
     let name = data.name.as_deref().unwrap_or(&existing.name);
@@ -94,6 +98,7 @@ pub async fn update(
 
     let form = HostCredentialUpdateForm {
         id,
+        user_id,
         host: parsed_host,
         kind: data.kind,
         name: data.name,
@@ -115,6 +120,8 @@ pub async fn delete(
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<HostCredential>> {
     ctx.deny_in_demo()?;
-    let host_credential = HostCredential::delete(&ctx.db_pool, path.into_inner()).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
+    let host_credential = HostCredential::delete(&ctx.db_pool, user_id, path.into_inner()).await?;
     Ok(Json(host_credential))
 }

@@ -11,6 +11,7 @@ pub mod session;
 use crate::oidc::Oidc;
 use crate::session::SessionManager;
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 #[cfg(feature = "oidc")]
 use wyrm_utils::error::AuthError;
 use wyrm_utils::{config::WyrmStartupConfig, result::WyrmResult};
@@ -29,6 +30,7 @@ pub struct Auth {
     #[cfg(feature = "oidc")]
     oidc: Option<Oidc>,
     sessions: Option<SessionManager>,
+    setup_token: Option<String>,
 }
 
 impl Auth {
@@ -42,6 +44,7 @@ impl Auth {
             #[cfg(feature = "oidc")]
             oidc: Oidc::new(config)?,
             sessions,
+            setup_token: None,
         })
     }
 
@@ -80,6 +83,29 @@ impl Auth {
 
     pub fn sessions(&self) -> Option<&SessionManager> {
         self.sessions.as_ref()
+    }
+
+    pub fn setup_token(&self) -> Option<&str> {
+        self.setup_token.as_deref()
+    }
+
+    /// Generates a one-time setup token.
+    pub fn with_setup_token(self) -> Self {
+        let mut bytes = [0u8; 8];
+        getrandom::fill(&mut bytes).expect("OS random source unavailable");
+        let token = hex::encode(bytes);
+
+        Self {
+            setup_token: Some(token),
+            ..self
+        }
+    }
+
+    /// True if `provided` is this instance's setup token.
+    pub fn setup_token_matches(&self, provided: &str) -> bool {
+        self.setup_token
+            .as_deref()
+            .is_some_and(|token| Sha256::digest(provided.trim()) == Sha256::digest(token))
     }
 }
 

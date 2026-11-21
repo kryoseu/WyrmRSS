@@ -1,4 +1,4 @@
-use crate::{DatabasePool, schema::shortcut_overrides};
+use crate::{DatabasePool, newtypes::UserId, schema::shortcut_overrides};
 use diesel::{Selectable, deserialize::Queryable, prelude::*, upsert::excluded};
 use diesel_async::RunQueryDsl;
 use serde::{
@@ -179,10 +179,11 @@ impl Shortcuts {
     }
 }
 
-#[derive(Default, Insertable)]
+#[derive(Insertable)]
 #[diesel(table_name = crate::schema::shortcut_overrides)]
 #[diesel(check_for_backend(crate::Backend))]
 pub struct ShortcutOverrideInsertForm {
+    pub user_id: UserId,
     pub shortcut_action: String,
     pub key: String,
 }
@@ -193,14 +194,22 @@ pub struct ShortcutOverrideInsertForm {
 #[derive(ts_rs::TS)]
 #[ts(export)]
 pub struct ShortcutOverride {
+    #[serde(skip)]
+    #[ts(skip)]
+    pub user_id: UserId,
     pub shortcut_action: String,
     pub key: String,
 }
 
 impl ShortcutOverride {
-    pub async fn get_all(pool: &DatabasePool) -> WyrmResult<Vec<Self>> {
+    #[diesel::dsl::auto_type(no_type_alias)]
+    pub(crate) fn owned(user_id: UserId) -> _ {
+        shortcut_overrides::table.filter(shortcut_overrides::user_id.eq(user_id))
+    }
+
+    pub async fn get_all(pool: &DatabasePool, user_id: UserId) -> WyrmResult<Vec<Self>> {
         let mut conn = pool.get().await?;
-        shortcut_overrides::table
+        Self::owned(user_id)
             .select(ShortcutOverride::as_select())
             .load(&mut conn)
             .await
@@ -211,18 +220,22 @@ impl ShortcutOverride {
         let mut conn = pool.get().await?;
         diesel::insert_into(shortcut_overrides::table)
             .values(&form)
-            .on_conflict(shortcut_overrides::shortcut_action)
+            .on_conflict((
+                shortcut_overrides::user_id,
+                shortcut_overrides::shortcut_action,
+            ))
             .do_update()
             .set(shortcut_overrides::key.eq(excluded(shortcut_overrides::key)))
-            .get_result::<Self>(&mut conn)
+            .returning(ShortcutOverride::as_returning())
+            .get_result(&mut conn)
             .await
             .map_err(WyrmError::from)?;
         Ok(())
     }
 
-    pub async fn delete(pool: &DatabasePool, action: &str) -> WyrmResult<()> {
+    pub async fn delete(pool: &DatabasePool, user_id: UserId, action: &str) -> WyrmResult<()> {
         let mut conn = pool.get().await?;
-        diesel::delete(shortcut_overrides::table.find(action))
+        diesel::delete(shortcut_overrides::table.find((user_id, action)))
             .execute(&mut conn)
             .await?;
         Ok(())
@@ -235,6 +248,7 @@ mod tests {
 
     fn shortcut_override(action: &str, key: &str) -> ShortcutOverride {
         ShortcutOverride {
+            user_id: UserId(1),
             shortcut_action: action.into(),
             key: key.into(),
         }
@@ -263,6 +277,7 @@ mod tests {
                 .map(|o| o.key)
         };
         let form = |key: &str| ShortcutOverrideInsertForm {
+            user_id: UserId(1),
             shortcut_action: "focus_search".into(),
             key: key.into(),
         };
@@ -274,16 +289,16 @@ mod tests {
         ShortcutOverride::create(&pool, form("ctrl+alt+f12"))
             .await
             .expect("create should upsert");
-        let after_upsert = key_of(ShortcutOverride::get_all(&pool).await.unwrap());
+        let after_upsert = key_of(ShortcutOverride::get_all(&pool, UserId(1)).await.unwrap());
 
-        ShortcutOverride::delete(&pool, "focus_search")
+        ShortcutOverride::delete(&pool, UserId(1), "focus_search")
             .await
             .expect("delete should succeed");
         // Resetting an action with no override is a no-op, not a 404.
-        ShortcutOverride::delete(&pool, "focus_search")
+        ShortcutOverride::delete(&pool, UserId(1), "focus_search")
             .await
             .expect("second delete should succeed");
-        let after_delete = key_of(ShortcutOverride::get_all(&pool).await.unwrap());
+        let after_delete = key_of(ShortcutOverride::get_all(&pool, UserId(1)).await.unwrap());
 
         assert_eq!(after_upsert.as_deref(), Some("ctrl+alt+f12"));
         assert_eq!(after_delete, None);

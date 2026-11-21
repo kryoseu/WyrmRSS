@@ -90,6 +90,8 @@ impl FeedWorker {
 
         info!("Processing {} due feeds", due_feeds.len());
 
+        // TODO(#372): every user's credentials share one client, matched by host;
+        // a feed must only use its owner's credentials.
         let host_credentials = HostCredential::get_all(&self.db_pool).await?;
 
         // Build the http client from in-memory runtime settings

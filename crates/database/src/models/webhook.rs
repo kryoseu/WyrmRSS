@@ -1,6 +1,6 @@
 use crate::{
     DatabasePool,
-    newtypes::{FeedId, WebhookId},
+    newtypes::{FeedId, UserId, WebhookId},
     schema::{feed_webhooks, webhooks},
 };
 use chrono::{DateTime, Utc};
@@ -53,6 +53,10 @@ pub struct FeedWebhook {
 pub struct Webhook {
     /// Primary key
     pub id: WebhookId,
+    #[serde(skip)]
+    #[ts(skip)]
+    /// User who owns this webhook.
+    pub user_id: UserId,
     /// Label shown in the UI.
     pub name: String,
     /// Endpoint the payload is POSTed to.
@@ -65,9 +69,24 @@ pub struct Webhook {
 }
 
 impl Webhook {
-    pub async fn get_all(pool: &DatabasePool) -> WyrmResult<Vec<Self>> {
+    #[diesel::dsl::auto_type(no_type_alias)]
+    pub(crate) fn owned(user_id: UserId) -> _ {
+        webhooks::table.filter(webhooks::user_id.eq(user_id))
+    }
+
+    pub async fn get(pool: &DatabasePool, user_id: UserId, id: WebhookId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        webhooks::table
+        Self::owned(user_id)
+            .find(id)
+            .select(Webhook::as_select())
+            .first(&mut conn)
+            .await
+            .map_err(WyrmError::from)
+    }
+
+    pub async fn get_all(pool: &DatabasePool, user_id: UserId) -> WyrmResult<Vec<Self>> {
+        let mut conn = pool.get().await?;
+        Self::owned(user_id)
             .select(Webhook::as_select())
             .load(&mut conn)
             .await
@@ -78,23 +97,29 @@ impl Webhook {
         let mut conn = pool.get().await?;
         diesel::insert_into(webhooks::table)
             .values(form)
-            .get_result::<Self>(&mut conn)
+            .returning(Webhook::as_returning())
+            .get_result(&mut conn)
             .await
             .map_err(WyrmError::from)
     }
 
     pub async fn update(pool: &DatabasePool, form: WebhookUpdateForm) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        diesel::update(webhooks::table.find(form.id))
+        diesel::update(Self::owned(form.user_id).find(form.id))
             .set(form)
-            .get_result::<Self>(&mut conn)
+            .returning(Webhook::as_returning())
+            .get_result(&mut conn)
             .await
             .map_err(WyrmError::from)
     }
 
-    pub async fn delete(pool: &DatabasePool, webhook_id: WebhookId) -> WyrmResult<Self> {
+    pub async fn delete(
+        pool: &DatabasePool,
+        user_id: UserId,
+        webhook_id: WebhookId,
+    ) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        diesel::delete(webhooks::table.find(webhook_id))
+        diesel::delete(Self::owned(user_id).find(webhook_id))
             .returning(Self::as_returning())
             .get_result(&mut conn)
             .await
@@ -145,6 +170,9 @@ impl FeedWebhook {
 #[diesel(check_for_backend(crate::Backend))]
 pub struct WebhookUpdateForm {
     pub id: WebhookId,
+    /// Owner; scopes the update, never written.
+    #[diesel(skip_update)]
+    pub user_id: UserId,
     pub name: Option<String>,
     pub url: Option<String>,
     pub kind: Option<WebhookKind>,
@@ -155,6 +183,7 @@ pub struct WebhookUpdateForm {
 #[diesel(table_name = crate::schema::webhooks)]
 #[diesel(check_for_backend(crate::Backend))]
 pub struct WebhookInsertForm {
+    pub user_id: UserId,
     pub name: String,
     pub url: String,
     pub kind: WebhookKind,
