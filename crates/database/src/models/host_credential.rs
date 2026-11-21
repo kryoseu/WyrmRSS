@@ -57,19 +57,36 @@ pub struct HostCredential {
 }
 
 impl HostCredential {
-    pub async fn get(pool: &DatabasePool, id: HostCredentialId) -> WyrmResult<Self> {
+    pub async fn get(
+        pool: &DatabasePool,
+        user_id: UserId,
+        id: HostCredentialId,
+    ) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         host_credentials::table
             .find(id)
+            .filter(host_credentials::user_id.eq(user_id))
             .select(HostCredential::as_select())
             .first(&mut conn)
             .await
             .map_err(WyrmError::from)
     }
 
+    /// Every user's credentials, for building HTTP clients. Handlers use
+    /// [`get_all_for_user`](Self::get_all_for_user).
     pub async fn get_all(pool: &DatabasePool) -> WyrmResult<Vec<Self>> {
         let mut conn = pool.get().await?;
         host_credentials::table
+            .select(HostCredential::as_select())
+            .load(&mut conn)
+            .await
+            .map_err(WyrmError::from)
+    }
+
+    pub async fn get_all_for_user(pool: &DatabasePool, user_id: UserId) -> WyrmResult<Vec<Self>> {
+        let mut conn = pool.get().await?;
+        host_credentials::table
+            .filter(host_credentials::user_id.eq(user_id))
             .select(HostCredential::as_select())
             .load(&mut conn)
             .await
@@ -88,7 +105,10 @@ impl HostCredential {
 
     pub async fn update(pool: &DatabasePool, form: HostCredentialUpdateForm) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        diesel::update(host_credentials::table.find(form.id))
+        let target = host_credentials::table
+            .find(form.id)
+            .filter(host_credentials::user_id.eq(form.user_id));
+        diesel::update(target)
             .set(form)
             .returning(HostCredential::as_returning())
             .get_result(&mut conn)
@@ -96,9 +116,16 @@ impl HostCredential {
             .map_err(WyrmError::from)
     }
 
-    pub async fn delete(pool: &DatabasePool, id: HostCredentialId) -> WyrmResult<Self> {
+    pub async fn delete(
+        pool: &DatabasePool,
+        user_id: UserId,
+        id: HostCredentialId,
+    ) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
-        diesel::delete(host_credentials::table.find(id))
+        let target = host_credentials::table
+            .find(id)
+            .filter(host_credentials::user_id.eq(user_id));
+        diesel::delete(target)
             .returning(Self::as_returning())
             .get_result(&mut conn)
             .await
@@ -122,6 +149,8 @@ pub struct HostCredentialInsertForm {
 #[diesel(check_for_backend(crate::Backend))]
 pub struct HostCredentialUpdateForm {
     pub id: HostCredentialId,
+    #[diesel(skip_update)]
+    pub user_id: UserId,
     pub host: Option<String>,
     pub kind: Option<HostCredentialKind>,
     pub name: Option<String>,
@@ -189,6 +218,7 @@ mod tests {
             &pool,
             HostCredentialUpdateForm {
                 id: created.id,
+                user_id: created.user_id,
                 host: None,
                 kind: None,
                 name: None,
@@ -201,16 +231,18 @@ mod tests {
         assert_eq!(updated.name, "reader");
         assert_eq!(updated.host, host);
 
-        let fetched = HostCredential::get(&pool, created.id)
+        let fetched = HostCredential::get(&pool, created.user_id, created.id)
             .await
             .expect("get should succeed");
         assert_eq!(fetched.secret, "correct horse");
 
-        HostCredential::delete(&pool, created.id)
+        HostCredential::delete(&pool, created.user_id, created.id)
             .await
             .expect("delete should succeed");
         assert!(
-            HostCredential::get(&pool, created.id).await.is_err(),
+            HostCredential::get(&pool, created.user_id, created.id)
+                .await
+                .is_err(),
             "deleted credential should be gone"
         );
     }
