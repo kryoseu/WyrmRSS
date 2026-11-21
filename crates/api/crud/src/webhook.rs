@@ -5,7 +5,7 @@ use actix_web::{
 use api_utils::context::WyrmContext;
 use database::{
     models::webhook::{FeedWebhook, Webhook, WebhookInsertForm, WebhookKind, WebhookUpdateForm},
-    newtypes::{FeedId, WebhookId},
+    newtypes::{FeedId, UserId, WebhookId},
 };
 use serde::Deserialize;
 use wyrm_utils::{error::WyrmError, result::WyrmResult};
@@ -38,9 +38,12 @@ pub async fn create(
     webhook::validate(&data.kind, data.payload_template.as_deref())
         .map_err(|e| WyrmError::WebhookTemplate(e.to_string()))?;
 
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
     let webhook = Webhook::create(
         &ctx.db_pool,
         WebhookInsertForm {
+            user_id,
             name: data.name,
             url: data.url,
             kind: data.kind,
@@ -65,10 +68,13 @@ pub async fn update(
             .map_err(|e| WyrmError::WebhookTemplate(e.to_string()))?;
     }
 
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
     let webhook = Webhook::update(
         &ctx.db_pool,
         WebhookUpdateForm {
             id: path.into_inner(),
+            user_id,
             name: data.name,
             url: data.url,
             kind: Some(data.kind),
@@ -82,7 +88,9 @@ pub async fn update(
 pub async fn delete(path: Path<WebhookId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<Webhook>> {
     ctx.deny_in_demo()?;
 
-    let webhook = Webhook::delete(&ctx.db_pool, path.into_inner()).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
+    let webhook = Webhook::delete(&ctx.db_pool, user_id, path.into_inner()).await?;
     Ok(Json(webhook))
 }
 

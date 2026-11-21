@@ -2,13 +2,15 @@ use actix_web::web::{Data, Json, Path};
 use api_utils::context::WyrmContext;
 use database::{
     models::webhook::Webhook,
-    newtypes::FeedId,
+    newtypes::{FeedId, UserId},
     views::{self, webhook::FeedWebhookView},
 };
 use wyrm_utils::result::WyrmResult;
 
 pub async fn list(ctx: Data<WyrmContext>) -> WyrmResult<Json<Vec<Webhook>>> {
-    let webhooks = Webhook::get_all(&ctx.db_pool).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
+    let webhooks = Webhook::get_all(&ctx.db_pool, user_id).await?;
     Ok(Json(webhooks))
 }
 
