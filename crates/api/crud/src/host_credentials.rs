@@ -2,7 +2,10 @@ use actix_web::web::{Data, Json, Path};
 use api_utils::context::WyrmContext;
 use database::{
     models::host_credential::{
-        HostCredential, HostCredentialInsertForm, HostCredentialKind, HostCredentialUpdateForm,
+        HostCredential,
+        HostCredentialInsertForm,
+        HostCredentialKind,
+        HostCredentialUpdateForm,
     },
     newtypes::{HostCredentialId, UserId},
 };

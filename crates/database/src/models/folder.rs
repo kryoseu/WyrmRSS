@@ -1,5 +1,6 @@
 use crate::{
-    DatabaseConn, DatabasePool,
+    DatabaseConn,
+    DatabasePool,
     newtypes::{FolderId, UserId},
     schema::folders,
 };

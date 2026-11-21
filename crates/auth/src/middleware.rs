@@ -1,6 +1,7 @@
 use crate::{Auth, api_key};
 use actix_web::{
-    Error, HttpMessage,
+    Error,
+    HttpMessage,
     body::MessageBody,
     dev::{ServiceRequest, ServiceResponse},
     error::ErrorUnauthorized,

@@ -218,7 +218,9 @@ async fn filters_round_trip_through_json() {
     );
 
     // Re-read so the value comes back through FromSql rather than RETURNING.
-    let fetched = Feed::get(&db.pool, created.user_id, created.id).await.expect("should get");
+    let fetched = Feed::get(&db.pool, created.user_id, created.id)
+        .await
+        .expect("should get");
     assert_eq!(fetched.filters.0, created.filters.0);
 
     // The column default is the JSON literal '[]', not NULL.

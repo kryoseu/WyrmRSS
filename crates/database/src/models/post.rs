@@ -713,15 +713,17 @@ mod tests {
 
             // Repeated toggles: each count must include its own update.
             for _ in 0..3 {
-                let (post, count) = Post::update_with_unread_count(&pool, feed.user_id, mark_read(true))
-                    .await
-                    .expect("should mark post read");
+                let (post, count) =
+                    Post::update_with_unread_count(&pool, feed.user_id, mark_read(true))
+                        .await
+                        .expect("should mark post read");
                 assert!(post.is_read);
                 assert_eq!(count, 1);
 
-                let (post, count) = Post::update_with_unread_count(&pool, feed.user_id, mark_read(false))
-                    .await
-                    .expect("should mark post unread");
+                let (post, count) =
+                    Post::update_with_unread_count(&pool, feed.user_id, mark_read(false))
+                        .await
+                        .expect("should mark post unread");
                 assert!(!post.is_read);
                 assert_eq!(count, 2);
             }

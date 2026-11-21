@@ -101,7 +101,12 @@ mod tests {
         let pool = setup_test_db().await;
         let feed = test_feed!(&pool);
 
-        assert!(FeedIcon::get(&pool, feed.user_id, feed.id).await.unwrap().is_none());
+        assert!(
+            FeedIcon::get(&pool, feed.user_id, feed.id)
+                .await
+                .unwrap()
+                .is_none()
+        );
 
         FeedIcon::create(
             &pool,

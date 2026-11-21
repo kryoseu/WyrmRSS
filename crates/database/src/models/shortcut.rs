@@ -2,7 +2,8 @@ use crate::{DatabasePool, newtypes::UserId, schema::shortcut_overrides};
 use diesel::{Selectable, deserialize::Queryable, prelude::*, upsert::excluded};
 use diesel_async::RunQueryDsl;
 use serde::{
-    Deserialize, Serialize,
+    Deserialize,
+    Serialize,
     de::{IntoDeserializer, value::Error as ParseError},
 };
 use std::str::FromStr;
