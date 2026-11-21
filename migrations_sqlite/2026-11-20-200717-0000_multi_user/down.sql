@@ -1,5 +1,3 @@
-DROP TABLE api_keys;
-
 -- Indexes first: SQLite can't drop a column that an index uses.
 DROP INDEX idx_host_credentials_user_host;
 DROP INDEX idx_folders_user_name_lower;

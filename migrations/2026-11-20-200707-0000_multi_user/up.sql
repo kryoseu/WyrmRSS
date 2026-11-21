@@ -44,15 +44,3 @@ CREATE UNIQUE INDEX idx_folders_user_name_lower ON folders (user_id, LOWER(name)
 
 CREATE INDEX idx_webhooks_user_id ON webhooks (user_id);
 CREATE INDEX idx_post_archive_user_id ON post_archive (user_id);
-
--- Per-user API keys, created in-app
-CREATE TABLE api_keys (
-    id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    key_hash TEXT UNIQUE NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    last_used_at TIMESTAMPTZ
-);
-
-CREATE INDEX idx_api_keys_user_id ON api_keys (user_id);

@@ -1,17 +1,6 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    api_keys (id) {
-        id -> Integer,
-        user_id -> Integer,
-        name -> Text,
-        key_hash -> Text,
-        created_at -> TimestamptzSqlite,
-        last_used_at -> Nullable<TimestamptzSqlite>,
-    }
-}
-
-diesel::table! {
     expired_posts (feed_id, url) {
         feed_id -> Integer,
         url -> Text,
@@ -181,7 +170,6 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(api_keys -> users (user_id));
 diesel::joinable!(expired_posts -> feeds (feed_id));
 diesel::joinable!(feed_icons -> feeds (feed_id));
 diesel::joinable!(feed_webhooks -> feeds (feed_id));
@@ -190,7 +178,6 @@ diesel::joinable!(feeds -> folders (folder_id));
 diesel::joinable!(posts -> feeds (feed_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    api_keys,
     expired_posts,
     feed_icons,
     feed_webhooks,

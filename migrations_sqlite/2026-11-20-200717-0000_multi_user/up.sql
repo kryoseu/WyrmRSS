@@ -41,12 +41,3 @@ ALTER TABLE shortcut_overrides_new RENAME TO shortcut_overrides;
 CREATE UNIQUE INDEX idx_feeds_user_url ON feeds (user_id, url);
 CREATE UNIQUE INDEX idx_folders_user_name_lower ON folders (user_id, LOWER(name));
 CREATE UNIQUE INDEX idx_host_credentials_user_host ON host_credentials (user_id, host);
-
-CREATE TABLE api_keys (
-    id           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name         TEXT NOT NULL,
-    key_hash     TEXT NOT NULL UNIQUE,
-    created_at   TIMESTAMP NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-    last_used_at TIMESTAMP
-);

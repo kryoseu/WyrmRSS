@@ -1,7 +1,5 @@
 -- Rolling back fails if two users have the same feed URL, folder name, host or
 -- shortcut key, since the restored single-user constraints don't allow duplicates.
-DROP TABLE api_keys;
-
 DROP INDEX idx_post_archive_user_id;
 DROP INDEX idx_webhooks_user_id;
 
