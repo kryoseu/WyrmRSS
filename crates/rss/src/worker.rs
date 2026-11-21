@@ -1,6 +1,6 @@
 use crate::{
     filter::CompiledFilters,
-    http::{HttpClient, HttpConfig},
+    http::{FeedResponse, HttpClient, HttpConfig, HttpValidators},
     url::FeedUrlResolver,
 };
 use chrono::Utc;
@@ -184,8 +184,13 @@ async fn process_feed(
     info!("Processing feed {}", task.feed.title);
 
     let result = fetch_and_store(pool, http, resolver, task).await;
-    Feed::update(pool, FeedUpdateForm::from_poll_result(&task.feed, &result)).await?;
-    result
+    let mut form = FeedUpdateForm::from_poll_result(&task.feed, &result);
+    if let Ok(validators) = &result {
+        form.etag = Some(validators.etag.clone());
+        form.last_modified = Some(validators.last_modified.clone());
+    }
+    Feed::update(pool, form).await?;
+    result.map(|_| ())
 }
 
 async fn fetch_and_store(
@@ -193,9 +198,19 @@ async fn fetch_and_store(
     http: &HttpClient,
     resolver: &FeedUrlResolver,
     task: &FeedTask,
-) -> WyrmResult<()> {
+) -> WyrmResult<HttpValidators> {
     let fetch_target = resolver.resolve(&task.feed.url)?;
-    let (bytes, _) = http.fetch(&fetch_target).await?;
+    let current = Feed::get(pool, task.feed.id).await?;
+    let validators = if crate::icon::needs_feed_icon(pool, task.feed.id).await {
+        HttpValidators::default() // Fetch the body so the icon can be resolved.
+    } else {
+        HttpValidators::from(&current)
+    };
+    let response = http.fetch_conditional(&fetch_target, &validators).await?;
+    let (bytes, validators) = match response {
+        FeedResponse::NotModified(validators) => return Ok(validators),
+        FeedResponse::Modified { body, validators } => (body, validators),
+    };
 
     let parsed = feed_rs::parser::parse(&bytes[..])?;
 
@@ -237,7 +252,7 @@ async fn fetch_and_store(
     );
 
     if new_posts.is_empty() {
-        return Ok(());
+        return Ok(validators);
     }
 
     for webhook in &task.webhooks {
@@ -257,5 +272,5 @@ async fn fetch_and_store(
         }
     }
 
-    Ok(())
+    Ok(validators)
 }

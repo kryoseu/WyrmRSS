@@ -28,7 +28,9 @@ pub type FiltersSql = Text;
 /// Deliberately does not derive `ts_rs::TS`: that would emit a named `Filters`
 /// alias and make every struct holding one import it, changing the generated
 /// frontend types. The exporting structs override the field type instead.
-#[derive(Clone, Debug, Default, Serialize, Deserialize, AsExpression, FromSqlRow)]
+#[derive(
+    Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, AsExpression, FromSqlRow,
+)]
 #[diesel(sql_type = FiltersSql)]
 #[serde(transparent)]
 pub struct Filters(pub Vec<Option<String>>);
@@ -42,11 +44,15 @@ impl std::ops::Deref for Filters {
     }
 }
 
-/// Lets the existing `.map(Some).collect()` chains in `api_crud` build a
-/// `Filters` without naming it.
 impl FromIterator<Option<String>> for Filters {
     fn from_iter<I: IntoIterator<Item = Option<String>>>(iter: I) -> Self {
         Self(iter.into_iter().collect())
+    }
+}
+
+impl From<Vec<String>> for Filters {
+    fn from(value: Vec<String>) -> Self {
+        value.into_iter().map(Some).collect()
     }
 }
 

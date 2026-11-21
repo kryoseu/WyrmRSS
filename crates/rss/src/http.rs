@@ -1,10 +1,13 @@
 use bytes::{Bytes, BytesMut};
 use database::{
-    models::host_credential::{HostCredential, HostCredentialKind},
+    models::{
+        feed::Feed,
+        host_credential::{HostCredential, HostCredentialKind},
+    },
     utils::settings::RuntimeSettings,
 };
 use http::{Extensions, HeaderName, HeaderValue};
-use reqwest::{Request, Response, StatusCode, Url};
+use reqwest::{Request, Response, StatusCode, Url, header};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Middleware, Next, Result};
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 use std::{collections::HashMap, time::Duration};
@@ -58,6 +61,30 @@ impl From<&RuntimeSettings> for HttpConfig {
     }
 }
 
+#[derive(Default)]
+pub struct HttpValidators {
+    pub etag: Option<String>,
+    pub last_modified: Option<String>,
+}
+
+impl From<&Feed> for HttpValidators {
+    fn from(feed: &Feed) -> Self {
+        Self {
+            etag: feed.etag.clone(),
+            last_modified: feed.last_modified.clone(),
+        }
+    }
+}
+
+/// Feed polling can skip parsing and storage when the publisher returns 304.
+pub enum FeedResponse {
+    Modified {
+        body: Bytes,
+        validators: HttpValidators,
+    },
+    NotModified(HttpValidators),
+}
+
 #[derive(Clone)]
 pub struct HttpClient {
     inner: ClientWithMiddleware,
@@ -103,7 +130,57 @@ impl HttpClient {
     /// Fetches `url`, returning the body and the response's `Content-Type`
     /// header (stripped of parameters like `; charset=`).
     pub async fn fetch(&self, url: &str) -> WyrmResult<(Bytes, Option<String>)> {
+        let response = self.send(url, None).await?;
+        let content_type = response
+            .headers()
+            .get(header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .map(|v| v.split(';').next().unwrap_or(v).trim().to_ascii_lowercase());
+
+        Ok((Self::read_body(response).await?, content_type))
+    }
+
+    pub async fn fetch_conditional(
+        &self,
+        url: &str,
+        validators: &HttpValidators,
+    ) -> WyrmResult<FeedResponse> {
+        let response = self.send(url, Some(validators)).await?;
+        let read_header = |name| {
+            response
+                .headers()
+                .get(name)
+                .and_then(|value| value.to_str().ok())
+                .map(String::from)
+        };
+        let etag = read_header(header::ETAG);
+        let last_modified = read_header(header::LAST_MODIFIED);
+        if response.status() == StatusCode::NOT_MODIFIED {
+            return Ok(FeedResponse::NotModified(HttpValidators {
+                etag: etag.or_else(|| validators.etag.clone()),
+                last_modified: last_modified.or_else(|| validators.last_modified.clone()),
+            }));
+        }
+
+        Ok(FeedResponse::Modified {
+            body: Self::read_body(response).await?,
+            validators: HttpValidators {
+                etag,
+                last_modified,
+            },
+        })
+    }
+
+    async fn send(&self, url: &str, validators: Option<&HttpValidators>) -> WyrmResult<Response> {
         let mut request = self.inner.get(url);
+        if let Some(validators) = validators {
+            if let Some(etag) = &validators.etag {
+                request = request.header(header::IF_NONE_MATCH, etag);
+            }
+            if let Some(last_modified) = &validators.last_modified {
+                request = request.header(header::IF_MODIFIED_SINCE, last_modified);
+            }
+        }
 
         let parsed_url = Url::parse(url).ok();
         let credential = parsed_url
@@ -144,20 +221,16 @@ impl HttpClient {
             );
         }
 
-        let mut response = response.error_for_status()?;
+        Ok(response.error_for_status()?)
+    }
 
+    async fn read_body(mut response: Response) -> WyrmResult<Bytes> {
         if response
             .content_length()
             .is_some_and(|len| len as usize > MAX_RESPONSE_BYTES)
         {
             return Err(HttpClientError::ResponseTooLarge(MAX_RESPONSE_BYTES).into());
         }
-
-        let content_type = response
-            .headers()
-            .get(reqwest::header::CONTENT_TYPE)
-            .and_then(|v| v.to_str().ok())
-            .map(|v| v.split(';').next().unwrap_or(v).trim().to_ascii_lowercase());
 
         let mut body = BytesMut::new();
         while let Some(chunk) = response.chunk().await? {
@@ -167,13 +240,13 @@ impl HttpClient {
             body.extend_from_slice(&chunk);
         }
 
-        Ok((body.freeze(), content_type))
+        Ok(body.freeze())
     }
 
     pub async fn post_json(&self, url: &str, body: &serde_json::Value) -> WyrmResult<()> {
         self.inner
             .post(url)
-            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .header(header::CONTENT_TYPE, "application/json")
             .body(body.to_string())
             .send()
             .await?

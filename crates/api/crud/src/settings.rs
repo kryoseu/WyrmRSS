@@ -1,7 +1,10 @@
 use actix_web::web::{Data, Json};
 use api_utils::{context::WyrmContext, response::SettingsResponse};
 use database::{
-    models::settings::{ReadMode, Settings, SettingsUpdateForm},
+    models::{
+        feed::Feed,
+        settings::{ReadMode, Settings, SettingsUpdateForm},
+    },
     utils::settings::RuntimeSettings,
 };
 use serde::Deserialize;
@@ -40,6 +43,8 @@ pub async fn update(
 ) -> WyrmResult<Json<SettingsResponse>> {
     ctx.deny_in_demo()?;
 
+    let previous_instance = ctx.runtime_settings.read()?.rsshub_instance.clone();
+
     let settings = Settings::update(
         &ctx.db_pool,
         SettingsUpdateForm {
@@ -63,6 +68,10 @@ pub async fn update(
         },
     )
     .await?;
+
+    if settings.rsshub_instance != previous_instance {
+        Feed::clear_rsshub_validators(&ctx.db_pool).await?;
+    }
 
     *ctx.runtime_settings.write()? = RuntimeSettings::from(&settings);
     // Interrupt the worker's sleep so it reconfigures immediately; safe to drop

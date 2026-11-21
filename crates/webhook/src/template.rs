@@ -145,6 +145,8 @@ mod tests {
             is_paused: false,
             last_fetched_at: None,
             last_error: None,
+            etag: None,
+            last_modified: None,
             created_at: Utc::now(),
             folder_id: None,
             display_mode: DisplayMode::River,

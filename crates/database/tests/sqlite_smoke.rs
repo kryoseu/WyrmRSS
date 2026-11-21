@@ -401,12 +401,16 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
     assert!(feed.last_error.is_none());
     assert!(feed.last_fetched_at.is_none());
 
-    let success = Feed::update(&db.pool, FeedUpdateForm::from_poll_result(&feed, &Ok(())))
-        .await
-        .unwrap();
+    let mut success_form = FeedUpdateForm::from_poll_result(&feed, &Ok(()));
+    success_form.etag = Some(Some("etag-v1".into()));
+    success_form.last_modified = Some(Some("yesterday".into()));
+    let success = Feed::update(&db.pool, success_form).await.unwrap();
     assert!(success.last_fetched_at.is_some());
+    assert_eq!(success.etag.as_deref(), Some("etag-v1"));
+    assert_eq!(success.last_modified.as_deref(), Some("yesterday"));
 
-    let failed_poll = Err(WyrmError::WorkerError("boom".into()));
+    let failed_poll: wyrm_utils::result::WyrmResult<()> =
+        Err(WyrmError::WorkerError("boom".into()));
     let failed = Feed::update(
         &db.pool,
         FeedUpdateForm::from_poll_result(&feed, &failed_poll),
@@ -415,11 +419,15 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
     .unwrap();
     assert_eq!(failed.last_fetched_at, success.last_fetched_at);
     assert_eq!(failed.last_error.as_deref(), Some("Fetch failed"));
+    assert_eq!(failed.etag, success.etag);
+    assert_eq!(failed.last_modified, success.last_modified);
 
-    let recovered = Feed::update(&db.pool, FeedUpdateForm::from_poll_result(&feed, &Ok(())))
-        .await
-        .unwrap();
+    let mut recovered_form = FeedUpdateForm::from_poll_result(&feed, &Ok(()));
+    recovered_form.etag = Some(None);
+    recovered_form.last_modified = Some(None);
+    let recovered = Feed::update(&db.pool, recovered_form).await.unwrap();
     assert!(recovered.last_error.is_none());
+    assert!(recovered.etag.is_none() && recovered.last_modified.is_none());
 
     let updated = Feed::update(
         &db.pool,
@@ -433,6 +441,8 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
             is_paused: None,
             last_fetched_at: Some(None),
             last_error: Some(None),
+            etag: Some(None),
+            last_modified: Some(None),
             expected_url: None,
             display_mode: None,
         },
@@ -440,6 +450,7 @@ async fn feed_health_preserves_success_and_ignores_stale_results() {
     .await
     .unwrap();
     assert!(updated.last_fetched_at.is_none());
+    assert!(updated.etag.is_none() && updated.last_modified.is_none());
 
     // A poll of the old URL finishing after the edit is discarded.
     let stale = Feed::update(
