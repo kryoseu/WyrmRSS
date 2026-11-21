@@ -33,6 +33,7 @@ impl PostArchiveQuery {
     pub async fn list(
         self,
         pool: &DatabasePool,
+        user_id: UserId,
         page_size: i32,
     ) -> WyrmResult<PagedResponse<Vec<PostArchive>>> {
         let mut conn = pool.get().await?;
@@ -40,6 +41,7 @@ impl PostArchiveQuery {
         let cursor = self.cursor.as_ref().and_then(|c| c.decode());
 
         let mut query = post_archive::table
+            .filter(post_archive::user_id.eq(user_id))
             .select(PostArchive::as_select())
             .order((post_archive::archived_at.desc(), post_archive::id.desc()))
             .limit(page_size as i64 + 1)
@@ -80,17 +82,19 @@ impl PostArchiveQuery {
 
 pub async fn get_post_archive_insert_form(
     pool: &DatabasePool,
+    user_id: UserId,
     post_id: PostId,
 ) -> WyrmResult<PostArchiveInsertForm> {
     use crate::schema::{feeds, posts};
 
     let mut conn = pool.get().await?;
 
-    // The archive belongs to whoever owns the post's feed.
-    let (post, user_id): (Post, UserId) = posts::table
+    // Only the owner of the post's feed can archive it.
+    let post: Post = posts::table
         .inner_join(feeds::table)
         .filter(posts::id.eq(post_id))
-        .select((Post::as_select(), feeds::user_id))
+        .filter(feeds::user_id.eq(user_id))
+        .select(Post::as_select())
         .first(&mut conn)
         .await
         .map_err(WyrmError::from)?;

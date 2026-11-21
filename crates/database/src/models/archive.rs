@@ -46,10 +46,11 @@ pub struct PostArchive {
 }
 
 impl PostArchive {
-    pub async fn get(pool: &DatabasePool, id: PostId) -> WyrmResult<Self> {
+    pub async fn get(pool: &DatabasePool, user_id: UserId, id: PostId) -> WyrmResult<Self> {
         let mut conn = pool.get().await?;
         post_archive::table
             .find(id)
+            .filter(post_archive::user_id.eq(user_id))
             .select(PostArchive::as_select())
             .first(&mut conn)
             .await
@@ -85,14 +86,20 @@ impl PostArchive {
     /// Unarchives a post: deletes the `post_archive` row and sets `posts.is_archived = false`
     /// atomically. If the original post no longer exists (e.g. feed was deleted), the archive
     /// row is still removed.
-    pub async fn delete(pool: &DatabasePool, post_id: PostId) -> WyrmResult<()> {
+    pub async fn delete(pool: &DatabasePool, user_id: UserId, post_id: PostId) -> WyrmResult<()> {
         let mut conn = pool.get().await?;
         let conn = &mut *conn;
 
         conn.transaction(async |conn| {
-            diesel::delete(post_archive::table.filter(post_archive::id.eq(post_id)))
-                .execute(conn)
-                .await?;
+            let target = post_archive::table
+                .find(post_id)
+                .filter(post_archive::user_id.eq(user_id));
+            let deleted = diesel::delete(target).execute(conn).await?;
+
+            // Nothing archived for this user: leave the post alone.
+            if deleted == 0 {
+                return Ok(());
+            }
 
             diesel::update(posts::table.find(post_id))
                 .set(posts::is_archived.eq(false))
@@ -149,7 +156,7 @@ mod tests {
         let post = test_post!(&pool, feed_id);
         let post_id = post.id;
 
-        let form = get_post_archive_insert_form(&pool, post_id)
+        let form = get_post_archive_insert_form(&pool, feed.user_id, post_id)
             .await
             .expect("insert form should build");
         let archived = PostArchive::create(&pool, form)
@@ -159,15 +166,22 @@ mod tests {
         assert_eq!(archived.title.as_deref(), Some("test post"));
         assert!(Post::get(&pool, post_id).await.unwrap().is_archived);
         assert_eq!(
-            PostArchive::get(&pool, post_id).await.unwrap().id,
+            PostArchive::get(&pool, feed.user_id, post_id)
+                .await
+                .unwrap()
+                .id,
             post_id,
             "get should return the archived row"
         );
 
-        PostArchive::delete(&pool, post_id)
+        PostArchive::delete(&pool, feed.user_id, post_id)
             .await
             .expect("unarchive should succeed");
-        assert!(PostArchive::get(&pool, post_id).await.is_err());
+        assert!(
+            PostArchive::get(&pool, feed.user_id, post_id)
+                .await
+                .is_err()
+        );
         assert!(!Post::get(&pool, post_id).await.unwrap().is_archived);
 
         Feed::delete(&pool, feed.user_id, feed_id)

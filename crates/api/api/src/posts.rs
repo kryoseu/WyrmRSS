@@ -5,7 +5,7 @@ use actix_web::{
 use api_utils::context::WyrmContext;
 use database::{
     models::{archive::PostArchive, post::Post},
-    newtypes::{FeedId, FolderId, PostId},
+    newtypes::{FeedId, FolderId, PostId, UserId},
     utils::pagination::{PagedResponse, PaginationCursor},
     views::{archive::get_post_archive_insert_form, post::PostQuery},
 };
@@ -37,15 +37,19 @@ pub async fn get(path: Path<PostId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<
 }
 
 pub async fn archive(path: Path<PostId>, ctx: Data<WyrmContext>) -> WyrmResult<Json<PostArchive>> {
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
     let post_id = path.into_inner();
-    let form = get_post_archive_insert_form(&ctx.db_pool, post_id).await?;
+    let form = get_post_archive_insert_form(&ctx.db_pool, user_id, post_id).await?;
     let archived = PostArchive::create(&ctx.db_pool, form).await?;
     Ok(Json(archived))
 }
 
 pub async fn unarchive(path: Path<PostId>, ctx: Data<WyrmContext>) -> WyrmResult<HttpResponse> {
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
     let post_id = path.into_inner();
-    PostArchive::delete(&ctx.db_pool, post_id).await?;
+    PostArchive::delete(&ctx.db_pool, user_id, post_id).await?;
     Ok(HttpResponse::NoContent().finish())
 }
 
