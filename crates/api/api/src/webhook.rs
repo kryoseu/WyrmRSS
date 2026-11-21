@@ -18,6 +18,8 @@ pub async fn list_for_feed(
     path: Path<FeedId>,
     ctx: Data<WyrmContext>,
 ) -> WyrmResult<Json<Vec<FeedWebhookView>>> {
-    let webhooks = views::webhook::list_for_feed(&ctx.db_pool, path.into_inner()).await?;
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
+    let webhooks = views::webhook::list_for_feed(&ctx.db_pool, user_id, path.into_inner()).await?;
     Ok(Json(webhooks))
 }

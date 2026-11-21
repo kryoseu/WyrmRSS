@@ -69,6 +69,17 @@ pub struct Webhook {
 }
 
 impl Webhook {
+    pub async fn get(pool: &DatabasePool, user_id: UserId, id: WebhookId) -> WyrmResult<Self> {
+        let mut conn = pool.get().await?;
+        webhooks::table
+            .find(id)
+            .filter(webhooks::user_id.eq(user_id))
+            .select(Webhook::as_select())
+            .first(&mut conn)
+            .await
+            .map_err(WyrmError::from)
+    }
+
     pub async fn get_all(pool: &DatabasePool, user_id: UserId) -> WyrmResult<Vec<Self>> {
         let mut conn = pool.get().await?;
         webhooks::table

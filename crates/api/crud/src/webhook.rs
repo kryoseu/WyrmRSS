@@ -4,7 +4,10 @@ use actix_web::{
 };
 use api_utils::context::WyrmContext;
 use database::{
-    models::webhook::{FeedWebhook, Webhook, WebhookInsertForm, WebhookKind, WebhookUpdateForm},
+    models::{
+        feed::Feed,
+        webhook::{FeedWebhook, Webhook, WebhookInsertForm, WebhookKind, WebhookUpdateForm},
+    },
     newtypes::{FeedId, UserId, WebhookId},
 };
 use serde::Deserialize;
@@ -100,7 +103,14 @@ pub async fn attach(
 ) -> WyrmResult<HttpResponse> {
     ctx.deny_in_demo()?;
 
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
     let (feed_id, webhook_id) = path.into_inner();
+
+    // Both must be the user. 404 otherwise.
+    Feed::get(&ctx.db_pool, user_id, feed_id).await?;
+    Webhook::get(&ctx.db_pool, user_id, webhook_id).await?;
+
     FeedWebhook::create(&ctx.db_pool, feed_id, webhook_id).await?;
     Ok(HttpResponse::NoContent().finish())
 }
@@ -111,7 +121,13 @@ pub async fn detach(
 ) -> WyrmResult<HttpResponse> {
     ctx.deny_in_demo()?;
 
+    // TODO(#372): the requesting user, once the middleware provides it.
+    let user_id = UserId(1);
     let (feed_id, webhook_id) = path.into_inner();
+
+    // Feed must be owned by the user. 404 otherwise.
+    Feed::get(&ctx.db_pool, user_id, feed_id).await?;
+
     FeedWebhook::delete(&ctx.db_pool, feed_id, webhook_id).await?;
     Ok(HttpResponse::NoContent().finish())
 }

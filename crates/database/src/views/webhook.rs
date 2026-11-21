@@ -1,7 +1,7 @@
 use crate::{
     DatabasePool,
     models::webhook::Webhook,
-    newtypes::FeedId,
+    newtypes::{FeedId, UserId},
     schema::{feed_webhooks, webhooks},
 };
 use diesel::prelude::*;
@@ -34,18 +34,20 @@ pub async fn all_by_feed(pool: &DatabasePool) -> WyrmResult<HashMap<FeedId, Vec<
     Ok(map)
 }
 
-/// All webhooks, with an attached flag indicating which webhooks are
-/// attached to the given feed.
+/// All of the user's webhooks, with an attached flag indicating which webhooks
+/// are attached to the given feed.
 ///
 /// When editting a feed, we need to display the list of all webhooks
 /// available that can be attached, but also show which ones already are.
 /// This call allows everything to be returned in one call.
 pub async fn list_for_feed(
     pool: &DatabasePool,
+    user_id: UserId,
     feed_id: FeedId,
 ) -> WyrmResult<Vec<FeedWebhookView>> {
     let mut conn = pool.get().await?;
     let rows: Vec<(Webhook, bool)> = webhooks::table
+        .filter(webhooks::user_id.eq(user_id))
         .left_join(
             feed_webhooks::table.on(feed_webhooks::webhook_id
                 .eq(webhooks::id)
